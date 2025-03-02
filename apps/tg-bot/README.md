@@ -1,6 +1,7 @@
 # Remind0
 
 WhatsApp bot to write expenses to a database with a Twilio integration. 
+Work-in-progress, currently integrated with `ngrok`.
 Thought as a small project to be hosted on a Rasperry Pi. 
 
 
