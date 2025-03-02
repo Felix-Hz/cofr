@@ -1,0 +1,51 @@
+# General Go files
+# Build output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with 'go test' command
+*.test
+
+# Coverage files
+*.out
+
+# Dependency directories
+/vendor/
+
+# Go module files
+go.sum
+go.mod
+
+# IDE files (you can add others depending on the editor you use)
+.idea/
+.vscode/
+*.sublime-workspace
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# SQLite database file
+*.db
+
+# Environment variable files (store credentials/secrets, don't want to commit)
+.env
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+
+# Directory for application secrets (optional, if you're using it)
+secrets/
+
+# Other files you might want to exclude:
+# Your compiled Go binaries or if you have a build output folder
+build/
+dist/
