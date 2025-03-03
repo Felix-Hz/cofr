@@ -3,49 +3,67 @@ package app
 import (
 	"fmt"
 	"log"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
+	"time"
 
 	"remind0/db"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func HandleWppMessage(context *gin.Context) {
-	// Extract message details from Twilio's request
-	from := context.PostForm("From")
-	body := context.PostForm("Body")
+func HandleTelegramMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	from := update.Message.Chat.ID           // Get Telegram user ID
+	body := update.Message.Text              // Extract message text
+	username := update.Message.From.UserName // Extract username
+	timestamp := update.Message.Date         // Extract timestamp
 
 	// Validate the message
 	if !validateMessage(body) {
-		context.String(http.StatusBadRequest, "Invalid message.")
+		msg := tgbotapi.NewMessage(from, "Invalid message format.")
+		bot.Send(msg)
 		return
 	}
 
-	// Parse the message
+	// Parse the message (Assumes parseMessage function exists)
 	category, amount, notes, parseErr := parseMessage(body)
 	if parseErr != nil {
 		log.Println("Error parsing message:", parseErr)
-		context.String(http.StatusBadRequest, "Invalid format. Use: <category> <amount> <optional_notes>")
+		msg := tgbotapi.NewMessage(from, "Invalid format. Use: <category> <amount> <optional_notes>")
+		bot.Send(msg)
 		return
 	}
 
-	// Create the user if it doesn't exist
+	// Check if user exists
 	var user db.User
-	result := db.DBClient.Where("phone = ?", from).First(&user)
+	result := db.DBClient.Where("username = ?", username).First(&user)
 	if result.Error != nil {
-		user = db.User{Phone: from}
+		user = db.User{Username: username}
 		db.DBClient.Create(&user)
 	}
 
-	// Create the expense linked to the user
+	// Hash message to prevent duplicates.
+	hash := generateMessageHash(body, time.Unix(int64(timestamp), 0))
+
+	// Avoid duplicate expenses
+	var existingExpense db.Expense
+	result = db.DBClient.Where("hash = ?", hash).First(&existingExpense)
+	if result.Error == nil {
+		message := fmt.Sprintf("This expense was already recorded. %s - $%.2f", existingExpense.Category, existingExpense.Amount)
+		msg := tgbotapi.NewMessage(from, message)
+		bot.Send(msg)
+		return
+	}
+
+	// Store the expense
 	expense := db.Expense{
 		UserID:   user.ID,
 		Category: category,
 		Amount:   amount,
 		Notes:    notes,
+		Hash:     hash,
 	}
 	db.DBClient.Create(&expense)
 
-	// Send a response back to Twilio
-	context.String(http.StatusOK, fmt.Sprintf("Message stored for %s.", from))
+	// Return confirmation message
+	msg := tgbotapi.NewMessage(from, fmt.Sprintf("Expense recorded: %s - $%.2f", category, amount))
+	bot.Send(msg)
 }
