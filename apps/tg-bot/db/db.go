@@ -17,8 +17,11 @@ func InitialiseDB() {
 	}
 
 	// Run migrations
-	err = DBClient.AutoMigrate(&User{}, &Expense{})
+	models := []interface{}{&User{}, &Expense{}, &Offset{}}
+	err = DBClient.AutoMigrate(models...)
 	if err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
+
+	log.Println("> Database initialised!")
 }
