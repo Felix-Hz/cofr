@@ -51,19 +51,16 @@ func main() {
 		// Listen to updates in the range loop
 		for update := range updates {
 
-			// Check if the update is newer than the offset
+			// Only handle updates with IDs greater than the offset.
 			if update.UpdateID > offset.Offset {
 
-				// Update the offset in the database
+				// Update the offset in the database.
 				offset.Offset = update.UpdateID
 				db.DBClient.Save(&offset)
 
-				// Handle the message if it's a valid update
+				// Handle the message if it's a valid update.
 				if update.Message != nil {
-
-					// Your custom message handling logic
 					app.HandleTelegramMessage(bot, update)
-
 				}
 			}
 		}
