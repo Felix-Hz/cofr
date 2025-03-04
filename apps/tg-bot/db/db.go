@@ -22,4 +22,6 @@ func InitialiseDB() {
 	if err != nil {
 		log.Fatalf("Migration failed: %v", err)
 	}
+
+	log.Println("> Database initialised!")
 }

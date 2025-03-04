@@ -9,9 +9,12 @@ import "time"
  *
  */
 type User struct {
-	ID       uint      `gorm:"primaryKey"`
-	Username string    `gorm:"uniqueIndex"`       // Index usernames
-	Expenses []Expense `gorm:"foreignKey:UserID"` // One-to-Many Relationship
+	ID        uint      `gorm:"primaryKey"`
+	UserID    int64     `gorm:"uniqueIndex"`       // Index Telegram user IDs
+	FirstName string    `gorm:"index"`             // Index first names
+	LastName  string    `gorm:"index"`             // Index last names
+	Username  string    `gorm:"uniqueIndex"`       // Index usernames
+	Expenses  []Expense `gorm:"foreignKey:UserID"` // One-to-Many Relationship
 }
 
 /*

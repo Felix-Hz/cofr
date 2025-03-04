@@ -7,13 +7,14 @@ import (
 	"remind0/app"
 	"remind0/db"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/joho/godotenv"
+	tgClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	dotEnv "github.com/joho/godotenv"
 )
 
 func main() {
+
 	// Load environment variables.
-	err := godotenv.Load()
+	err := dotEnv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -28,7 +29,7 @@ func main() {
 	db.InitialiseDB()
 
 	// Setup Telegram bot instance.
-	bot, err := tgbotapi.NewBotAPI(botToken)
+	bot, err := tgClient.NewBotAPI(botToken)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -43,23 +44,30 @@ func main() {
 		db.DBClient.Create(&offset)
 	}
 
-	// Get updates using long-polling.
-	// This will return a channel for updates.
-	// Updates will be polled every 60 seconds.
-	u := tgbotapi.NewUpdate(offset.Offset)
-	u.Timeout = 60
-	updates := bot.GetUpdatesChan(u)
+	// Start the bot and listen for updates indefinitely.
+	for {
+		updates := app.ConnectBot(bot, offset)
 
-	for update := range updates {
-		if update.UpdateID > offset.Offset {
-			// Update the offset in the database.
-			// Store the latest offset.
-			offset.Offset = update.UpdateID
-			db.DBClient.Save(&offset)
+		// Listen to updates in the range loop
+		for update := range updates {
 
-			if update.Message != nil {
-				app.HandleTelegramMessage(bot, update)
+			// Check if the update is newer than the offset
+			if update.UpdateID > offset.Offset {
+
+				// Update the offset in the database
+				offset.Offset = update.UpdateID
+				db.DBClient.Save(&offset)
+
+				// Handle the message if it's a valid update
+				if update.Message != nil {
+
+					// Your custom message handling logic
+					app.HandleTelegramMessage(bot, update)
+
+				}
 			}
 		}
+
+		log.Println("> Channel closed. Reconnecting...")
 	}
 }
