@@ -14,9 +14,11 @@ import (
 func main() {
 
 	// Load environment variables.
-	err := dotEnv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if os.Getenv("ENV") != "production" {
+		err := dotEnv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 
 	// Retrieve bot token from environment variables.
