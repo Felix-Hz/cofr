@@ -40,7 +40,7 @@ func HandleTelegramMessage(bot *tgClient.BotAPI, update tgClient.Update) {
 	category, amount, notes, parseErr := parseMessage(body)
 	if parseErr != nil {
 		log.Println("Error parsing message:", parseErr)
-		errorMessage := "🚫 Invalid message 🚫\n----------------------------\nExpected format:\n<category> <amount> <optional_notes>.\nAn example would be: 'G 45 Woolworths'.\n----------------------------\nThe category should be one of the following abbreviations:\n- H (Health)\n- T (Transport)\n- G (Groceries)\n- GO (Going Out)\n- HM (Home)\n- I (Investment)\n- PC (Personal Care)\n- E (Entertainment)\n- S (Shopping)\n- INV (Investment)\n- EDU (Education)\n- TR (Travel)\n- M (Miscellaneous)\n----------------------------\n"
+		errorMessage := "🚫 Invalid message 🚫\n----------------------------\nExpected format:\n<category> <amount> <optional_notes>.\nAn example would be: 'G 45 Woolworths'.\n----------------------------\nThe category should be one of the following abbreviations:\n- H (Health)\n- T (Transport)\n- G (Groceries)\n- GO (Going Out)\n- HM (Home)\n- I (Income)\nIS (Insurance)\n- PC (Personal Care)\n- E (Entertainment)\n- S (Shopping)\n- INV (Investment)\n- EDU (Education)\n- TR (Travel)\n- M (Miscellaneous)\n----------------------------\n"
 		msg := tgClient.NewMessage(userId, errorMessage)
 		bot.Send(msg)
 		return
