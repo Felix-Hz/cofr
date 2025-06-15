@@ -41,7 +41,6 @@ var categoryAliases = map[string]string{
 	"PC":  "Personal Care",
 	"E":   "Entertainment",
 	"S":   "Savings",
-	"INV": "Investments",
 	"EDU": "Education",
 	"TR":  "Trips",
 	"M":   "Miscellaneous",
