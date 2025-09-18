@@ -22,29 +22,6 @@ func ConnectBot(bot *tgClient.BotAPI, offset db.Offset) tgClient.UpdatesChannel 
 	return bot.GetUpdatesChan(u)
 }
 
-/**
- * Format a return message to inform the user of the correct format.
- */
-func formatErrorMessage() string {
-	var categoryList string
-	for _, cat := range validCategories {
-		categoryList += fmt.Sprintf("- %s (%s)\n", cat.Alias, cat.Name)
-	}
-	return fmt.Sprintf(
-		"🚫 Invalid Message Format\n"+
-			"═══════════════════════\n"+
-			"📝 Expected Format:\n"+
-			"- <category> <amount> <optional_notes>\n\n"+
-			"💡 Example:\n"+
-			"- G 45 Woolworths\n"+
-			"- I 90 Salary\n\n"+
-			"📋 Valid Categories:\n"+
-			"%s"+
-			"═══════════════════════",
-		categoryList,
-	)
-}
-
 func HandleTelegramMessage(bot *tgClient.BotAPI, update tgClient.Update) {
 
 	userId := update.Message.Chat.ID           // Get Telegram user ID
