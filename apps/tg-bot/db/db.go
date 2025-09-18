@@ -11,17 +11,19 @@ var DBClient *gorm.DB
 
 func InitialiseDB() {
 	var err error
+
 	DBClient, err = gorm.Open(sqlite.Open("finance.db"), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatalf("<!> Failed to connect to database: %v", err)
 	}
+	log.Println("> Database connection established")
 
 	// Run migrations
-	models := []interface{}{&User{}, &Expense{}, &Offset{}}
+	models := []interface{}{&User{}, &Transaction{}, &Offset{}}
 	err = DBClient.AutoMigrate(models...)
 	if err != nil {
-		log.Fatalf("Migration failed: %v", err)
+		log.Fatalf("<!> Migration failed: %v", err)
 	}
 
-	log.Println("> Database initialised!")
+	log.Println("> Database migrated successfully")
 }

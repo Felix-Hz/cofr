@@ -9,21 +9,21 @@ import "time"
  *
  */
 type User struct {
-	ID        uint      `gorm:"primaryKey"`
-	UserID    int64     `gorm:"uniqueIndex"`       // Index Telegram user IDs
-	FirstName string    `gorm:"index"`             // Index first names
-	LastName  string    `gorm:"index"`             // Index last names
-	Username  string    `gorm:"uniqueIndex"`       // Index usernames
-	Expenses  []Expense `gorm:"foreignKey:UserID"` // One-to-Many Relationship
+	ID        uint          `gorm:"primaryKey"`
+	UserID    int64         `gorm:"uniqueIndex"`       // Index Telegram user IDs
+	FirstName string        `gorm:"index"`             // Index first names
+	LastName  string        `gorm:"index"`             // Index last names
+	Username  string        `gorm:"uniqueIndex"`       // Index usernames
+	Expenses  []Transaction `gorm:"foreignKey:UserID"` // One-to-Many Relationship
 }
 
 /*
- * 							Expense Model
+ * 							Transaction Model
  *
- * This model is used to store the expenses recorded by the bot.
+ * This model is used to store the transactions recorded by the bot.
  *
  */
-type Expense struct {
+type Transaction struct {
 	ID        uint   `gorm:"primaryKey"`
 	UserID    uint   `gorm:"index"`
 	User      User   `gorm:"constraint:OnDelete:CASCADE"`

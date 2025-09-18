@@ -9,7 +9,37 @@ import (
 	"time"
 )
 
-// Validate if the message is valid.
+type Category struct {
+	Alias string
+	Name  string
+}
+
+// TODO: Aliases should likely be a string[] to allow for multiple aliases per category.
+var validCategories = []Category{
+	{"+", "Income"},
+	{"H", "Health"},
+	{"T", "Transport"},
+	{"G", "Groceries"},
+	{"GO", "Going Out"},
+	{"HM", "Home"},
+	{"I", "Investment"},
+	{"PC", "Personal Care"},
+	{"E", "Entertainment"},
+	{"S", "Shopping"},
+	{"EDU", "Education"},
+	{"TR", "Travel"},
+	{"MISC", "Miscellaneous"},
+}
+
+func findCategory(code string) (string, bool) {
+	for _, cat := range validCategories {
+		if cat.Alias == code {
+			return cat.Name, true
+		}
+	}
+	return "", false
+}
+
 func validateMessage(message string) bool {
 	if message == "" || len(message) > 160 {
 		return false
@@ -17,11 +47,9 @@ func validateMessage(message string) bool {
 	return true
 }
 
-// Generate a unique hash based on the message and timestamp.
 func generateMessageHash(msg string, timestamp time.Time) string {
 	hash := sha256.New()
 
-	// Combine message content with the timestamp.
 	hash.Write([]byte(msg))
 	hash.Write([]byte(fmt.Sprintf("%d", timestamp.Unix())))
 
@@ -29,46 +57,39 @@ func generateMessageHash(msg string, timestamp time.Time) string {
 	return hex.EncodeToString(hashBytes)
 }
 
-var categoryAliases = map[string]string{
-	"H":   "Housing",
-	"T":   "Transportation",
-	"G":   "Groceries",
-	"GO":  "Going Out",
-	"HM":  "Health & Medical",
-	"I":   "Insurance",
-	"PC":  "Personal Care",
-	"E":   "Entertainment",
-	"S":   "Savings",
-	"INV": "Investments",
-	"EDU": "Education",
-	"TR":  "Trips",
-	"M":   "Miscellaneous",
-}
-
-// Parse the incoming message into category, amount, and optional notes
 func parseMessage(msg string) (string, float64, string, error) {
-	parts := strings.Fields(msg) // Split by spaces
+
+	/**
+	 * Split the message into parts divided by spaces,
+	 * and ensure it has at least a category and amount.
+	 */
+	parts := strings.Fields(msg)
 	if len(parts) < 2 {
-		return "", 0, "", fmt.Errorf("invalid message format")
+		return "", 0, "", fmt.Errorf("<!> Invalid message format")
 	}
 
-	// Category must be a key of the hashmap.
 	category := parts[0]
 
-	// Check if the category is an alias and replace it with full category name
-	if fullCategory, exists := categoryAliases[category]; exists {
-		category = fullCategory
+	/**
+	 * Check if the category is a valid alias and convert it to the full category name.
+	 */
+	if categoryName, exists := findCategory(category); exists {
+		category = categoryName
 	} else {
-		return "", 0, "", fmt.Errorf("invalid category alias")
+		return "", 0, "", fmt.Errorf("<!> Invalid category alias")
 	}
 
-	// Parse the amount as a float64.
+	/**
+	 * Parse the transaction amount and ensure it's a valid float.
+	 */
 	amount, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil {
-		return "", 0, "", fmt.Errorf("invalid amount")
+		return "", 0, "", fmt.Errorf("<!> Invalid amount")
 	}
 
-	// Everything after the amount is considered notes.
+	/**
+	 * Extract transaction notes if they exist.
+	 */
 	notes := ""
 	if len(parts) > 2 {
 		notes = strings.Join(parts[2:], " ")

@@ -10,14 +10,39 @@ import (
 	tgClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// Get updates using long-polling.
-// This will return a channel for updates.
-// Updates will be polled every 60 seconds.
+/**
+ * Get updates using long-polling.
+ * This will return a channel for updates.
+ * Updates will be polled every 60 seconds.
+ */
 func ConnectBot(bot *tgClient.BotAPI, offset db.Offset) tgClient.UpdatesChannel {
 	log.Println("> Channel opened. Connecting...")
 	u := tgClient.NewUpdate(offset.Offset)
 	u.Timeout = 60
 	return bot.GetUpdatesChan(u)
+}
+
+/**
+ * Format a return message to inform the user of the correct format.
+ */
+func formatErrorMessage() string {
+	var categoryList string
+	for _, cat := range validCategories {
+		categoryList += fmt.Sprintf("- %s (%s)\n", cat.Alias, cat.Name)
+	}
+	return fmt.Sprintf(
+		"🚫 Invalid Message Format\n"+
+			"═══════════════════════\n"+
+			"📝 Expected Format:\n"+
+			"- <category> <amount> <optional_notes>\n\n"+
+			"💡 Example:\n"+
+			"- G 45 Woolworths\n"+
+			"- I 90 Salary\n\n"+
+			"📋 Valid Categories:\n"+
+			"%s"+
+			"═══════════════════════",
+		categoryList,
+	)
 }
 
 func HandleTelegramMessage(bot *tgClient.BotAPI, update tgClient.Update) {
@@ -29,24 +54,27 @@ func HandleTelegramMessage(bot *tgClient.BotAPI, update tgClient.Update) {
 	firstName := update.Message.From.FirstName // Extract first name
 	lastName := update.Message.From.LastName   // Extract last name
 
-	// Validate the message
+	/**
+	 * Validate the message: non-empty and within length limits (160 chars).
+	 */
 	if !validateMessage(body) {
-		msg := tgClient.NewMessage(userId, "Invalid message format.")
-		bot.Send(msg)
+		bot.Send(tgClient.NewMessage(userId, "<!> Message cannot be empty or exceed 160 characters."))
 		return
 	}
 
-	// Parse the message (Assumes parseMessage function exists)
+	/**
+	 * Process incoming message.
+	 */
 	category, amount, notes, parseErr := parseMessage(body)
 	if parseErr != nil {
-		log.Println("Error parsing message:", parseErr)
-		errorMessage := "🚫 Invalid message 🚫\n----------------------------\nExpected format:\n<category> <amount> <optional_notes>.\nAn example would be: 'G 45 Woolworths'.\n----------------------------\nThe category should be one of the following abbreviations:\n- H (Health)\n- T (Transport)\n- G (Groceries)\n- GO (Going Out)\n- HM (Home)\n- I (Investment)\n- PC (Personal Care)\n- E (Entertainment)\n- S (Shopping)\n- INV (Investment)\n- EDU (Education)\n- TR (Travel)\n- M (Miscellaneous)\n----------------------------\n"
-		msg := tgClient.NewMessage(userId, errorMessage)
-		bot.Send(msg)
+		log.Println("<!> Error parsing message:", parseErr)
+		bot.Send(tgClient.NewMessage(userId, formatErrorMessage()))
 		return
 	}
 
-	// Check if user already exists.
+	/**
+	 * Validate or create user.
+	 */
 	var user db.User
 	result := db.DBClient.Where("user_id = ?", userId).First(&user)
 	if result.Error != nil {
@@ -54,22 +82,27 @@ func HandleTelegramMessage(bot *tgClient.BotAPI, update tgClient.Update) {
 		db.DBClient.Create(&user)
 	}
 
-	// Hash message to prevent duplicates.
+	/**
+	 * Write message hash to prevent duplicates.
+	 */
 	convertedTimestamp := time.Unix(int64(timestamp), 0)
 	hash := generateMessageHash(body, convertedTimestamp)
 
-	// Avoid duplicate expenses.
-	var existingExpense db.Expense
+	/**
+	 * Validate transaction uniqueness.
+	 */
+	var existingExpense db.Transaction
 	result = db.DBClient.Where("hash = ?", hash).First(&existingExpense)
 	if result.Error == nil {
-		message := fmt.Sprintf("This expense was already recorded. %s - $%.2f", existingExpense.Category, existingExpense.Amount)
-		msg := tgClient.NewMessage(userId, message)
-		bot.Send(msg)
+		message := fmt.Sprintf("<!> This expense was already recorded. %s - $%.2f", existingExpense.Category, existingExpense.Amount)
+		bot.Send(tgClient.NewMessage(userId, message))
 		return
 	}
 
-	// Store the expense
-	expense := db.Expense{
+	/**
+	 * Persist transaction
+	 */
+	expense := db.Transaction{
 		UserID:    user.ID,
 		Category:  category,
 		Amount:    amount,
@@ -79,18 +112,17 @@ func HandleTelegramMessage(bot *tgClient.BotAPI, update tgClient.Update) {
 	}
 	db.DBClient.Create(&expense)
 
-	formattedMessage := fmt.Sprintf(
-		"Expense Recorded:\n"+
-			"---------------------------------\n"+
-			"| Category   | %s\n"+
-			"| Amount     | $%.2f\n"+
-			"| Notes      | %s\n"+
-			"| Timestamp  | %s\n"+
-			"---------------------------------",
+	/**
+	 * Send confirmation message to user.
+	 */
+	bot.Send(tgClient.NewMessage(userId, fmt.Sprintf(
+		"✅ Expense Recorded\n"+
+			"══════════════════════\n"+
+			"📝 Category  │ %s\n"+
+			"💰 Amount    │ $%.2f\n"+
+			"📌 Notes     │ %s\n"+
+			"🕒 Timestamp │ %s\n"+
+			"══════════════════════",
 		category, amount, notes, convertedTimestamp.Format("02-Jan-2006 15:04:05"),
-	)
-
-	// Send the formatted message to the user
-	msg := tgClient.NewMessage(userId, formattedMessage)
-	bot.Send(msg)
+	)))
 }
