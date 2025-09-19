@@ -1,41 +1,32 @@
 package main
 
 import (
+	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"os"
 
 	"remind0/app"
 	"remind0/db"
-
-	tgClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	dotEnv "github.com/joho/godotenv"
 )
 
 func main() {
 
-	// Load environment variables.
-	if os.Getenv("ENV") != "production" {
-		err := dotEnv.Load()
-		if err != nil {
-			log.Fatal("Error loading .env file")
-		}
-	}
-
-	// Retrieve bot token from environment variables.
-	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
-	if botToken == "" {
-		log.Fatal("TELEGRAM_BOT_TOKEN is not set in .env file")
+	// Provision application env vars.
+	config, err := LoadConfig()
+	if err != nil {
+		log.Panicf("<!> Configuration loading error: %v", err)
 	}
 
 	// Initialize database connection and run migrations.
 	db.InitialiseDB()
 
-	// Setup Telegram bot instance.
-	bot, err := tgClient.NewBotAPI(botToken)
+	// Setup tg bot instance.
+	bot, err := telegramClient.NewBotAPI(config.TelegramToken)
 	if err != nil {
-		log.Panic(err)
+		log.Panicf("<!> Telegram bot initialization error: %v", err)
 	}
 
+	// Wel... what it says.
 	bot.Debug = true
 
 	// Initialise the offset if it doesn't exist.
