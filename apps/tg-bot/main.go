@@ -18,7 +18,10 @@ func main() {
 	}
 
 	// Initialize database connection and run migrations.
-	db.InitialiseDB()
+	dbClient, err := db.InitialiseDB("libsql://" + config.TursoDBUrl + ".turso.io?authToken=" + config.TursoAuthToken)
+	if err != nil {
+		log.Panicf("<!> Database initialization error: %v", err)
+	}
 
 	// Setup tg bot instance.
 	bot, err := telegramClient.NewBotAPI(config.TelegramToken)
@@ -30,11 +33,12 @@ func main() {
 	bot.Debug = true
 
 	// Initialise the offset if it doesn't exist.
+	// This will help to keep track of the already processed transactions.
 	var offset db.Offset
-	result := db.DBClient.First(&offset)
+	result := dbClient.First(&offset)
 	if result.Error != nil {
 		offset = db.Offset{Offset: 0}
-		db.DBClient.Create(&offset)
+		dbClient.Create(&offset)
 	}
 
 	// Start the bot and listen for updates indefinitely.
@@ -49,7 +53,7 @@ func main() {
 
 				// Update the offset in the database.
 				offset.Offset = update.UpdateID
-				db.DBClient.Save(&offset)
+				dbClient.Save(&offset)
 
 				// Handle the message if it's a valid update.
 				if update.Message != nil {
