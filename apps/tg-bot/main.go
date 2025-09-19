@@ -3,9 +3,7 @@ package main
 import (
 	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
-	"os"
-
-	"remind0/app"
+	. "remind0/app"
 	"remind0/db"
 )
 
@@ -43,7 +41,7 @@ func main() {
 
 	// Start the bot and listen for updates indefinitely.
 	for {
-		updates := app.ConnectBot(bot, offset)
+		updates := ConnectBot(bot, offset)
 
 		// Listen to updates in the range loop
 		for update := range updates {
@@ -57,7 +55,7 @@ func main() {
 
 				// Handle the message if it's a valid update.
 				if update.Message != nil {
-					app.HandleTelegramMessage(bot, update)
+					HandleTelegramMessage(bot, update)
 				}
 			}
 		}
