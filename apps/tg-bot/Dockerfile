@@ -35,8 +35,4 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /app/main .
 
-# Set environment variables
-ENV ENV=${ENV}
-ENV TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-
 CMD ["./main"]

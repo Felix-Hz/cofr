@@ -47,6 +47,8 @@ sudo docker build -t remind0 .
 
 docker run -d \
  -e TELEGRAM_BOT_TOKEN=<tg_api_token> \
+ -e TURSO_DATABASE_URL=<db_dsn> \
+ -e TURSO_AUTH_TOKEN=<auth_jwt> \
  -e ENV=production \
  --name expenses-telegram-bot \
  remind0

@@ -31,6 +31,16 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	firstName := update.Message.From.FirstName // Extract first name
 	lastName := update.Message.From.LastName   // Extract last name
 
+	log.Printf("> Received message: %+v", struct {
+		User      string
+		Body      string
+		Timestamp time.Time
+	}{
+		Body:      body,
+		Timestamp: time.Unix(int64(timestamp), 0),
+		User:      firstName + " " + lastName,
+	})
+
 	/**
 	 * Validate the message: non-empty and within length limits (160 chars).
 	 */
@@ -102,4 +112,6 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 			"══════════════════════",
 		category, amount, notes, convertedTimestamp.Format("02-Jan-2006 15:04:05"),
 	)))
+
+	log.Printf("> Expense recorded: %s - $%.2f", category, amount)
 }
