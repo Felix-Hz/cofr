@@ -2,14 +2,15 @@ package app
 
 import (
 	"fmt"
-	dotEnv "github.com/joho/godotenv"
 	"log"
 	"os"
 	"strings"
+
+	dotEnv "github.com/joho/godotenv"
 )
 
 type Config struct {
-	TursoDBUrl     string
+	TursoDSN       string
 	TursoAuthToken string
 	TelegramToken  string
 }
@@ -19,18 +20,18 @@ func LoadConfig() (*Config, error) {
 	if os.Getenv("ENV") != "production" {
 		err := dotEnv.Load()
 		if err != nil {
-			log.Fatal("<!> Failed to load environment variables")
+			log.Fatal("⚠️ Failed to load environment variables")
 		}
 	}
 
 	config := &Config{
-		TursoDBUrl:     os.Getenv("TURSO_DATABASE_URL"),
+		TursoDSN:       os.Getenv("TURSO_DATABASE_URL"),
 		TursoAuthToken: os.Getenv("TURSO_AUTH_TOKEN"),
 		TelegramToken:  os.Getenv("TELEGRAM_BOT_TOKEN"),
 	}
 
 	missing := make([]string, 0)
-	if config.TursoDBUrl == "" {
+	if config.TursoDSN == "" {
 		missing = append(missing, "TURSO_DATABASE_URL")
 	}
 	if config.TursoAuthToken == "" {
@@ -41,8 +42,10 @@ func LoadConfig() (*Config, error) {
 	}
 
 	if len(missing) > 0 {
-		return nil, fmt.Errorf("<!> Missing required environment variables: %s", strings.Join(missing, ", "))
+		return nil, fmt.Errorf("⚠️ Missing required environment variables: %s", strings.Join(missing, ", "))
 	}
+
+	log.Println("✅ Configuration loaded successfully")
 
 	return config, nil
 }

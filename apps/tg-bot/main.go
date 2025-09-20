@@ -1,10 +1,11 @@
 package main
 
 import (
-	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	. "remind0/app"
 	"remind0/db"
+
+	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 func main() {
@@ -12,19 +13,19 @@ func main() {
 	// Provision application env vars.
 	config, err := LoadConfig()
 	if err != nil {
-		log.Panicf("<!> Configuration loading error: %v", err)
+		log.Panicf("⚠️ Configuration loading error: %v", err)
 	}
 
 	// Initialize database connection and run migrations.
-	dbClient, err := db.InitialiseDB("libsql://" + config.TursoDBUrl + ".turso.io?authToken=" + config.TursoAuthToken)
+	dbClient, err := db.InitialiseDB(config.TursoDSN + "?authToken=" + config.TursoAuthToken)
 	if err != nil {
-		log.Panicf("<!> Database initialization error: %v", err)
+		log.Panicf("⚠️ Database initialization error: %v", err)
 	}
 
 	// Setup tg bot instance.
 	bot, err := telegramClient.NewBotAPI(config.TelegramToken)
 	if err != nil {
-		log.Panicf("<!> Telegram bot initialization error: %v", err)
+		log.Panicf("⚠️ Telegram bot initialization error: %v", err)
 	}
 
 	// Wel... what it says.

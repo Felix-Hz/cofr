@@ -65,7 +65,7 @@ func parseMessage(msg string) (string, float64, string, error) {
 	 */
 	parts := strings.Fields(msg)
 	if len(parts) < 2 {
-		return "", 0, "", fmt.Errorf("<!> Invalid message format")
+		return "", 0, "", fmt.Errorf("⚠️ Invalid message format")
 	}
 
 	category := parts[0]
@@ -76,7 +76,7 @@ func parseMessage(msg string) (string, float64, string, error) {
 	if categoryName, exists := findCategory(category); exists {
 		category = categoryName
 	} else {
-		return "", 0, "", fmt.Errorf("<!> Invalid category alias")
+		return "", 0, "", fmt.Errorf("⚠️ Invalid category alias")
 	}
 
 	/**
@@ -84,7 +84,7 @@ func parseMessage(msg string) (string, float64, string, error) {
 	 */
 	amount, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil {
-		return "", 0, "", fmt.Errorf("<!> Invalid amount")
+		return "", 0, "", fmt.Errorf("⚠️ Invalid amount")
 	}
 
 	/**
@@ -104,19 +104,19 @@ func parseMessage(msg string) (string, float64, string, error) {
 func formatErrorMessage() string {
 	var categoryList string
 	for _, cat := range validCategories {
-		categoryList += fmt.Sprintf("- %s (%s)\n", cat.Alias, cat.Name)
+		categoryList += fmt.Sprintf("• %s (%s)\n", cat.Alias, cat.Name)
 	}
 	return fmt.Sprintf(
-		"🚫 Invalid Message Format\n"+
-			"═══════════════════════\n"+
+		"⚠️ Invalid Message Format\n"+
+			"════════════\n\n"+
 			"📝 Expected Format:\n"+
-			"- <category> <amount> <optional_notes>\n\n"+
+			"• <category> <amount> <notes?>\n\n"+
 			"💡 Example:\n"+
-			"- G 45 Woolworths\n"+
-			"- I 90 Salary\n\n"+
-			"📋 Valid Categories:\n"+
+			"• G 45 Woolworths\n"+
+			"• I 90 Salary\n\n"+
+			"✅ Valid Categories:\n"+
 			"%s"+
-			"═══════════════════════",
+			"════════════\n",
 		categoryList,
 	)
 }

@@ -16,7 +16,7 @@ import (
  * Updates will be polled every 60 seconds.
  */
 func ConnectBot(bot *telegramClient.BotAPI, offset Offset) telegramClient.UpdatesChannel {
-	log.Println("> Channel opened. Connecting...")
+	log.Println("✅ Channel opened. Connecting...")
 	u := telegramClient.NewUpdate(offset.Offset)
 	u.Timeout = 60
 	return bot.GetUpdatesChan(u)
@@ -31,7 +31,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	firstName := update.Message.From.FirstName // Extract first name
 	lastName := update.Message.From.LastName   // Extract last name
 
-	log.Printf("> Received message: %+v", struct {
+	log.Printf("✅ Received message: %+v", struct {
 		User      string
 		Body      string
 		Timestamp time.Time
@@ -45,7 +45,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	 * Validate the message: non-empty and within length limits (160 chars).
 	 */
 	if !validateMessage(body) {
-		bot.Send(telegramClient.NewMessage(userId, "<!> Message cannot be empty or exceed 160 characters."))
+		bot.Send(telegramClient.NewMessage(userId, "⚠️ Message cannot be empty or exceed 160 characters."))
 		return
 	}
 
@@ -54,7 +54,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	 */
 	category, amount, notes, parseErr := parseMessage(body)
 	if parseErr != nil {
-		log.Println("<!> Error parsing message:", parseErr)
+		log.Println("⚠️ Error parsing message:", parseErr)
 		bot.Send(telegramClient.NewMessage(userId, formatErrorMessage()))
 		return
 	}
@@ -81,7 +81,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	var existingExpense Transaction
 	result = DBClient.Where("hash = ?", hash).First(&existingExpense)
 	if result.Error == nil {
-		message := fmt.Sprintf("<!> This expense was already recorded. %s - $%.2f", existingExpense.Category, existingExpense.Amount)
+		message := fmt.Sprintf("⚠️ This expense was already recorded. %s - $%.2f", existingExpense.Category, existingExpense.Amount)
 		bot.Send(telegramClient.NewMessage(userId, message))
 		return
 	}
@@ -113,5 +113,5 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 		category, amount, notes, convertedTimestamp.Format("02-Jan-2006 15:04:05"),
 	)))
 
-	log.Printf("> Expense recorded: %s - $%.2f", category, amount)
+	log.Printf("✅ Expense recorded: %s - $%.2f", category, amount)
 }
