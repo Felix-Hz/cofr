@@ -22,7 +22,7 @@ func InitialiseDB(DSN string) (*gorm.DB, error) {
 	var err error
 
 	// Setup custom dialector for the sqlite provider:
-	tursoDialector := sqlite.Config{DriverName: "turso", DSN: DSN}
+	tursoDialector := sqlite.Config{DriverName: "libsql", DSN: DSN}
 
 	// Connect to the database:
 	DBClient, err = gorm.Open(sqlite.New(tursoDialector), &gorm.Config{})
