@@ -113,7 +113,7 @@ func formatErrorMessage() string {
 			"• <category> <amount> <notes?>\n\n"+
 			"💡 Example:\n"+
 			"• G 45 Woolworths\n"+
-			"• I 90 Salary\n\n"+
+			"• + 90 Salary\n\n"+
 			"✅ Valid Categories:\n"+
 			"%s"+
 			"════════════\n",
