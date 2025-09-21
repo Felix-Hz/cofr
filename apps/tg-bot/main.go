@@ -28,7 +28,7 @@ func main() {
 		log.Panicf("⚠️ Telegram bot initialization error: %v", err)
 	}
 
-	// Wel... what it says.
+	// Well... what it says.
 	bot.Debug = true
 
 	// Initialise the offset if it doesn't exist.

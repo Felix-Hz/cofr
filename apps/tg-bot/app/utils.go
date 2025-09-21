@@ -82,7 +82,7 @@ func parseMessage(msg string) (string, float64, string, error) {
 	/**
 	 * Parse the transaction amount and ensure it's a valid float.
 	 */
-	amount, err := strconv.ParseFloat(parts[1], 64)
+	amount, err := strconv.ParseFloat(strings.Replace(parts[1], ",", ".", -1), 64)
 	if err != nil {
 		return "", 0, "", fmt.Errorf("⚠️ Invalid amount")
 	}
