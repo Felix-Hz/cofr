@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+/*                   dP                                   oo                  */
+/*                   88                                                       */
+/* .d8888b..d8888b.d8888P.d8888b..d8888b. .d8888b.88d888b.dP.d8888b..d8888b.  */
+/* 88'  `""88'  `88  88  88ooood888'  `88 88'  `8888'  `888888ooood8Y8ooooo.  */
+/* 88.  ...88.  .88  88  88.  ...88.  .88 88.  .8888      8888.  ...      88  */
+/* `88888P'`88888P8  dP  `88888P'`8888P88 `88888P'dP      dP`88888P'`88888P'  */
+/* ooooooooooooooooooooooooooooooo~~~~.88~ooooooooooooooooooooooooooooooooooo */
+/*                                d8888P                                      */
+
 type Category struct {
 	Alias string
 	Name  string
@@ -41,6 +50,16 @@ func findCategory(code string) (string, bool) {
 	return "", false
 }
 
+/* 88d8b.d8b..d8888b..d8888b..d8888b..d8888b..d8888b. .d8888b..d8888b.  */
+/* 88'`88'`8888ooood8Y8ooooo.Y8ooooo.88'  `8888'  `88 88ooood8Y8ooooo.  */
+/* 88  88  8888.  ...      88      8888.  .8888.  .88 88.  ...      88  */
+/* dP  dP  dP`88888P'`88888P'`88888P'`88888P8`8888P88 `88888P'`88888P'  */
+/* ooooooooooooooooooooooooooooooooooooooooooo~~~~.88~ooooooooooooooooo */
+/*                                            d8888P                    */
+
+/**
+ * Validate the message length and content.
+ */
 func validateMessage(message string) bool {
 	if message == "" || len(message) > 160 {
 		return false
@@ -48,6 +67,10 @@ func validateMessage(message string) bool {
 	return true
 }
 
+/**
+ * Generate a SHA-256 hash of the message combined with its timestamp.
+ * This helps to uniquely identify messages and prevent duplicates.
+ */
 func generateMessageHash(msg string, timestamp time.Time) string {
 	hash := sha256.New()
 
@@ -57,6 +80,58 @@ func generateMessageHash(msg string, timestamp time.Time) string {
 	hashBytes := hash.Sum(nil)
 	return hex.EncodeToString(hashBytes)
 }
+
+/**
+ * Format a return message to inform the user of a successful operation.
+ */
+func successMessage(recorded bool, id uint, category string, amount float64, notes string, timestamp time.Time) string {
+	operation := "✅ Expense Recorded"
+	if !recorded {
+		operation = "✂️ Expense Deleted"
+	}
+	return fmt.Sprintf(
+		"%s \n"+
+			"════════════\n"+
+			"🪪 ID: %d\n"+
+			"📥 Category: %s\n"+
+			"💰 Amount: $%.2f\n"+
+			"📌 Notes: %s\n"+
+			"🕒 At: %s\n"+
+			"════════════",
+		operation, id, category, amount, notes, timestamp.Format("02-Jan-2006 15:04"),
+	)
+}
+
+/**
+ * Format a return message to inform the user of the correct format.
+ */
+func invalidMessageError() string {
+	var categoryList string
+	for _, cat := range validCategories {
+		categoryList += fmt.Sprintf("• %s (%s)\n", cat.Alias, cat.Name)
+	}
+	return fmt.Sprintf(
+		"⚠️ Invalid Message Format\n"+
+			"════════════\n\n"+
+			"📝 Expected Format:\n"+
+			"• <category> <amount> <notes?>\n\n"+
+			"💡 Example:\n"+
+			"• G 45 Woolworths\n"+
+			"• + 90 Salary\n\n"+
+			"✅ Valid Categories:\n"+
+			"%s"+
+			"════════════\n",
+		categoryList,
+	)
+}
+
+/*   dP                                                    dP  oo                          */
+/*   88                                                    88                              */
+/* d8888P88d888b..d8888b.88d888b..d8888b..d8888b..d8888b.d8888PdP.d8888b.88d888b..d8888b.  */
+/*   88  88'  `8888'  `8888'  `88Y8ooooo.88'  `8888'  `""  88  8888'  `8888'  `88Y8ooooo.  */
+/*   88  88      88.  .8888    88      8888.  .8888.  ...  88  8888.  .8888    88      88  */
+/*   dP  dP      `88888P8dP    dP`88888P'`88888P8`88888P'  dP  dP`88888P'dP    dP`88888P'  */
+/* ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo */
 
 func removeTx(msg string, userId uint) (Transaction, error) {
 	/**
@@ -138,48 +213,4 @@ func processTx(msg string) (string, float64, string, error) {
 	}
 
 	return category, amount, notes, nil
-}
-
-/**
- * Format a return message to inform the user of a successful operation.
- */
-func successMessage(recorded bool, id uint, category string, amount float64, notes string, timestamp time.Time) string {
-	operation := "✅ Expense Recorded"
-	if !recorded {
-		operation = "✂️ Expense Deleted"
-	}
-	return fmt.Sprintf(
-		"%s \n"+
-			"════════════\n"+
-			"🪪 ID: %d\n"+
-			"📥 Category: %s\n"+
-			"💰 Amount: $%.2f\n"+
-			"📌 Notes: %s\n"+
-			"🕒 At: %s\n"+
-			"════════════",
-		operation, id, category, amount, notes, timestamp.Format("02-Jan-2006 15:04"),
-	)
-}
-
-/**
- * Format a return message to inform the user of the correct format.
- */
-func invalidMessageError() string {
-	var categoryList string
-	for _, cat := range validCategories {
-		categoryList += fmt.Sprintf("• %s (%s)\n", cat.Alias, cat.Name)
-	}
-	return fmt.Sprintf(
-		"⚠️ Invalid Message Format\n"+
-			"════════════\n\n"+
-			"📝 Expected Format:\n"+
-			"• <category> <amount> <notes?>\n\n"+
-			"💡 Example:\n"+
-			"• G 45 Woolworths\n"+
-			"• + 90 Salary\n\n"+
-			"✅ Valid Categories:\n"+
-			"%s"+
-			"════════════\n",
-		categoryList,
-	)
 }
