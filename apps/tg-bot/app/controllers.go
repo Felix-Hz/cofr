@@ -104,12 +104,12 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	 */
 	bot.Send(telegramClient.NewMessage(userId, fmt.Sprintf(
 		"✅ Expense Recorded\n"+
-			"══════════════════════\n"+
+			"════════════\n"+
 			"📝 Category  │ %s\n"+
 			"💰 Amount    │ $%.2f\n"+
 			"📌 Notes     │ %s\n"+
 			"🕒 Timestamp │ %s\n"+
-			"══════════════════════",
+			"════════════",
 		category, amount, notes, convertedTimestamp.Format("02-Jan-2006 15:04:05"),
 	)))
 

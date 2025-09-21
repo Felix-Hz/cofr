@@ -61,6 +61,6 @@ func main() {
 			}
 		}
 
-		log.Println("> Channel closed. Reconnecting...")
+		log.Println("⚠️ Channel closed. Reconnecting...")
 	}
 }
