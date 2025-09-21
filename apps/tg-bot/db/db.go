@@ -29,14 +29,14 @@ func InitialiseDB(DSN string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println("> Database connection established")
+	log.Println("✅ Database connection established")
 
 	// Run required migrations:
 	err = DBClient.AutoMigrate(&User{}, &Transaction{}, &Offset{})
 	if err != nil {
 		return nil, fmt.Errorf("<!> Migration failed: %v", err)
 	}
-	log.Println("> Database migrated successfully")
+	log.Println("✅ Database migrated successfully")
 
 	return DBClient, nil
 }

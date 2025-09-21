@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	. "remind0/db"
 	"strconv"
 	"strings"
 	"time"
@@ -57,7 +58,48 @@ func generateMessageHash(msg string, timestamp time.Time) string {
 	return hex.EncodeToString(hashBytes)
 }
 
-func parseMessage(msg string) (string, float64, string, error) {
+func removeTx(msg string, userId uint) (Transaction, error) {
+	/**
+	 * Negation command must have an ID following the exclamation mark.
+	 */
+	if len(msg) <= 1 {
+		return Transaction{}, fmt.Errorf("must indicate transaction ID")
+	}
+
+	strId := msg[1:]
+
+	/**
+	 * Validate and convert txId to int64
+	 */
+	id, err := strconv.ParseInt(strId, 10, 64)
+	if err != nil {
+		return Transaction{}, fmt.Errorf("ID must be a number")
+	}
+
+	/**
+	 * Verify the transaction exists
+	 */
+	var tx Transaction
+	result := DBClient.Where("id = ? AND user_id = ?", id, userId).First(&tx)
+	if result.Error != nil {
+		return Transaction{}, fmt.Errorf("ID %s not found: %s", strId, result.Error)
+	}
+
+	/**
+	 * Delete the transaction
+	 */
+	delete := DBClient.Delete(&tx)
+	if delete.Error != nil || delete.RowsAffected == 0 {
+		return Transaction{}, fmt.Errorf("failed to delete ID %s: %s", strId, delete.Error)
+	}
+
+	return tx, nil
+}
+
+/**
+ * Validate and process an add transaction message.
+ */
+func processTx(msg string) (string, float64, string, error) {
 
 	/**
 	 * Split the message into parts divided by spaces,
@@ -65,7 +107,7 @@ func parseMessage(msg string) (string, float64, string, error) {
 	 */
 	parts := strings.Fields(msg)
 	if len(parts) < 2 {
-		return "", 0, "", fmt.Errorf("⚠️ Invalid message format")
+		return "", 0, "", fmt.Errorf("invalid message format")
 	}
 
 	category := parts[0]
@@ -76,15 +118,15 @@ func parseMessage(msg string) (string, float64, string, error) {
 	if categoryName, exists := findCategory(category); exists {
 		category = categoryName
 	} else {
-		return "", 0, "", fmt.Errorf("⚠️ Invalid category alias")
+		return "", 0, "", fmt.Errorf("invalid category alias")
 	}
 
 	/**
 	 * Parse the transaction amount and ensure it's a valid float.
 	 */
-	amount, err := strconv.ParseFloat(strings.Replace(parts[1], ",", ".", -1), 64)
+	amount, err := strconv.ParseFloat(strings.ReplaceAll(parts[1], ",", "."), 64)
 	if err != nil {
-		return "", 0, "", fmt.Errorf("⚠️ Invalid amount")
+		return "", 0, "", fmt.Errorf("invalid amount")
 	}
 
 	/**
@@ -99,9 +141,30 @@ func parseMessage(msg string) (string, float64, string, error) {
 }
 
 /**
+ * Format a return message to inform the user of a successful operation.
+ */
+func successMessage(recorded bool, id uint, category string, amount float64, notes string, timestamp time.Time) string {
+	operation := "✅ Expense Recorded"
+	if !recorded {
+		operation = "✂️ Expense Deleted"
+	}
+	return fmt.Sprintf(
+		"%s \n"+
+			"════════════\n"+
+			"🪪 ID: %d\n"+
+			"📥 Category: %s\n"+
+			"💰 Amount: $%.2f\n"+
+			"📌 Notes: %s\n"+
+			"🕒 At: %s\n"+
+			"════════════",
+		operation, id, category, amount, notes, timestamp.Format("02-Jan-2006 15:04"),
+	)
+}
+
+/**
  * Format a return message to inform the user of the correct format.
  */
-func formatErrorMessage() string {
+func invalidMessageError() string {
 	var categoryList string
 	for _, cat := range validCategories {
 		categoryList += fmt.Sprintf("• %s (%s)\n", cat.Alias, cat.Name)
