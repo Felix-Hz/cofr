@@ -19,7 +19,7 @@
 
 ## Installation
 
-### Linux/MacOS Setup
+### Setup
 
 1. Install docker if not installed
 
@@ -69,7 +69,7 @@ docker run -d \
  remind0
 ```
 
-## Additional
+### Additional
 
 I've had issues with Docker not pulling through the images correctly. Can also grab them manually.
 
