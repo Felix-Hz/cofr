@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	. "remind0/db"
 	"strconv"
 	"strings"
 	"time"
@@ -27,14 +26,15 @@ type Category struct {
 // TODO: Aliases should likely be a string[] to allow for multiple aliases per category.
 var validCategories = []Category{
 	{"+", "Income"},
-	{"H", "Health"},
+	{"$", "Savings"},
+	{"U", "Utilities"},
+	{"SUB", "Subscriptions"},
+	{"R", "Rent"},
+	{"H", "Health & Fitness"},
 	{"T", "Transport"},
 	{"G", "Groceries"},
 	{"GO", "Going Out"},
-	{"HM", "Home"},
 	{"I", "Investment"},
-	{"PC", "Personal Care"},
-	{"E", "Entertainment"},
 	{"S", "Shopping"},
 	{"EDU", "Education"},
 	{"TR", "Travel"},
