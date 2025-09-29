@@ -1,11 +1,12 @@
 package app
 
 import (
+	"strconv"
+	"strings"
+
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -81,50 +82,6 @@ func generateMessageHash(msg string, timestamp time.Time) string {
 	return hex.EncodeToString(hashBytes)
 }
 
-/**
- * Format a return message to inform the user of a successful operation.
- */
-func successMessage(recorded bool, id uint, category string, amount float64, notes string, timestamp time.Time) string {
-	operation := "✅ Expense Recorded"
-	if !recorded {
-		operation = "✂️ Expense Deleted"
-	}
-	return fmt.Sprintf(
-		"%s \n"+
-			"════════════\n"+
-			"🪪 ID: %d\n"+
-			"📥 Category: %s\n"+
-			"💰 Amount: $%.2f\n"+
-			"📌 Notes: %s\n"+
-			"🕒 At: %s\n"+
-			"════════════",
-		operation, id, category, amount, notes, timestamp.Format("02-Jan-2006 15:04"),
-	)
-}
-
-/**
- * Format a return message to inform the user of the correct format.
- */
-func invalidMessageError() string {
-	var categoryList string
-	for _, cat := range validCategories {
-		categoryList += fmt.Sprintf("• %s (%s)\n", cat.Alias, cat.Name)
-	}
-	return fmt.Sprintf(
-		"⚠️ Invalid Message Format\n"+
-			"════════════\n\n"+
-			"📝 Expected Format:\n"+
-			"• <category> <amount> <notes?>\n\n"+
-			"💡 Example:\n"+
-			"• G 45 Woolworths\n"+
-			"• + 90 Salary\n\n"+
-			"✅ Valid Categories:\n"+
-			"%s"+
-			"════════════\n",
-		categoryList,
-	)
-}
-
 /*   dP                                                    dP  oo                          */
 /*   88                                                    88                              */
 /* d8888P88d888b..d8888b.88d888b..d8888b..d8888b..d8888b.d8888PdP.d8888b.88d888b..d8888b.  */
@@ -133,48 +90,10 @@ func invalidMessageError() string {
 /*   dP  dP      `88888P8dP    dP`88888P'`88888P8`88888P'  dP  dP`88888P'dP    dP`88888P'  */
 /* ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo */
 
-func removeTx(msg string, userId uint) (Transaction, error) {
-	/**
-	 * Negation command must have an ID following the exclamation mark.
-	 */
-	if len(msg) <= 1 {
-		return Transaction{}, fmt.Errorf("must indicate transaction ID")
-	}
-
-	strId := msg[1:]
-
-	/**
-	 * Validate and convert txId to int64
-	 */
-	id, err := strconv.ParseInt(strId, 10, 64)
-	if err != nil {
-		return Transaction{}, fmt.Errorf("ID must be a number")
-	}
-
-	/**
-	 * Verify the transaction exists
-	 */
-	var tx Transaction
-	result := DBClient.Where("id = ? AND user_id = ?", id, userId).First(&tx)
-	if result.Error != nil {
-		return Transaction{}, fmt.Errorf("ID %s not found: %s", strId, result.Error)
-	}
-
-	/**
-	 * Delete the transaction
-	 */
-	delete := DBClient.Delete(&tx)
-	if delete.Error != nil || delete.RowsAffected == 0 {
-		return Transaction{}, fmt.Errorf("failed to delete ID %s: %s", strId, delete.Error)
-	}
-
-	return tx, nil
-}
-
 /**
  * Validate and process an add transaction message.
  */
-func processTx(msg string) (string, float64, string, error) {
+func parseAddTx(msg string) (string, float64, string, error) {
 
 	/**
 	 * Split the message into parts divided by spaces,
