@@ -51,7 +51,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	/**
 	 * Validate or create user.
 	 */
-	user, err := r.UserRepo.GetOrCreate(tgUserID, update.Message.From)
+	user, err := r.UserRepo().GetOrCreate(tgUserID, update.Message.From)
 	if err != nil {
 		log.Printf("⚠️ Error getting user: %s", err)
 		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Failed to fetch or create user profile. Please try again later."))

@@ -36,7 +36,8 @@ func main() {
 	bot.Debug = true
 
 	// Initialise conversation's offset tracking.
-	offset, _ := r.OffsetRepo.GetOrCreate()
+	o := r.OffsetRepo()
+	offset, _ := o.GetOrCreate()
 
 	// Start the bot and listen for updates indefinitely.
 	for {
@@ -49,7 +50,7 @@ func main() {
 			if update.UpdateID > offset.Offset {
 
 				// Update to keep track of the already processed transactions.
-				r.OffsetRepo.UpdateLastSeen(offset, update.UpdateID)
+				o.UpdateLastSeen(offset, update.UpdateID)
 
 				// Handle the message if it's a valid update.
 				if update.Message != nil {
