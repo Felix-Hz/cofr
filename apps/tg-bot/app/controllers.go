@@ -16,7 +16,7 @@ import (
  * This will return a channel for updates.
  * Updates will be polled every 60 seconds.
  */
-func ConnectBot(bot *telegramClient.BotAPI, offset Offset) telegramClient.UpdatesChannel {
+func ConnectBot(bot *telegramClient.BotAPI, offset *Offset) telegramClient.UpdatesChannel {
 	u := telegramClient.NewUpdate(offset.Offset)
 	u.Timeout = 60
 	log.Println("✅ Channel opened")

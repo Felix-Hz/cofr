@@ -4,6 +4,7 @@ import (
 	"log"
 	. "remind0/app"
 	"remind0/db"
+	repo "remind0/repository"
 
 	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -31,14 +32,9 @@ func main() {
 	// Well... what it says.
 	bot.Debug = true
 
-	// Initialise the offset if it doesn't exist.
-	// This will help to keep track of the already processed transactions.
-	var offset db.Offset
-	result := dbClient.First(&offset)
-	if result.Error != nil {
-		offset = db.Offset{Offset: 0}
-		dbClient.Create(&offset)
-	}
+	// Initialise conversation's offset tracking.
+	o := repo.OffsetRepositoryImpl(dbClient)
+	offset, _ := o.GetOrCreate()
 
 	// Start the bot and listen for updates indefinitely.
 	for {
@@ -50,9 +46,8 @@ func main() {
 			// Only handle updates with IDs greater than the offset.
 			if update.UpdateID > offset.Offset {
 
-				// Update the offset in the database.
-				offset.Offset = update.UpdateID
-				dbClient.Save(&offset)
+				// Keep track of the already processed transactions.
+				o.UpdateLastSeen(offset, update.UpdateID)
 
 				// Handle the message if it's a valid update.
 				if update.Message != nil {

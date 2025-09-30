@@ -12,8 +12,6 @@ import (
 
 /**
  * Database client instance (Turso)
- *
- * <!> TODO: Need to handle the closing of the DB connection gracefully 🥴
  */
 
 var DBClient *gorm.DB
@@ -34,7 +32,7 @@ func InitialiseDB(DSN string) (*gorm.DB, error) {
 	// Run required migrations:
 	err = DBClient.AutoMigrate(&User{}, &Transaction{}, &Offset{})
 	if err != nil {
-		return nil, fmt.Errorf("<!> Migration failed: %v", err)
+		return nil, fmt.Errorf("⚠️ Migration failed: %v", err)
 	}
 	log.Println("✅ Database migrated successfully")
 
