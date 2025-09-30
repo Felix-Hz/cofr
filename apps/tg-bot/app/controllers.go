@@ -70,7 +70,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	 * An exclamation mark indicates a user's wish to interact with the system.
 	 */
 	if strings.HasPrefix(body, "!") {
-		r := dispatch(strings.TrimPrefix(body, "!"), user.ID)
+		r := dispatch(strings.TrimPrefix(body, "!"), timestamp, user.ID)
 		if r.Error != nil {
 			log.Printf("⚠️ Error processing command: %s", r.Error)
 			bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: %s", r.UserError)))
@@ -82,63 +82,17 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	}
 
 	/**
-	 * If it doesn't have a shebang but it's valid, treat the message as an add transaction request.
+	 * If it doesn't have a command but it's valid, treat the message as an add transaction request.
 	 * This is because I like the simplicity of being able to do: $ 45
-	 * Design-wise, it's crap? I'll potentially encapsulate it in an explicit command later.
-	 * But who cares. Do I? I don't know.
+	 * Design-wise, is it crap or is it not? I don't care. Might make it a command-only later.
 	 */
-	cmd := Add
-
-	/**
-	 * Process incoming add-request message.
-	 */
-	category, amount, notes, err := parseAddTx(body)
-	if err != nil {
-		log.Printf("⚠️ Error parsing message: %s", err)
-		bot.Send(telegramClient.NewMessage(tgUserID, userErrors[cmd]))
+	r := add(body, timestamp, user.ID)
+	if r.Error != nil {
+		log.Printf("⚠️ Error processing add command: %s", r.Error)
+		bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: %s", r.UserError)))
 		return
 	}
 
-	/**
-	 * Write message hash to prevent duplicates.
-	 */
-	hash := generateMessageHash(body, timestamp)
-
-	/**
-	 * Validate transaction uniqueness.
-	 */
-	var existingExpense Transaction
-	result = DBClient.Where("hash = ?", hash).First(&existingExpense)
-	if result.Error == nil {
-		log.Printf("⚠️ This expense was already recorded.")
-		bot.Send(telegramClient.NewMessage(tgUserID, userErrors[Unknown]))
-		return
-	}
-
-	/**
-	 * Persist transaction
-	 */
-	tx := Transaction{
-		UserID:    user.ID,
-		Category:  category,
-		Amount:    amount,
-		Notes:     notes,
-		Timestamp: timestamp,
-		Hash:      hash,
-	}
-
-	createOperation := DBClient.Create(&tx)
-	if createOperation.Error != nil {
-		log.Printf("⚠️ Error creating transaction: %s", createOperation.Error)
-		bot.Send(telegramClient.NewMessage(tgUserID, userErrors[Unknown]))
-		return
-	}
-
-	/**
-	 * Send confirmation message to user.
-	 */
-	msg := generateSuccessMessage(CommandResult{Command: cmd, Transaction: &tx})
-	bot.Send(telegramClient.NewMessage(tgUserID, msg))
-
-	log.Printf("✅ Expense recorded: %+v", tx)
+	bot.Send(telegramClient.NewMessage(tgUserID, generateSuccessMessage(r)))
+	log.Printf("✅ Expense recorded: %+v", *r.Transaction)
 }
