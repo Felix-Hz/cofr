@@ -61,8 +61,8 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	/**
 	 * An exclamation mark indicates a user's wish to interact with the system.
 	 */
-	if strings.HasPrefix(body, "!") {
-		result := dispatch(strings.TrimPrefix(body, "!"), timestamp, user.ID)
+	if cmd, ok := strings.CutPrefix(body, "!"); ok {
+		result := dispatch(cmd, timestamp, user.ID)
 		if result.Error != nil {
 			log.Printf("⚠️ Error processing command: %s", result.Error)
 			bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: %s", result.UserError)))
