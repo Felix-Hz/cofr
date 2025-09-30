@@ -1,11 +1,11 @@
 # Remind-o
 
 >
-> A Telegram bot for expense tracking with Turso DB integration.
+> A Telegram bot for expense tracking with `TursoDB`.
 >
 
 <details>
-<summary>This is me at the moment</summary>
+<summary>Me as you read</summary>
 <div align="center">
   <img src="https://media3.giphy.com/media/SEWEmCymjv8XDbsb8I/giphy.gif?cid=bd3ea57ep35h7i3oqy7gl1w5l4id0nkr90015z9224g39m1r&ep=v1_gifs_search&rid=giphy.gif&ct=g" alt="Expenses Tracking Bot"/>
 </div>
