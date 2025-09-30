@@ -7,6 +7,7 @@ import (
 	"time"
 
 	. "remind0/db"
+	repo "remind0/repository"
 
 	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -28,9 +29,6 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	tgUserID := update.Message.Chat.ID                    // Get Telegram user ID
 	body := update.Message.Text                           // Extract message text
 	timestamp := time.Unix(int64(update.Message.Date), 0) // Extract timestamp
-	username := update.Message.From.UserName              // Extract username
-	firstName := update.Message.From.FirstName            // Extract first name
-	lastName := update.Message.From.LastName              // Extract last name
 
 	log.Printf("✅ Received message: %+v", struct {
 		User      string
@@ -39,7 +37,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	}{
 		Body:      body,
 		Timestamp: timestamp,
-		User:      firstName + " " + lastName,
+		User:      update.Message.From.FirstName + " " + update.Message.From.LastName,
 	})
 
 	/**
@@ -53,17 +51,12 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	/**
 	 * Validate or create user.
 	 */
-	var user User
-	result := DBClient.Where("user_id = ?", tgUserID).First(&user)
-	if result.Error != nil {
-		user = User{Username: username, UserID: tgUserID, FirstName: firstName, LastName: lastName}
-		create := DBClient.Create(&user)
-		if create.Error != nil {
-			log.Printf("⚠️ Error creating user: %s", create.Error)
-			bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Failed to create user profile. Please try again later."))
-			return
-		}
-		log.Printf("✅ Created new user: %s (%d)", firstName+" "+lastName, tgUserID)
+	u := repo.UserRepositoryImpl(DBClient)
+	user, err := u.GetOrCreate(tgUserID, update.Message.From)
+	if err != nil {
+		log.Printf("⚠️ Error getting user: %s", err)
+		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Failed to fetch or create user profile. Please try again later."))
+		return
 	}
 
 	/**
