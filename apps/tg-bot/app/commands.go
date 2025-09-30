@@ -2,8 +2,8 @@ package app
 
 import (
 	"fmt"
-	"log"
 	. "remind0/db"
+	repo "remind0/repository"
 	"strconv"
 	"strings"
 	"time"
@@ -63,6 +63,7 @@ func dispatch(msg string, timestamp time.Time, userId uint) CommandResult {
 func remove(strId string, userId uint) CommandResult {
 	// Define the command type for context
 	cmd := Remove
+	r := repo.TxRepo()
 
 	/**
 	 * Validate and convert txId to int64
@@ -75,28 +76,25 @@ func remove(strId string, userId uint) CommandResult {
 	/**
 	 * Verify the transaction exists
 	 */
-	var tx Transaction
-	result := DBClient.Where("id = ? AND user_id = ?", id, userId).First(&tx)
-	if result.Error != nil {
-		return CommandResult{Command: cmd, Error: fmt.Errorf("ID %s not found: %s", strId, result.Error), UserError: userErrors[Unknown]}
+	tx, err := r.GetById(id, userId)
+	if err != nil {
+		return CommandResult{Command: cmd, Error: fmt.Errorf("ID %s not found: %s", strId, err), UserError: userErrors[Unknown]}
 	}
 
 	/**
 	 * Delete the transaction
 	 */
-	delete := DBClient.Delete(&tx)
-	if delete.Error != nil || delete.RowsAffected == 0 {
-		return CommandResult{Command: cmd, Error: fmt.Errorf("failed to delete ID %s: %s", strId, delete.Error), UserError: userErrors[Unknown]}
+	if err := r.Delete(tx); err != nil {
+		return CommandResult{Command: cmd, Error: fmt.Errorf("failed to delete ID %s: %s", strId, err), UserError: userErrors[Unknown]}
 	}
 
-	log.Printf("✅ Deleted transaction %d (user=%d)", tx.ID, userId)
-
-	return CommandResult{Transaction: &tx, Command: cmd, Error: nil}
+	return CommandResult{Transaction: tx, Command: cmd, Error: nil}
 }
 
 func add(body string, timestamp time.Time, userId uint) CommandResult {
 	// Define the command type for context
 	cmd := Add
+	r := repo.TxRepo()
 
 	/**
 	 * Process incoming add-request message.
@@ -114,29 +112,25 @@ func add(body string, timestamp time.Time, userId uint) CommandResult {
 	/**
 	 * Validate transaction uniqueness.
 	 */
-	var exists Transaction
-	r := DBClient.Where("hash = ?", hash).First(&exists)
-	if r.Error == nil {
+	_tx, err := r.GetByHash(hash, userId)
+	if _tx != nil && err == nil {
 		return CommandResult{Command: cmd, Error: fmt.Errorf("duplicate transaction"), UserError: userErrors[Unknown]}
 	}
 
 	/**
 	 * Persist transaction
 	 */
-	tx := Transaction{
-		UserID:    userId,
-		Category:  category,
-		Amount:    amount,
-		Notes:     notes,
-		Timestamp: timestamp,
+	tx, err := r.Create(&Transaction{
 		Hash:      hash,
+		Notes:     notes,
+		UserID:    userId,
+		Amount:    amount,
+		Category:  category,
+		Timestamp: timestamp,
+	})
+	if err != nil {
+		return CommandResult{Command: cmd, Error: err, UserError: userErrors[Unknown]}
 	}
 
-	c := DBClient.Create(&tx)
-	if c.Error != nil {
-		return CommandResult{Command: cmd, Error: c.Error, UserError: userErrors[Unknown]}
-	}
-
-	log.Printf("✅ Expense recorded: %+v", tx)
-	return CommandResult{Transaction: &tx, Command: cmd, Error: nil}
+	return CommandResult{Transaction: tx, Command: cmd, Error: nil}
 }

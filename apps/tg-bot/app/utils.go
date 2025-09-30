@@ -44,7 +44,7 @@ var validCategories = []Category{
 
 func findCategory(code string) (string, bool) {
 	for _, cat := range validCategories {
-		if cat.Alias == code {
+		if cat.Alias == strings.ToUpper(code) {
 			return cat.Name, true
 		}
 	}

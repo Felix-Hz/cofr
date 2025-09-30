@@ -68,7 +68,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 			bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: %s", result.UserError)))
 			return
 		}
-
+		log.Printf("✅ Processed command: %+v", result)
 		bot.Send(telegramClient.NewMessage(tgUserID, generateSuccessMessage(result)))
 		return
 	}
