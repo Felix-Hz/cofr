@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 	. "remind0/app"
-	"remind0/db"
-	repo "remind0/repository"
+	DB "remind0/db"
+	r "remind0/repository"
 
 	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -18,10 +18,13 @@ func main() {
 	}
 
 	// Initialize database connection and run migrations.
-	dbClient, err := db.InitialiseDB(config.TursoDSN + "?authToken=" + config.TursoAuthToken)
+	db, err := DB.InitialiseDB(config.TursoDSN + "?authToken=" + config.TursoAuthToken)
 	if err != nil {
 		log.Panicf("⚠️ Database initialization error: %v", err)
 	}
+
+	// Start-up all repositories, yeehaw!
+	r.InitRepositories(db)
 
 	// Setup tg bot instance.
 	bot, err := telegramClient.NewBotAPI(config.TelegramToken)
@@ -33,21 +36,20 @@ func main() {
 	bot.Debug = true
 
 	// Initialise conversation's offset tracking.
-	o := repo.OffsetRepositoryImpl(dbClient)
-	offset, _ := o.GetOrCreate()
+	offset, _ := r.OffsetRepo.GetOrCreate()
 
 	// Start the bot and listen for updates indefinitely.
 	for {
 		updates := ConnectBot(bot, offset)
 
-		// Listen to updates in the range loop
+		// Listen to new messages.
 		for update := range updates {
 
-			// Only handle updates with IDs greater than the offset.
+			// Only process unhandled messages.
 			if update.UpdateID > offset.Offset {
 
-				// Keep track of the already processed transactions.
-				o.UpdateLastSeen(offset, update.UpdateID)
+				// Update to keep track of the already processed transactions.
+				r.OffsetRepo.UpdateLastSeen(offset, update.UpdateID)
 
 				// Handle the message if it's a valid update.
 				if update.Message != nil {

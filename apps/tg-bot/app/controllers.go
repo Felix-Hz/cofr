@@ -7,7 +7,7 @@ import (
 	"time"
 
 	. "remind0/db"
-	repo "remind0/repository"
+	r "remind0/repository"
 
 	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -51,8 +51,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	/**
 	 * Validate or create user.
 	 */
-	u := repo.UserRepositoryImpl(DBClient)
-	user, err := u.GetOrCreate(tgUserID, update.Message.From)
+	user, err := r.UserRepo.GetOrCreate(tgUserID, update.Message.From)
 	if err != nil {
 		log.Printf("⚠️ Error getting user: %s", err)
 		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Failed to fetch or create user profile. Please try again later."))
@@ -63,14 +62,14 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	 * An exclamation mark indicates a user's wish to interact with the system.
 	 */
 	if strings.HasPrefix(body, "!") {
-		r := dispatch(strings.TrimPrefix(body, "!"), timestamp, user.ID)
-		if r.Error != nil {
-			log.Printf("⚠️ Error processing command: %s", r.Error)
-			bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: %s", r.UserError)))
+		result := dispatch(strings.TrimPrefix(body, "!"), timestamp, user.ID)
+		if result.Error != nil {
+			log.Printf("⚠️ Error processing command: %s", result.Error)
+			bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: %s", result.UserError)))
 			return
 		}
 
-		bot.Send(telegramClient.NewMessage(tgUserID, generateSuccessMessage(r)))
+		bot.Send(telegramClient.NewMessage(tgUserID, generateSuccessMessage(result)))
 		return
 	}
 
@@ -79,13 +78,12 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	 * This is because I like the simplicity of being able to do: $ 45
 	 * Design-wise, is it crap or is it not? I don't care. Might make it a command-only later.
 	 */
-	r := add(body, timestamp, user.ID)
-	if r.Error != nil {
-		log.Printf("⚠️ Error processing add command: %s", r.Error)
-		bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: %s", r.UserError)))
+	result := add(body, timestamp, user.ID)
+	if result.Error != nil {
+		log.Printf("⚠️ Error processing add command: %s", result.Error)
+		bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: %s", result.UserError)))
 		return
 	}
 
-	bot.Send(telegramClient.NewMessage(tgUserID, generateSuccessMessage(r)))
-	log.Printf("✅ Expense recorded: %+v", *r.Transaction)
+	bot.Send(telegramClient.NewMessage(tgUserID, generateSuccessMessage(result)))
 }

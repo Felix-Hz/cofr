@@ -10,17 +10,15 @@ type offsetRepository struct {
 	dbClient *gorm.DB
 }
 
-type OffsetRepository interface {
+type IOffsetRepository interface {
 	// Get the existing offset or create a new one if it doesn't exist.
 	GetOrCreate() (*Offset, error)
 	// Update the offset value in the database to keep track of processed updates.
 	UpdateLastSeen(offset *Offset, id int) error
 }
 
-/**
- * Factory method to initialise a repository.
- */
-func OffsetRepositoryImpl(dbClient *gorm.DB) OffsetRepository {
+// Factory method to initialise a repository.
+func OffsetRepositoryImpl(dbClient *gorm.DB) IOffsetRepository {
 	return &offsetRepository{dbClient: dbClient}
 }
 

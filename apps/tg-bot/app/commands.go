@@ -137,5 +137,6 @@ func add(body string, timestamp time.Time, userId uint) CommandResult {
 		return CommandResult{Command: cmd, Error: c.Error, UserError: userErrors[Unknown]}
 	}
 
+	log.Printf("✅ Expense recorded: %+v", tx)
 	return CommandResult{Transaction: &tx, Command: cmd, Error: nil}
 }
