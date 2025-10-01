@@ -7,7 +7,6 @@
 *.exe~
 *.dll
 *.so
-*.dylib
 
 *.test
 __debug*
@@ -20,14 +19,9 @@ __debug*
 *.sublime-workspace
 
 .DS_Store
-
 *.log
-
 *.db
-
 .env
 
-# Other files you might want to exclude:
-# Your compiled Go binaries or if you have a build output folder
 build/
 dist/

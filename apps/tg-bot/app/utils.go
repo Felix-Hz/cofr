@@ -72,11 +72,14 @@ func validateMessage(message string) bool {
  * Generate a SHA-256 hash of the message combined with its timestamp.
  * This helps to uniquely identify messages and prevent duplicates.
  */
-func generateMessageHash(msg string, timestamp time.Time) string {
+func generateMessageHash(category string, amount float64, notes string, timestamp time.Time, userId uint) string {
 	hash := sha256.New()
 
-	hash.Write([]byte(msg))
+	hash.Write([]byte(category))
+	hash.Write([]byte(fmt.Sprintf("%f", amount)))
+	hash.Write([]byte(notes))
 	hash.Write([]byte(fmt.Sprintf("%d", timestamp.Unix())))
+	hash.Write([]byte(fmt.Sprintf("%d", userId)))
 
 	hashBytes := hash.Sum(nil)
 	return hex.EncodeToString(hashBytes)
@@ -90,10 +93,46 @@ func generateMessageHash(msg string, timestamp time.Time) string {
 /*   dP  dP      `88888P8dP    dP`88888P'`88888P8`88888P'  dP  dP`88888P'dP    dP`88888P'  */
 /* ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo */
 
+// String to float64, handling commas and dots.
+func stringToFloat(amountStr string) (float64, error) {
+	return strconv.ParseFloat(strings.ReplaceAll(amountStr, ",", "."), 64)
+}
+
+// Parse multiple amounts from a string, handling batch amounts enclosed in parentheses.
+func processBatchAmounts(amountsStr string) ([]float64, error) {
+	var amounts []float64
+
+	for amt := range strings.SplitSeq(amountsStr, "-") {
+		amount, err := stringToFloat(amt)
+		if err != nil {
+			return nil, err
+		}
+		amounts = append(amounts, amount)
+	}
+
+	return amounts, nil
+}
+
+// Parse amounts which can be either a single amount or a batch enclosed in parentheses.
+func parseAmounts(amountStr string) ([]float64, error) {
+
+	// Handle batch amounts enclosed in parentheses
+	if strings.ContainsAny(amountStr, "()") {
+		return processBatchAmounts(strings.Trim(amountStr, "()"))
+	}
+
+	// Handle single amount
+	amount, err := stringToFloat(amountStr)
+	if err != nil {
+		return nil, err
+	}
+	return []float64{amount}, nil
+}
+
 /**
  * Validate and process an add transaction message.
  */
-func parseAddTx(msg string) (string, float64, string, error) {
+func parseAddTx(msg string) (string, []float64, string, error) {
 
 	/**
 	 * Split the message into parts divided by spaces,
@@ -101,7 +140,7 @@ func parseAddTx(msg string) (string, float64, string, error) {
 	 */
 	parts := strings.Fields(msg)
 	if len(parts) < 2 {
-		return "", 0, "", fmt.Errorf("invalid message format")
+		return "", []float64{0}, "", fmt.Errorf("invalid message format")
 	}
 
 	category := parts[0]
@@ -112,15 +151,20 @@ func parseAddTx(msg string) (string, float64, string, error) {
 	if categoryName, exists := findCategory(category); exists {
 		category = categoryName
 	} else {
-		return "", 0, "", fmt.Errorf("invalid category alias")
+		return "", []float64{0}, "", fmt.Errorf("invalid category alias")
 	}
 
 	/**
 	 * Parse the transaction amount and ensure it's a valid float.
 	 */
-	amount, err := strconv.ParseFloat(strings.ReplaceAll(parts[1], ",", "."), 64)
+	amounts, err := parseAmounts(parts[1])
 	if err != nil {
-		return "", 0, "", fmt.Errorf("invalid amount")
+		return "", []float64{0}, "", fmt.Errorf("failed to parse amount %q: %w", parts[1], err)
+	}
+
+	// At least one valid amount is required
+	if len(amounts) == 0 {
+		return "", []float64{0}, "", fmt.Errorf("no valid amounts found")
 	}
 
 	/**
@@ -131,5 +175,5 @@ func parseAddTx(msg string) (string, float64, string, error) {
 		notes = strings.Join(parts[2:], " ")
 	}
 
-	return category, amount, notes, nil
+	return category, amounts, notes, nil
 }

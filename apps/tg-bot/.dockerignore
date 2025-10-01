@@ -1,9 +1,6 @@
-# Ignore Go binary and build artifacts
+# ignore go binary
 main
 
-# Ignore the local Go module cache
-**/vendor/
-
-# Ignore Dockerfile and .dockerignore themselves
+# ignore docker files
 Dockerfile
 .dockerignore

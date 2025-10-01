@@ -90,7 +90,7 @@ func remove(strIds []string, userId uint) CommandResult {
 	/**
 	 * Delete the transaction
 	 */
-	if err := r.BatchDelete(txs); err != nil {
+	if err := r.Delete(txs); err != nil {
 		return CommandResult{Command: cmd, Error: fmt.Errorf("failed to delete IDs %v: %s", ids, err), UserError: userErrors[Unknown]}
 	}
 
@@ -105,38 +105,42 @@ func add(body string, timestamp time.Time, userId uint) CommandResult {
 	/**
 	 * Process incoming add-request message.
 	 */
-	category, amount, notes, err := parseAddTx(body)
+	category, amounts, notes, err := parseAddTx(body)
 	if err != nil {
 		return CommandResult{Command: cmd, Error: err, UserError: userErrors[cmd]}
 	}
 
 	/**
-	 * Hash message to prevent duplicates.
+	 * Setup required transactions to be created.
 	 */
-	hash := generateMessageHash(body, timestamp)
+	_txs := []*Transaction{}
+	for _, amount := range amounts {
+		// Hash message to prevent duplicates.
+		hash := generateMessageHash(category, amount, notes, timestamp, userId)
 
-	/**
-	 * Validate transaction uniqueness.
-	 */
-	_tx, err := r.GetByHash(hash, userId)
-	if _tx != nil && err == nil {
-		return CommandResult{Command: cmd, Error: fmt.Errorf("duplicate transaction"), UserError: userErrors[Unknown]}
+		// Validate transaction uniqueness.
+		_tx, err := r.GetByHash(hash, userId)
+		if _tx != nil && err == nil {
+			return CommandResult{Command: cmd, Error: fmt.Errorf("duplicate transaction"), UserError: userErrors[Unknown]}
+		}
+
+		_txs = append(_txs, &Transaction{
+			Hash:      hash,
+			Notes:     notes,
+			UserID:    userId,
+			Amount:    amount,
+			Category:  category,
+			Timestamp: timestamp,
+		})
 	}
 
 	/**
-	 * Persist transaction
+	 * Create the transaction(s).
 	 */
-	tx, err := r.Create(&Transaction{
-		Hash:      hash,
-		Notes:     notes,
-		UserID:    userId,
-		Amount:    amount,
-		Category:  category,
-		Timestamp: timestamp,
-	})
+	txs, err := r.Create(_txs)
 	if err != nil {
 		return CommandResult{Command: cmd, Error: err, UserError: userErrors[Unknown]}
 	}
 
-	return CommandResult{Transactions: []*Transaction{tx}, Command: cmd, Error: nil}
+	return CommandResult{Transactions: txs, Command: cmd, Error: nil}
 }

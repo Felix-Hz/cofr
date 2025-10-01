@@ -11,9 +11,8 @@ type transactionRepository struct {
 }
 
 type ITransactionRepository interface {
-	Create(transaction *Transaction) (*Transaction, error)
-	Delete(transaction *Transaction) error
-	BatchDelete(transactions []*Transaction) error
+	Create(transaction []*Transaction) ([]*Transaction, error)
+	Delete(transaction []*Transaction) error
 
 	GetById(id int64, userId uint) (*Transaction, error)
 	GetManyById(id []int64, userId uint) ([]*Transaction, error)
@@ -25,23 +24,15 @@ func TransactionRepositoryImpl(dbClient *gorm.DB) ITransactionRepository {
 	return &transactionRepository{dbClient: dbClient}
 }
 
-func (r *transactionRepository) Create(tx *Transaction) (*Transaction, error) {
-	result := r.dbClient.Create(&tx)
+func (r *transactionRepository) Create(txs []*Transaction) ([]*Transaction, error) {
+	result := r.dbClient.Create(&txs)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return tx, nil
+	return txs, nil
 }
 
-func (r *transactionRepository) Delete(tx *Transaction) error {
-	result := r.dbClient.Delete(&tx)
-	if result.Error != nil || result.RowsAffected == 0 {
-		return result.Error
-	}
-	return nil
-}
-
-func (r *transactionRepository) BatchDelete(txs []*Transaction) error {
+func (r *transactionRepository) Delete(txs []*Transaction) error {
 	result := r.dbClient.Delete(&txs)
 	if result.Error != nil || result.RowsAffected == 0 {
 		return result.Error
