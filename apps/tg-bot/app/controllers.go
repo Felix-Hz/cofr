@@ -59,7 +59,7 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	}
 
 	/**
-	 * An exclamation mark indicates a user's wish to interact with the system.
+	 * If it has a command, dispatch it accordingly.
 	 */
 	if cmd, ok := strings.CutPrefix(body, "!"); ok {
 		result := dispatch(cmd, timestamp, user.ID)

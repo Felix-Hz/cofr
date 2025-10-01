@@ -13,8 +13,10 @@ type transactionRepository struct {
 type ITransactionRepository interface {
 	Create(transaction *Transaction) (*Transaction, error)
 	Delete(transaction *Transaction) error
+	BatchDelete(transactions []*Transaction) error
 
 	GetById(id int64, userId uint) (*Transaction, error)
+	GetManyById(id []int64, userId uint) ([]*Transaction, error)
 	GetByHash(hash string, userId uint) (*Transaction, error)
 }
 
@@ -39,6 +41,14 @@ func (r *transactionRepository) Delete(tx *Transaction) error {
 	return nil
 }
 
+func (r *transactionRepository) BatchDelete(txs []*Transaction) error {
+	result := r.dbClient.Delete(&txs)
+	if result.Error != nil || result.RowsAffected == 0 {
+		return result.Error
+	}
+	return nil
+}
+
 func (r *transactionRepository) GetById(id int64, userId uint) (*Transaction, error) {
 	var transaction Transaction
 	result := r.dbClient.Where("id = ? and user_id = ?", id, userId).First(&transaction)
@@ -46,6 +56,15 @@ func (r *transactionRepository) GetById(id int64, userId uint) (*Transaction, er
 		return nil, result.Error
 	}
 	return &transaction, nil
+}
+
+func (r *transactionRepository) GetManyById(ids []int64, userId uint) ([]*Transaction, error) {
+	var transactions []*Transaction
+	result := r.dbClient.Where("id IN ? and user_id = ?", ids, userId).Find(&transactions)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return transactions, nil
 }
 
 func (r *transactionRepository) GetByHash(hash string, userId uint) (*Transaction, error) {

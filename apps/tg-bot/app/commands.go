@@ -21,10 +21,10 @@ const (
 )
 
 type CommandResult struct {
-	Error       error
-	UserError   string
-	Command     Command
-	Transaction *Transaction // Optional as not all commands return a transaction.
+	Error        error
+	UserError    string
+	Command      Command
+	Transactions []*Transaction // Optional as not all commands return a transaction.
 }
 
 /**
@@ -33,7 +33,7 @@ type CommandResult struct {
 var userErrors = map[Command]string{
 	Add: addMessageError(),
 
-	Remove:  "Please use the format: !rm <transaction_id>",
+	Remove:  "Please use the format: !rm <required IDs separated by space>",
 	Unknown: "Something went wrong, please try again later.",
 	List:    "Listing transactions is not implemented yet.",
 	Help:    "Help command is not implemented yet.",
@@ -48,7 +48,7 @@ func dispatch(msg string, timestamp time.Time, userId uint) CommandResult {
 	case "add", "a", "$", "+":
 		return add(strings.Join(content[1:], ""), timestamp, userId)
 	case "remove", "rm", "r", "delete", "del", "d":
-		return remove(strings.Join(content[1:], ""), userId)
+		return remove(content[1:], userId)
 	case "list", "ls", "l":
 		return CommandResult{Command: List, Error: fmt.Errorf("list not implemented"), UserError: userErrors[List]}
 	case "help", "h":
@@ -60,35 +60,41 @@ func dispatch(msg string, timestamp time.Time, userId uint) CommandResult {
 	}
 }
 
-func remove(strId string, userId uint) CommandResult {
+func remove(strIds []string, userId uint) CommandResult {
 	// Define the command type for context
 	cmd := Remove
 	r := repo.TxRepo()
 
+	// Slice to hold validated IDs to delete
+	ids := []int64{}
+
 	/**
 	 * Validate and convert txId to int64
 	 */
-	id, err := strconv.ParseInt(strId, 10, 64)
-	if err != nil {
-		return CommandResult{Command: cmd, Error: fmt.Errorf("ID must be a number"), UserError: userErrors[cmd]}
+	for _, strId := range strIds {
+		id, err := strconv.ParseInt(strId, 10, 64)
+		if err != nil {
+			return CommandResult{Command: cmd, Error: fmt.Errorf("ID must be a number"), UserError: userErrors[cmd]}
+		}
+		ids = append(ids, id)
 	}
 
 	/**
 	 * Verify the transaction exists
 	 */
-	tx, err := r.GetById(id, userId)
+	txs, err := r.GetManyById(ids, userId)
 	if err != nil {
-		return CommandResult{Command: cmd, Error: fmt.Errorf("ID %s not found: %s", strId, err), UserError: userErrors[Unknown]}
+		return CommandResult{Command: cmd, Error: fmt.Errorf("IDs %v not found: %s", ids, err), UserError: userErrors[Unknown]}
 	}
 
 	/**
 	 * Delete the transaction
 	 */
-	if err := r.Delete(tx); err != nil {
-		return CommandResult{Command: cmd, Error: fmt.Errorf("failed to delete ID %s: %s", strId, err), UserError: userErrors[Unknown]}
+	if err := r.BatchDelete(txs); err != nil {
+		return CommandResult{Command: cmd, Error: fmt.Errorf("failed to delete IDs %v: %s", ids, err), UserError: userErrors[Unknown]}
 	}
 
-	return CommandResult{Transaction: tx, Command: cmd, Error: nil}
+	return CommandResult{Transactions: txs, Command: cmd, Error: nil}
 }
 
 func add(body string, timestamp time.Time, userId uint) CommandResult {
@@ -132,5 +138,5 @@ func add(body string, timestamp time.Time, userId uint) CommandResult {
 		return CommandResult{Command: cmd, Error: err, UserError: userErrors[Unknown]}
 	}
 
-	return CommandResult{Transaction: tx, Command: cmd, Error: nil}
+	return CommandResult{Transactions: []*Transaction{tx}, Command: cmd, Error: nil}
 }
