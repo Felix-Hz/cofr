@@ -24,7 +24,8 @@ type CommandResult struct {
 	Error        error
 	UserError    string
 	Command      Command
-	Transactions []*Transaction // Optional as not all commands return a transaction.
+	Transactions []*Transaction           // Optional as not all commands return a transaction.
+	Aggregated   []AggregatedTransactions // Optional as not all commands return aggregated data.
 }
 
 /**
@@ -34,10 +35,10 @@ var userErrors = map[Command]string{
 	Add: addMessageError(),
 
 	Remove:  "Please use the format: !rm <required IDs separated by space>",
-	Unknown: "Something went wrong, please try again later.",
-	List:    "Listing transactions is not implemented yet.",
+	List:    "Please use the format: !ls <optional category> <optional * for aggregation> <optional date DD/MM/YYYY> <optional number for limit>",
 	Help:    "Help command is not implemented yet.",
 	Edit:    "Editing transactions is not implemented yet.",
+	Unknown: "Something went wrong, please try again later.",
 }
 
 /**
@@ -50,7 +51,7 @@ func dispatch(msg string, timestamp time.Time, userId uint) CommandResult {
 	case "remove", "rm", "r", "delete", "del", "d":
 		return remove(content[1:], userId)
 	case "list", "ls", "l":
-		return CommandResult{Command: List, Error: fmt.Errorf("list not implemented"), UserError: userErrors[List]}
+		return list(content, timestamp, userId)
 	case "help", "h":
 		return CommandResult{Command: Help, Error: fmt.Errorf("help not implemented"), UserError: userErrors[Help]}
 	case "edit", "e", "update", "u":
@@ -61,8 +62,6 @@ func dispatch(msg string, timestamp time.Time, userId uint) CommandResult {
 }
 
 func remove(strIds []string, userId uint) CommandResult {
-	// Define the command type for context
-	cmd := Remove
 	r := repo.TxRepo()
 
 	// Slice to hold validated IDs to delete
@@ -74,7 +73,7 @@ func remove(strIds []string, userId uint) CommandResult {
 	for _, strId := range strIds {
 		id, err := strconv.ParseInt(strId, 10, 64)
 		if err != nil {
-			return CommandResult{Command: cmd, Error: fmt.Errorf("ID must be a number"), UserError: userErrors[cmd]}
+			return CommandResult{Command: Remove, Error: fmt.Errorf("ID must be a number"), UserError: userErrors[Remove]}
 		}
 		ids = append(ids, id)
 	}
@@ -84,22 +83,21 @@ func remove(strIds []string, userId uint) CommandResult {
 	 */
 	txs, err := r.GetManyById(ids, userId)
 	if err != nil {
-		return CommandResult{Command: cmd, Error: fmt.Errorf("IDs %v not found: %s", ids, err), UserError: userErrors[Unknown]}
+		return CommandResult{Command: Remove, Error: fmt.Errorf("IDs %v not found: %s", ids, err), UserError: userErrors[Unknown]}
 	}
 
 	/**
 	 * Delete the transaction
 	 */
 	if err := r.Delete(txs); err != nil {
-		return CommandResult{Command: cmd, Error: fmt.Errorf("failed to delete IDs %v: %s", ids, err), UserError: userErrors[Unknown]}
+		return CommandResult{Command: Remove, Error: fmt.Errorf("failed to delete IDs %v: %s", ids, err), UserError: userErrors[Unknown]}
 	}
 
-	return CommandResult{Transactions: txs, Command: cmd, Error: nil}
+	return CommandResult{Transactions: txs, Command: Remove, Error: nil}
 }
 
 func add(body string, timestamp time.Time, userId uint) CommandResult {
 	// Define the command type for context
-	cmd := Add
 	r := repo.TxRepo()
 
 	/**
@@ -107,7 +105,7 @@ func add(body string, timestamp time.Time, userId uint) CommandResult {
 	 */
 	category, amounts, notes, err := parseAddTx(body)
 	if err != nil {
-		return CommandResult{Command: cmd, Error: err, UserError: userErrors[cmd]}
+		return CommandResult{Command: Add, Error: err, UserError: userErrors[Add]}
 	}
 
 	/**
@@ -121,7 +119,7 @@ func add(body string, timestamp time.Time, userId uint) CommandResult {
 		// Validate transaction uniqueness.
 		_tx, err := r.GetByHash(hash, userId)
 		if _tx != nil && err == nil {
-			return CommandResult{Command: cmd, Error: fmt.Errorf("duplicate transaction"), UserError: userErrors[Unknown]}
+			return CommandResult{Command: Add, Error: fmt.Errorf("duplicate transaction"), UserError: userErrors[Unknown]}
 		}
 
 		_txs = append(_txs, &Transaction{
@@ -139,8 +137,50 @@ func add(body string, timestamp time.Time, userId uint) CommandResult {
 	 */
 	txs, err := r.Create(_txs)
 	if err != nil {
-		return CommandResult{Command: cmd, Error: err, UserError: userErrors[Unknown]}
+		return CommandResult{Command: Add, Error: err, UserError: userErrors[Unknown]}
 	}
 
-	return CommandResult{Transactions: txs, Command: cmd, Error: nil}
+	return CommandResult{Transactions: txs, Command: Add, Error: nil}
+}
+
+func list(body []string, timestamp time.Time, userId uint) CommandResult {
+	r := repo.TxRepo()
+
+	opts, err := parseListOptions(body, timestamp)
+	if err != nil {
+		return CommandResult{
+			Command:   List,
+			Error:     err,
+			UserError: userErrors[List],
+		}
+	}
+
+	if opts.Category != "" {
+		txs, err := r.GetManyByCategory(userId, opts.Category, opts.FromTime, opts.Limit)
+		if err != nil {
+			return CommandResult{
+				Command:   List,
+				Error:     err,
+				UserError: userErrors[Unknown],
+			}
+		}
+		if !opts.Aggregate {
+			return CommandResult{Command: List, Transactions: txs}
+		}
+		return CommandResult{Command: List, Aggregated: aggregateCategories(txs)}
+	}
+
+	txs, err := r.GetAll(userId, opts.FromTime, opts.Limit)
+	if err != nil {
+		return CommandResult{
+			Command:   List,
+			Error:     err,
+			UserError: userErrors[Unknown],
+		}
+	}
+	if !opts.Aggregate {
+		return CommandResult{Command: List, Transactions: txs}
+	}
+	return CommandResult{Command: List, Aggregated: aggregateCategories(txs)}
+
 }

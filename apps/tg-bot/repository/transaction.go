@@ -2,6 +2,7 @@ package repository
 
 import (
 	. "remind0/db"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -17,6 +18,9 @@ type ITransactionRepository interface {
 	GetById(id int64, userId uint) (*Transaction, error)
 	GetManyById(id []int64, userId uint) ([]*Transaction, error)
 	GetByHash(hash string, userId uint) (*Transaction, error)
+
+	GetAll(userId uint, timestamp time.Time, limit int) ([]*Transaction, error)
+	GetManyByCategory(userId uint, category string, timestamp time.Time, limit int) ([]*Transaction, error)
 }
 
 // Factory method to initialise a repository.
@@ -65,4 +69,38 @@ func (r *transactionRepository) GetByHash(hash string, userId uint) (*Transactio
 		return nil, result.Error
 	}
 	return &transaction, nil
+}
+
+func (r *transactionRepository) GetAll(userId uint, fromTime time.Time, limit int) ([]*Transaction, error) {
+
+	var transactions []*Transaction
+
+	result := r.dbClient.
+		Where("user_id = ? and timestamp >= ? and timestamp < ?", userId, fromTime, time.Now()).
+		Order("timestamp DESC, id DESC").
+		Limit(limit).
+		Find(&transactions)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return transactions, nil
+}
+
+func (r *transactionRepository) GetManyByCategory(userId uint, category string, fromTime time.Time, limit int) ([]*Transaction, error) {
+
+	var transactions []*Transaction
+
+	result := r.dbClient.
+		Where("category = ? and user_id = ? and timestamp >= ? and timestamp < ?", category, userId, fromTime, time.Now()).
+		Order("timestamp DESC, id DESC").
+		Limit(limit).
+		Find(&transactions)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return transactions, nil
 }

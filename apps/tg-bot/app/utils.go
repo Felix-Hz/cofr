@@ -1,8 +1,11 @@
 package app
 
 import (
+	"slices"
 	"strconv"
 	"strings"
+
+	"remind0/db"
 
 	"crypto/sha256"
 	"encoding/hex"
@@ -49,6 +52,37 @@ func findCategory(code string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+type AggregatedTransactions struct {
+	Category string
+	Total    float64
+	Count    int
+}
+
+func aggregateCategories(txs []*db.Transaction) []AggregatedTransactions {
+	aggMap := make(map[string]AggregatedTransactions)
+
+	for _, tx := range txs {
+		if agg, exists := aggMap[tx.Category]; exists {
+			agg.Total += tx.Amount
+			agg.Count++
+			aggMap[tx.Category] = agg
+		} else {
+			aggMap[tx.Category] = AggregatedTransactions{
+				Category: tx.Category,
+				Total:    tx.Amount,
+				Count:    1,
+			}
+		}
+	}
+
+	aggregated := make([]AggregatedTransactions, 0, len(aggMap))
+	for _, agg := range aggMap {
+		aggregated = append(aggregated, agg)
+	}
+
+	return aggregated
 }
 
 /* 88d8b.d8b..d8888b..d8888b..d8888b..d8888b..d8888b. .d8888b..d8888b.  */
@@ -140,7 +174,7 @@ func parseAddTx(msg string) (string, []float64, string, error) {
 	 */
 	parts := strings.Fields(msg)
 	if len(parts) < 2 {
-		return "", []float64{0}, "", fmt.Errorf("invalid message format")
+		return "", nil, "", fmt.Errorf("invalid message format")
 	}
 
 	category := parts[0]
@@ -151,7 +185,7 @@ func parseAddTx(msg string) (string, []float64, string, error) {
 	if categoryName, exists := findCategory(category); exists {
 		category = categoryName
 	} else {
-		return "", []float64{0}, "", fmt.Errorf("invalid category alias")
+		return "", nil, "", fmt.Errorf("invalid category alias")
 	}
 
 	/**
@@ -159,12 +193,12 @@ func parseAddTx(msg string) (string, []float64, string, error) {
 	 */
 	amounts, err := parseAmounts(parts[1])
 	if err != nil {
-		return "", []float64{0}, "", fmt.Errorf("failed to parse amount %q: %w", parts[1], err)
+		return "", nil, "", fmt.Errorf("failed to parse amount %q: %w", parts[1], err)
 	}
 
 	// At least one valid amount is required
 	if len(amounts) == 0 {
-		return "", []float64{0}, "", fmt.Errorf("no valid amounts found")
+		return "", nil, "", fmt.Errorf("no valid amounts found")
 	}
 
 	/**
@@ -176,4 +210,168 @@ func parseAddTx(msg string) (string, []float64, string, error) {
 	}
 
 	return category, amounts, notes, nil
+}
+
+/**
+ *                                                   _
+ *                                                  | |
+ *      ___ ___  _ __ ___  _ __ ___   __ _ _ __   __| |___
+ *     / __/ _ \| '_ ` _ \| '_ ` _ \ / _` | '_ \ / _` / __|
+ *    | (_| (_) | | | | | | | | | | | (_| | | | | (_| \__ \
+ *     \___\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|\__,_|___/
+ *
+ *
+ */
+
+type ListOptions struct {
+	FromTime  time.Time
+	ToTime    time.Time
+	Category  string
+	Aggregate bool
+	Limit     int
+}
+
+func parseListOptions(args []string, timestamp time.Time) (ListOptions, error) {
+
+	// Date format: DD/MM/YYYY
+	const dateLayout = "02/01/2006"
+
+	opts := ListOptions{
+		Limit:     10,
+		Aggregate: false,
+		ToTime:    timestamp,
+	}
+
+	// Default case: Current cycle
+	if len(args) == 1 {
+		opts.FromTime = beginningOfMonth(timestamp)
+		return opts, nil
+	}
+
+	// Check for aggregate wildcard flag
+	if slices.Contains(args, "*") {
+		opts.Aggregate = true
+
+		// Command with wildcard means give all back all categories from all time
+		if len(args) == 2 {
+			return opts, nil
+		}
+	}
+
+	// Handle all-time ampersand
+	if slices.Contains(args, "&") {
+		opts.FromTime = time.Unix(0, 0) // Epoch time
+		opts.Limit = 50                 // Max limit
+
+		// Command with ampersand means give all back all categories from all time
+		if len(args) == 2 {
+			return opts, nil
+		}
+
+	}
+
+	// Try number for limit
+	if n, err := validateLimit(args[1]); err == nil {
+		opts.Limit = n
+		opts.FromTime = beginningOfMonth(timestamp)
+		return opts, nil
+	}
+
+	// Try full date first
+	if t, err := time.Parse(dateLayout, args[1]); err == nil {
+		opts.FromTime = t
+
+		if len(args) > 2 {
+			// Try number for limit
+			if n, err := validateLimit(args[2]); err == nil {
+				opts.Limit = n
+				return opts, nil
+			}
+		}
+
+		return opts, nil
+	}
+
+	// Try category
+	if category, found := findCategory(args[1]); found {
+		opts.Category = category
+		opts.FromTime = beginningOfMonth(timestamp)
+
+		// Try date filter on category
+		if len(args) > 2 {
+
+			// Try wildcard for aggregate
+			if args[2] == "*" {
+				opts.Aggregate = true
+
+				if len(args) > 3 {
+					// Try number for limit
+					if n, err := validateLimit(args[3]); err == nil {
+						opts.Limit = n
+						return opts, nil
+					}
+
+					// Try full date next
+					if t, err := time.Parse(dateLayout, args[3]); err == nil {
+						opts.FromTime = t
+						return opts, nil
+					}
+				}
+
+				return opts, nil
+			}
+
+			// Try full date next
+			if t, err := time.Parse(dateLayout, args[2]); err == nil {
+				opts.FromTime = t
+
+				if len(args) > 3 {
+					// Try number for limit
+					if n, err := validateLimit(args[3]); err == nil {
+						opts.Limit = n
+						return opts, nil
+					}
+				}
+
+				return opts, nil
+			}
+
+			if n, err := validateLimit(args[2]); err == nil {
+				opts.Limit = n
+				return opts, nil
+			}
+		}
+
+		return opts, nil
+	}
+
+	return opts, fmt.Errorf("invalid arguments")
+}
+
+func validateLimit(limit string) (int, error) {
+	n, err := strconv.Atoi(limit)
+	if err != nil {
+		return 0, err
+	}
+	if n <= 0 || n > 50 {
+		return 0, fmt.Errorf("limit must be between 1 and 50")
+	}
+	return n, nil
+}
+
+//  _____ _  _      _____
+// /__ __Y \/ \__/|/  __/
+//   / \ | || |\/|||  \
+//   | | | || |  |||  /_
+//   \_/ \_/\_/  \|\____\
+
+// Cycles starting from the 28th each month
+func beginningOfMonth(t time.Time) time.Time {
+	if t.Day() > 28 {
+		// If it's after 28th, return the 28th of current month
+		return time.Date(t.Year(), t.Month(), 28, 0, 0, 0, 0, t.Location())
+	} else {
+		// If it's before 28th, return 28th of previous month
+		return time.Date(t.Year(), t.Month(), 28, 0, 0, 0, 0, t.Location()).AddDate(0, -1, 0)
+	}
 }

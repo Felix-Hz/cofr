@@ -23,6 +23,10 @@ func generateSuccessMessage(r CommandResult) string {
 		msg = txSuccessMessage(r.Command, txs)
 	}
 
+	if aggs := r.Aggregated; aggs != nil {
+		msg = aggSuccessMessage(r.Command, aggs)
+	}
+
 	return msg
 }
 
@@ -41,6 +45,25 @@ func txSuccessMessage(operation Command, txs []*Transaction) string {
 				"🕒 At: %s\n"+
 				"════════════\n",
 			tx.ID, tx.Category, tx.Amount, tx.Notes, tx.Timestamp.Format("02-Jan-2006 15:04"),
+		)
+	}
+
+	return msg
+}
+
+/**
+ * Format a return message to inform the user of a successful aggregation-related operation.
+ */
+func aggSuccessMessage(operation Command, aggs []AggregatedTransactions) string {
+	msg := operationHeaders[operation] + "\n════════════\n"
+
+	for _, agg := range aggs {
+		msg += fmt.Sprintf(
+			"📥 Category: %s\n"+
+				"💰 Total: $%.2f\n"+
+				"📊 Count: %d\n"+
+				"════════════\n",
+			agg.Category, agg.Total, agg.Count,
 		)
 	}
 
