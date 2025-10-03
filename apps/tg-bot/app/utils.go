@@ -1,7 +1,6 @@
 package app
 
 import (
-	"slices"
 	"strconv"
 	"strings"
 
@@ -29,8 +28,8 @@ type Category struct {
 
 // TODO: Aliases should likely be a string[] to allow for multiple aliases per category.
 var validCategories = []Category{
-	{"+", "Income"},
-	{"$", "Savings"},
+	{"$", "Income"},
+	{"S", "Savings"},
 	{"U", "Utilities"},
 	{"SUB", "Subscriptions"},
 	{"R", "Rent"},
@@ -38,8 +37,8 @@ var validCategories = []Category{
 	{"T", "Transport"},
 	{"G", "Groceries"},
 	{"GO", "Going Out"},
-	{"I", "Investment"},
-	{"S", "Shopping"},
+	{"INV", "Investment"},
+	{"SH", "Shopping"},
 	{"EDU", "Education"},
 	{"TR", "Travel"},
 	{"MISC", "Miscellaneous"},
@@ -233,119 +232,63 @@ type ListOptions struct {
 
 func parseListOptions(args []string, timestamp time.Time) (ListOptions, error) {
 
+	// Special arguments
+	const eternity = "*"   // All-time
+	const aggregator = "+" // Aggregate by category
+
 	// Date format: DD/MM/YYYY
 	const dateLayout = "02/01/2006"
 
 	opts := ListOptions{
 		Limit:     10,
 		Aggregate: false,
+		FromTime:  beginningOfMonth(timestamp), // 28th
 		ToTime:    timestamp,
 	}
 
 	// Default case: Current cycle
 	if len(args) == 1 {
-		opts.FromTime = beginningOfMonth(timestamp)
 		return opts, nil
 	}
 
-	// Check for aggregate wildcard flag
-	if slices.Contains(args, "*") {
-		opts.Aggregate = true
+	for _, arg := range args[1:] {
 
-		// Command with wildcard means give all back all categories from all time
-		if len(args) == 2 {
-			return opts, nil
-		}
-	}
-
-	// Handle all-time ampersand
-	if slices.Contains(args, "&") {
-		opts.FromTime = time.Unix(0, 0) // Epoch time
-		opts.Limit = 50                 // Max limit
-
-		// Command with ampersand means give all back all categories from all time
-		if len(args) == 2 {
-			return opts, nil
+		// Handle aggregate flag
+		if arg == aggregator {
+			opts.Aggregate = true
+			opts.Limit = 100 // Max limit
+			continue
 		}
 
-	}
-
-	// Try number for limit
-	if n, err := validateLimit(args[1]); err == nil {
-		opts.Limit = n
-		opts.FromTime = beginningOfMonth(timestamp)
-		return opts, nil
-	}
-
-	// Try full date first
-	if t, err := time.Parse(dateLayout, args[1]); err == nil {
-		opts.FromTime = t
-
-		if len(args) > 2 {
-			// Try number for limit
-			if n, err := validateLimit(args[2]); err == nil {
-				opts.Limit = n
-				return opts, nil
-			}
+		// Handle all-time
+		if arg == eternity {
+			opts.FromTime = time.Unix(0, 0) // Epoch time
+			opts.Limit = 50                 // Max limit
+			continue
 		}
 
-		return opts, nil
-	}
-
-	// Try category
-	if category, found := findCategory(args[1]); found {
-		opts.Category = category
-		opts.FromTime = beginningOfMonth(timestamp)
-
-		// Try date filter on category
-		if len(args) > 2 {
-
-			// Try wildcard for aggregate
-			if args[2] == "*" {
-				opts.Aggregate = true
-
-				if len(args) > 3 {
-					// Try number for limit
-					if n, err := validateLimit(args[3]); err == nil {
-						opts.Limit = n
-						return opts, nil
-					}
-
-					// Try full date next
-					if t, err := time.Parse(dateLayout, args[3]); err == nil {
-						opts.FromTime = t
-						return opts, nil
-					}
-				}
-
-				return opts, nil
-			}
-
-			// Try full date next
-			if t, err := time.Parse(dateLayout, args[2]); err == nil {
-				opts.FromTime = t
-
-				if len(args) > 3 {
-					// Try number for limit
-					if n, err := validateLimit(args[3]); err == nil {
-						opts.Limit = n
-						return opts, nil
-					}
-				}
-
-				return opts, nil
-			}
-
-			if n, err := validateLimit(args[2]); err == nil {
-				opts.Limit = n
-				return opts, nil
-			}
+		// Try query limit
+		if n, err := validateLimit(arg); err == nil {
+			opts.Limit = n
+			continue
 		}
 
-		return opts, nil
+		// Try date filter
+		if t, err := time.Parse(dateLayout, arg); err == nil {
+			opts.FromTime = t
+			continue
+		}
+
+		// Try category
+		if category, found := findCategory(arg); found {
+			opts.Category = category
+			continue
+		}
+
+		return opts, fmt.Errorf("invalid argument: %s", arg)
 	}
 
-	return opts, fmt.Errorf("invalid arguments")
+	return opts, nil
 }
 
 func validateLimit(limit string) (int, error) {
@@ -353,8 +296,8 @@ func validateLimit(limit string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	if n <= 0 || n > 50 {
-		return 0, fmt.Errorf("limit must be between 1 and 50")
+	if n <= 0 || n > 100 {
+		return 0, fmt.Errorf("limit must be between 1 and 100")
 	}
 	return n, nil
 }

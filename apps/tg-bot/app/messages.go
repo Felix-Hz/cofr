@@ -78,7 +78,7 @@ func addMessageError() string {
 	for _, cat := range validCategories {
 		categoryList += fmt.Sprintf("• %s (%s)\n", cat.Alias, cat.Name)
 	}
-	return fmt.Sprintf("\n══════════════\n\n"+"📝 Expected Format:\n"+
+	return fmt.Sprintf("══════════════\n\n"+"📝 Expected Format:\n"+
 		"• <category> <amount> <notes?>\n\n"+
 		"💡 Example:\n"+
 		"• G 45 Woolworths\n"+
