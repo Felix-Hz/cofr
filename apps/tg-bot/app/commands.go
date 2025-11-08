@@ -63,9 +63,9 @@ func add(body string, timestamp time.Time, userId uint) CommandResult {
 	 * Setup required transactions to be created.
 	 */
 	_txs := []*Transaction{}
-	for _, amount := range amounts {
-		// Hash message to prevent duplicates.
-		hash := generateMessageHash(category, amount, notes, timestamp, userId)
+	for i, amount := range amounts {
+		// Hash message to prevent duplicates. Include batch index to allow duplicate amounts.
+		hash := generateMessageHash(category, amount, notes, timestamp, userId, i)
 
 		// Validate transaction uniqueness.
 		_tx, err := r.TxRepo().GetByHash(hash, userId)

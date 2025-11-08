@@ -104,8 +104,9 @@ func validateMessage(message string) bool {
 /**
  * Generate a SHA-256 hash of the message combined with its timestamp.
  * This helps to uniquely identify messages and prevent duplicates.
+ * The batchIndex parameter ensures that duplicate amounts in batch adds generate unique hashes.
  */
-func generateMessageHash(category string, amount float64, notes string, timestamp time.Time, userId uint) string {
+func generateMessageHash(category string, amount float64, notes string, timestamp time.Time, userId uint, batchIndex int) string {
 	hash := sha256.New()
 
 	hash.Write([]byte(category))
@@ -113,6 +114,7 @@ func generateMessageHash(category string, amount float64, notes string, timestam
 	hash.Write([]byte(notes))
 	hash.Write([]byte(fmt.Sprintf("%d", timestamp.Unix())))
 	hash.Write([]byte(fmt.Sprintf("%d", userId)))
+	hash.Write([]byte(fmt.Sprintf("%d", batchIndex)))
 
 	hashBytes := hash.Sum(nil)
 	return hex.EncodeToString(hashBytes)
