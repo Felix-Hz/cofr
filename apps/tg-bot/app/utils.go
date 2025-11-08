@@ -105,8 +105,9 @@ func validateMessage(message string) bool {
  * Generate a SHA-256 hash of the message combined with its timestamp.
  * This helps to uniquely identify messages and prevent duplicates.
  * The batchIndex parameter ensures that duplicate amounts in batch adds generate unique hashes.
+ * The currency parameter ensures same amount in different currencies are treated as different transactions.
  */
-func generateMessageHash(category string, amount float64, notes string, timestamp time.Time, userId uint, batchIndex int) string {
+func generateMessageHash(category string, amount float64, notes string, timestamp time.Time, userId uint, batchIndex int, currency string) string {
 	hash := sha256.New()
 
 	hash.Write([]byte(category))
@@ -115,6 +116,7 @@ func generateMessageHash(category string, amount float64, notes string, timestam
 	hash.Write([]byte(fmt.Sprintf("%d", timestamp.Unix())))
 	hash.Write([]byte(fmt.Sprintf("%d", userId)))
 	hash.Write([]byte(fmt.Sprintf("%d", batchIndex)))
+	hash.Write([]byte(currency))
 
 	hashBytes := hash.Sum(nil)
 	return hex.EncodeToString(hashBytes)
@@ -167,7 +169,7 @@ func parseAmounts(amountStr string) ([]float64, error) {
 /**
  * Validate and process an add transaction message.
  */
-func parseAddTx(msg string) (string, []float64, string, error) {
+func parseAddTx(msg string, preferredCurrency string) (string, []float64, string, string, error) {
 
 	/**
 	 * Split the message into parts divided by spaces,
@@ -175,7 +177,7 @@ func parseAddTx(msg string) (string, []float64, string, error) {
 	 */
 	parts := strings.Fields(msg)
 	if len(parts) < 2 {
-		return "", nil, "", fmt.Errorf("invalid message format")
+		return "", nil, "", "", fmt.Errorf("invalid message format")
 	}
 
 	category := parts[0]
@@ -186,7 +188,7 @@ func parseAddTx(msg string) (string, []float64, string, error) {
 	if categoryName, exists := findCategory(category); exists {
 		category = categoryName
 	} else {
-		return "", nil, "", fmt.Errorf("invalid category alias")
+		return "", nil, "", "", fmt.Errorf("invalid category alias")
 	}
 
 	/**
@@ -194,23 +196,37 @@ func parseAddTx(msg string) (string, []float64, string, error) {
 	 */
 	amounts, err := parseAmounts(parts[1])
 	if err != nil {
-		return "", nil, "", fmt.Errorf("failed to parse amount %q: %w", parts[1], err)
+		return "", nil, "", "", fmt.Errorf("failed to parse amount %q: %w", parts[1], err)
 	}
 
 	// At least one valid amount is required
 	if len(amounts) == 0 {
-		return "", nil, "", fmt.Errorf("no valid amounts found")
+		return "", nil, "", "", fmt.Errorf("no valid amounts found")
 	}
 
 	/**
-	 * Extract transaction notes if they exist.
+	 * Extract transaction notes and preferred currency if they exist.
 	 */
 	notes := ""
+	currency := preferredCurrency
+
 	if len(parts) > 2 {
-		notes = strings.Join(parts[2:], " ")
+		notesParts := parts[2:]
+
+		// Check if last part is a currency code starting with $
+		lastPart := notesParts[len(notesParts)-1]
+		if strings.HasPrefix(lastPart, "$") {
+			currencyCode := strings.ToUpper(strings.TrimPrefix(lastPart, "$"))
+			if isValidCurrency(currencyCode) {
+				currency = currencyCode
+				notesParts = notesParts[:len(notesParts)-1]
+			}
+		}
+
+		notes = strings.Join(notesParts, " ")
 	}
 
-	return category, amounts, notes, nil
+	return category, amounts, notes, currency, nil
 }
 
 /**
@@ -228,6 +244,7 @@ type ListOptions struct {
 	FromTime  time.Time
 	ToTime    time.Time
 	Category  string
+	Currency  string // Filter by currency
 	Aggregate bool
 	Limit     int
 }
@@ -267,6 +284,15 @@ func parseListOptions(args []string, timestamp time.Time) (ListOptions, error) {
 			opts.FromTime = time.Unix(0, 0) // Epoch time
 			opts.Limit = 50                 // Max limit
 			continue
+		}
+
+		// Handle currency filter (e.g., $USD)
+		if strings.HasPrefix(arg, "$") {
+			currencyCode := strings.ToUpper(strings.TrimPrefix(arg, "$"))
+			if isValidCurrency(currencyCode) {
+				opts.Currency = currencyCode
+				continue
+			}
 		}
 
 		// Try query limit

@@ -15,6 +15,10 @@ type userRepository struct {
 type IUserRepository interface {
 	// Get the existing user or create a new one if it doesn't exist.
 	GetOrCreate(userId int64, sender *telegramClient.User) (*User, error)
+	// Get user by internal ID
+	GetByID(id uint) (*User, error)
+	// Update user
+	Update(user *User) error
 }
 
 // Factory method to initialise a repository.
@@ -42,4 +46,14 @@ func (r *userRepository) GetOrCreate(userId int64, sender *telegramClient.User) 
 		}
 	}
 	return &user, nil
+}
+
+func (r *userRepository) GetByID(id uint) (*User, error) {
+	var user User
+	err := r.dbClient.Where("id = ?", id).First(&user).Error
+	return &user, err
+}
+
+func (r *userRepository) Update(user *User) error {
+	return r.dbClient.Save(user).Error
 }

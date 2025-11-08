@@ -9,12 +9,13 @@ import "time"
  *
  */
 type User struct {
-	ID        uint          `gorm:"primaryKey"`
-	UserID    int64         `gorm:"uniqueIndex"`       // Index Telegram user IDs
-	FirstName string        `gorm:"index"`             // Index first names
-	LastName  string        `gorm:"index"`             // Index last names
-	Username  string        `gorm:"uniqueIndex"`       // Index usernames
-	Expenses  []Transaction `gorm:"foreignKey:UserID"` // One-to-Many Relationship
+	ID                uint          `gorm:"primaryKey"`
+	UserID            int64         `gorm:"uniqueIndex"`       // Index Telegram user IDs
+	FirstName         string        `gorm:"index"`             // Index first names
+	LastName          string        `gorm:"index"`             // Index last names
+	Username          string        `gorm:"uniqueIndex"`       // Index usernames
+	PreferredCurrency string        `gorm:"default:'NZD'"`     // User's preferred currency
+	Expenses          []Transaction `gorm:"foreignKey:UserID"` // One-to-Many Relationship
 }
 
 /*
@@ -29,6 +30,7 @@ type Transaction struct {
 	User      User   `gorm:"constraint:OnDelete:CASCADE"`
 	Category  string `gorm:"index"`
 	Amount    float64
+	Currency  string `gorm:"default:'NZD';index"` // ISO 4217 currency code
 	Notes     string
 	Timestamp time.Time `gorm:"autoCreateTime"`
 	Hash      string    `gorm:"uniqueIndex"`

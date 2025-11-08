@@ -63,9 +63,9 @@ docker run -d \
    - Messages without "!" are treated as "add" commands for quick expense entry
 
 3. **Command System** (app/commands.go):
-   - Dispatcher routes to: add, remove, list, help, edit (not implemented)
+   - Dispatcher routes to: add, remove, list, config, help, edit (not implemented)
    - Commands return CommandResult struct with error handling and user-facing messages
-   - Supports command aliases (e.g., "rm", "r", "delete" all map to remove)
+   - Supports command aliases (e.g., "rm", "r", "delete" all map to remove; "c", "cfg" map to config)
 
 4. **Repository Pattern** (repository/):
    - Singleton pattern initialized once with InitRepositories(db)
@@ -75,8 +75,8 @@ docker run -d \
 
 ### Database Models (db/models.go)
 
-- **User**: Stores Telegram user info (UserID is Telegram's user ID)
-- **Transaction**: Expense records with category, amount, notes, timestamp, and hash for deduplication
+- **User**: Stores Telegram user info (UserID is Telegram's user ID) and preferred currency (PreferredCurrency, defaults to NZD)
+- **Transaction**: Expense records with category, amount, currency, notes, timestamp, and hash for deduplication
 - **Offset**: Tracks last processed Telegram update ID to prevent duplicate message processing
 
 ### Category System (app/utils.go:24-54)
@@ -88,12 +88,14 @@ Categories use short aliases that map to full names:
 
 ### Message Parsing (app/utils.go)
 
-- **parseAddTx**: Parses "CATEGORY AMOUNT [NOTES]" format
+- **parseAddTx**: Parses "CATEGORY AMOUNT [NOTES] [$CURRENCY]" format
   - Supports batch amounts: "G (5-10-15) groceries" creates 3 transactions
   - Amount parsing handles both commas and dots as decimal separators
+  - Currency specified with $ prefix (e.g., "$USD", "$EUR"), defaults to user's preferred currency
+  - Falls back to NZD if user has no preferred currency set
 - **parseListOptions**: Parses query filters for list command
   - Special flags: "*" for all-time, "+" for aggregation
-  - Supports date filters (DD/MM/YYYY), category filters, and result limits
+  - Supports date filters (DD/MM/YYYY), category filters, currency filters ($USD), and result limits
   - Default time range: 28th of previous month to now (billing cycle logic)
 
 ## Environment Variables
@@ -108,25 +110,32 @@ Local development: Create `.env` file (auto-loaded when ENV != production)
 
 ## Important Implementation Details
 
-- **Deduplication**: Transactions are hashed (SHA-256) using category + amount + notes + timestamp + userId to prevent duplicates (app/utils.go:108)
+- **Deduplication**: Transactions are hashed (SHA-256) using category + amount + notes + timestamp + userId + batchIndex + currency to prevent duplicates (app/utils.go:108). Currency is included to allow same amount in different currencies.
+- **Currency Support**: Each transaction has a currency field (ISO 4217 codes). Users have a PreferredCurrency field (defaults to NZD). Supports 25+ major currencies including USD, EUR, GBP, ARS, BRL, etc. Currency validation and conversion utilities in app/currency.go.
 - **Offset Tracking**: The bot maintains a single Offset record to track the last processed Telegram update ID, preventing message reprocessing on reconnection (main.go:50-54)
 - **Long-polling**: Bot uses 60-second timeout for Telegram update polling (app/controllers.go:20-24)
 - **Message Validation**: 160 character limit on incoming messages (app/utils.go:97)
 - **Repository Singleton**: All repositories initialized once and accessed via global functions to ensure single DB connection (repository/init.go)
-- **GORM Auto-Migration**: Schema automatically migrated on startup (db/db.go:41)
+- **GORM Auto-Migration**: Schema automatically migrated on startup (db/db.go:41). Currency fields backfilled with NZD for existing records.
 
 ## User Interaction Patterns
 
 Commands are prefixed with "!" in Telegram messages:
-- `!add G 45 groceries` or `!a G 45 groceries` - Add expense
+- `!add G 45 groceries` or `!a G 45 groceries` - Add expense (uses user's default currency)
+- `!add G 45 groceries $USD` - Add expense with specific currency
+- `!add G (10-5) groceries $EUR` - Batch add with currency
 - `G 45 groceries` - Quick add (no prefix needed)
+- `!c set-default-currency USD` or `!c sdc NZD` - Set preferred currency
 - `!rm 123` or `!r 123 456` - Remove transaction(s) by ID
 - `!ls` - List current cycle transactions (28th to now)
 - `!ls *` - List all-time transactions
 - `!ls +` - List with category aggregation
 - `!ls G` - List groceries only
+- `!ls $USD` - List only USD transactions
+- `!ls G $EUR 20` - List 20 EUR grocery transactions
 - `!ls 20` - List with custom limit
 - `!h` or `!help` - General help
 - `!h add` - Command-specific help
+- `!h currencies` - List supported currencies
 
 Error messages and help text are defined in app/messages.go.

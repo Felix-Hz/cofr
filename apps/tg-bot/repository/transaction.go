@@ -21,6 +21,7 @@ type ITransactionRepository interface {
 
 	GetAll(userId uint, timestamp time.Time, limit int) ([]*Transaction, error)
 	GetManyByCategory(userId uint, category string, timestamp time.Time, limit int) ([]*Transaction, error)
+	GetManyByCurrency(userId uint, currency string, fromTime time.Time, limit int) ([]*Transaction, error)
 }
 
 // Factory method to initialise a repository.
@@ -94,6 +95,23 @@ func (r *transactionRepository) GetManyByCategory(userId uint, category string, 
 
 	result := r.dbClient.
 		Where("category = ? and user_id = ? and timestamp >= ? and timestamp < ?", category, userId, fromTime, time.Now()).
+		Order("timestamp DESC, id DESC").
+		Limit(limit).
+		Find(&transactions)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return transactions, nil
+}
+
+func (r *transactionRepository) GetManyByCurrency(userId uint, currency string, fromTime time.Time, limit int) ([]*Transaction, error) {
+
+	var transactions []*Transaction
+
+	result := r.dbClient.
+		Where("currency = ? and user_id = ? and timestamp >= ? and timestamp < ?", currency, userId, fromTime, time.Now()).
 		Order("timestamp DESC, id DESC").
 		Limit(limit).
 		Find(&transactions)
