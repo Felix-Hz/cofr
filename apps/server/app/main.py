@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import dispose_client
+from app.middleware import log_requests
 from app.routers import auth, expenses
 
 
@@ -28,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add request logging for debugging
+app.middleware("http")(log_requests)
 
 
 @app.get("/health")
