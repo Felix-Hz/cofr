@@ -17,27 +17,14 @@ Expense Dashboard API - FastAPI backend serving expense data from Turso with Tel
 # Setup
 uv sync
 cp .env.example .env
-# Edit .env with your credentials
+
+# NOTE: Edit .env with your credentials
 
 # Run development server
 uv run uvicorn app.main:app --reload --port 5784
 
-# See API documentation
-open http://localhost:5784/docs
-
 # Visit http://localhost:5784/docs for API documentation
 ```
-
-## Deploy to Raspberry Pi
-
-```bash
-./deploy.sh
-# Enter your Pi's IP address when prompted
-```
-
-## Documentation
-
-See [IMPLEMENTATION.md](./IMPLEMENTATION.md) for complete implementation guide.
 
 ## Tech Stack
 
