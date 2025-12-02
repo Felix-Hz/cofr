@@ -50,3 +50,18 @@ uv run pytest
 # Build Docker image
 docker build -t expense-api:latest .
 ```
+
+# HTTP Clients Setup
+
+## Regenerating JWT Token
+
+> Your JWT token expires in 24 hours, to generate a new one:
+
+```bash
+cd /path/to/repo
+uv run python -c "
+from app.auth.jwt import create_access_token
+token = create_access_token(telegram_id='<YOUR_ID>', username='<YOUR_USERNAME>')
+print(token)
+"
+```
