@@ -137,7 +137,13 @@ class ExpenseService:
         summary_result = self.db.execute(
             summary_query, [telegram_id_int, f"{month:02d}", str(year)]
         )
-        summary = summary_result.rows[0] if summary_result.rows else {}
+
+        # Row to dict using column names
+        if summary_result.rows:
+            summary_row = summary_result.rows[0]
+            summary = dict(zip(summary_result.columns, summary_row))
+        else:
+            summary = {"total_spent": 0, "transaction_count": 0}
 
         category_breakdown_query = """
             SELECT
@@ -157,12 +163,15 @@ class ExpenseService:
         )
 
         category_breakdown = [
-            CategoryTotal(category=row["category"], total=row["total"], count=row["count"])
+            CategoryTotal(
+                category=row_dict["category"], total=row_dict["total"], count=row_dict["count"]
+            )
             for row in breakdown_result.rows
+            for row_dict in [dict(zip(breakdown_result.columns, row))]
         ]
 
         return MonthlyStats(
-            total_spent=summary.get("total_spent", 0),
-            transaction_count=summary.get("transaction_count", 0),
+            total_spent=summary["total_spent"],
+            transaction_count=summary["transaction_count"],
             category_breakdown=category_breakdown,
         )
