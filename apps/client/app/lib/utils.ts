@@ -52,12 +52,14 @@ export enum Category {
   SHOPPING = "Shopping",
   EDUCATION = "Education",
   TRAVEL = "Travel",
+  ENTERTAINMENT = "Entertainment",
   MISCELLANEOUS = "Miscellaneous",
 }
 
 // Category HEX color mapping
 const CATEGORY_HEX_COLORS: Record<Category, string> = {
   [Category.INCOME]: "#22c55e", // green-500
+  [Category.ENTERTAINMENT]: "#14b8a6", // teal-500
   [Category.SAVINGS]: "#10b981", // emerald-500
   [Category.UTILITIES]: "#eab308", // yellow-500
   [Category.SUBSCRIPTIONS]: "#a855f7", // purple-500
@@ -66,7 +68,7 @@ const CATEGORY_HEX_COLORS: Record<Category, string> = {
   [Category.TRANSPORT]: "#3b82f6", // blue-500
   [Category.GROCERIES]: "#f97316", // orange-500
   [Category.GOING_OUT]: "#ec4899", // pink-500
-  [Category.INVESTMENT]: "#14b8a6", // teal-500
+  [Category.INVESTMENT]: "#a3e635", // lime-400
   [Category.SHOPPING]: "#8b5cf6", // violet-500
   [Category.EDUCATION]: "#06b6d4", // cyan-500
   [Category.TRAVEL]: "#0ea5e9", // sky-500
