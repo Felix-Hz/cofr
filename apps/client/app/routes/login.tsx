@@ -60,7 +60,7 @@ export default function Login() {
       <div className="max-w-lg w-full space-y-8 p-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-            Sign in to Bezorgen
+            Sign in to Uitzicht
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Use your Telegram account to securely log in

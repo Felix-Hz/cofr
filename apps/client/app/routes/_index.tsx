@@ -16,7 +16,7 @@ export default function Index() {
       <div className="max-w-xl w-full space-y-8 p-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-            Bezorgen Expense Tracker
+            Uitzicht Expense Tracker
           </h1>
           <p className="mt-4 text-lg text-gray-600">
             Track your expenses effortlessly with Telegram integration
