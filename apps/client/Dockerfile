@@ -19,6 +19,7 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
 COPY --from=builder /app/build ./build
+COPY --from=builder /app/server.ts ./server.ts
 
 EXPOSE 3000
 
