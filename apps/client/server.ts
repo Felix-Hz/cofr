@@ -1,33 +1,26 @@
-import { join } from "node:path";
-
-const clientPath = join(import.meta.dir, "build", "client");
 const port = Number(process.env.PORT) || 3000;
 
 Bun.serve({
   port,
-  async fetch(request) {
-    const url = new URL(request.url);
-    let pathname = url.pathname;
-
-    // Try to serve the exact file
-    let filePath = join(clientPath, pathname);
-    let file = Bun.file(filePath);
-
+  // @ts-expect-error
+  static: {
+    "/*": new Response(Bun.file("build/client/index.html"), {
+      headers: { "Content-Type": "text/html" },
+    }),
+  },
+  async fetch(req) {
+    const path = new URL(req.url).pathname;
+    const file = Bun.file(`build/client${path}`);
     if (await file.exists()) {
-      const isAsset = pathname.startsWith("/assets/");
       return new Response(file, {
         headers: {
-          "Cache-Control": isAsset
+          "Cache-Control": path.startsWith("/assets/")
             ? "public, max-age=31536000, immutable"
             : "public, max-age=3600",
         },
       });
     }
-
-    // For SPA: serve index.html for all non-file routes
-    const indexPath = join(clientPath, "index.html");
-    const indexFile = Bun.file(indexPath);
-    return new Response(indexFile, {
+    return new Response(Bun.file("build/client/index.html"), {
       headers: { "Content-Type": "text/html" },
     });
   },
