@@ -44,5 +44,8 @@ htmlcov/
 
 uv.lock
 
+.serena
+.ruff_cache
+.zed
 .claude
 CLAUDE.md
