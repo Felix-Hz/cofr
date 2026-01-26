@@ -25,8 +25,7 @@ export default function DashboardLayout() {
 
   const navItems = [
     { path: "/dashboard", label: "Overview" },
-    { path: "/dashboard/expenses", label: "Expenses" },
-    { path: "/dashboard/categories", label: "Categories" },
+    { path: "/dashboard/expenses", label: "Transactions" },
     { path: "/dashboard/stats", label: "Statistics" },
   ];
 

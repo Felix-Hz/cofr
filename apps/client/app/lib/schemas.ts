@@ -29,8 +29,13 @@ export const CategoryTotalSchema = z.object({
 
 export const MonthlyStatsSchema = z.object({
   total_spent: z.number(),
+  total_income: z.number(),
+  total_savings: z.number(),
+  total_investment: z.number(),
   transaction_count: z.number(),
+  expense_count: z.number(),
   category_breakdown: z.array(CategoryTotalSchema),
+  currency: z.string().length(3),
 });
 
 export const TokenResponseSchema = z.object({
@@ -48,6 +53,27 @@ export const TelegramAuthDataSchema = z.object({
   hash: z.string(),
 });
 
+export const ExpenseCreateSchema = z.object({
+  amount: z.number().min(0),
+  category: z.string(),
+  description: z.string().default(""),
+  currency: z.string().length(3).default("NZD"),
+  created_at: z.coerce.date().optional(),
+});
+
+export const ExpenseUpdateSchema = z.object({
+  amount: z.number().min(0).optional(),
+  category: z.string().optional(),
+  description: z.string().optional(),
+  currency: z.string().length(3).optional(),
+  created_at: z.coerce.date().optional(),
+});
+
+export const ExpenseDeleteResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});
+
 // ============================================================================
 // Infer TypeScript Types from Schemas (Single Source of Truth)
 // ============================================================================
@@ -59,3 +85,6 @@ export type CategoryTotal = z.infer<typeof CategoryTotalSchema>;
 export type MonthlyStats = z.infer<typeof MonthlyStatsSchema>;
 export type TokenResponse = z.infer<typeof TokenResponseSchema>;
 export type TelegramAuthData = z.infer<typeof TelegramAuthDataSchema>;
+export type ExpenseCreate = z.infer<typeof ExpenseCreateSchema>;
+export type ExpenseUpdate = z.infer<typeof ExpenseUpdateSchema>;
+export type ExpenseDeleteResponse = z.infer<typeof ExpenseDeleteResponseSchema>;

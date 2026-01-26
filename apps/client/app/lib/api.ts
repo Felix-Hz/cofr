@@ -1,9 +1,15 @@
 import { getToken, removeToken } from "./auth";
 import {
+  ExpenseDeleteResponseSchema,
+  ExpenseSchema,
   ExpensesResponseSchema,
   MonthlyStatsSchema,
   TokenResponseSchema,
+  type Expense,
+  type ExpenseCreate,
+  type ExpenseDeleteResponse,
   type ExpensesResponse,
+  type ExpenseUpdate,
   type MonthlyStats,
   type TelegramAuthData,
   type TokenResponse,
@@ -133,15 +139,61 @@ export async function getExpensesByDateRange(
 export async function getMonthlyStats(
   month: number,
   year: number,
+  currency?: string,
 ): Promise<MonthlyStats> {
   const params = new URLSearchParams({
     month: month.toString(),
     year: year.toString(),
   });
 
+  if (currency) {
+    params.set("currency", currency);
+  }
+
   const response = await fetchWithAuth(`/expenses/stats/monthly?${params}`);
   const json = await response.json();
   return MonthlyStatsSchema.parse(json);
+}
+
+export async function createExpense(data: ExpenseCreate): Promise<Expense> {
+  const response = await fetchWithAuth(`/expenses/`, {
+    method: "POST",
+    body: JSON.stringify({
+      ...data,
+      created_at: data.created_at?.toISOString(),
+    }),
+  });
+  const json = await response.json();
+  return ExpenseSchema.parse(json);
+}
+
+export async function getExpense(id: number): Promise<Expense> {
+  const response = await fetchWithAuth(`/expenses/${id}`);
+  const json = await response.json();
+  return ExpenseSchema.parse(json);
+}
+
+export async function updateExpense(
+  id: number,
+  data: ExpenseUpdate,
+): Promise<Expense> {
+  const response = await fetchWithAuth(`/expenses/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      ...data,
+      created_at: data.created_at?.toISOString(),
+    }),
+  });
+  const json = await response.json();
+  return ExpenseSchema.parse(json);
+}
+
+export async function deleteExpense(id: number): Promise<ExpenseDeleteResponse> {
+  const response = await fetchWithAuth(`/expenses/${id}`, {
+    method: "DELETE",
+  });
+  const json = await response.json();
+  return ExpenseDeleteResponseSchema.parse(json);
 }
 
 // Health check (no auth required)
