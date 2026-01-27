@@ -196,6 +196,29 @@ export async function deleteExpense(id: number): Promise<ExpenseDeleteResponse> 
   return ExpenseDeleteResponseSchema.parse(json);
 }
 
+// Account / Provider Linking
+export async function getLinkedProviders(): Promise<
+  {
+    id: number;
+    provider: string;
+    provider_user_id: string;
+    email: string | null;
+    display_name: string | null;
+  }[]
+> {
+  const response = await fetchWithAuth("/account/providers");
+  return response.json();
+}
+
+export async function unlinkProvider(
+  id: number,
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetchWithAuth(`/account/providers/${id}`, {
+    method: "DELETE",
+  });
+  return response.json();
+}
+
 // Health check (no auth required)
 export async function healthCheck(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);

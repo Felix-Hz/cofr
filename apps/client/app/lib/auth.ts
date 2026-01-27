@@ -19,7 +19,7 @@ export function isAuthenticated(): boolean {
 
 // Decode JWT payload (without verification - backend verifies)
 export function getTokenPayload(): {
-  telegram_id: string;
+  user_id: number;
   username: string;
   exp: number;
 } | null {

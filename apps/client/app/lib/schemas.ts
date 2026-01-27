@@ -11,7 +11,7 @@ export const ExpenseSchema = z.object({
   description: z.string(),
   created_at: z.coerce.date(),
   currency: z.string().length(3),
-  telegram_user_id: z.number(),
+  user_id: z.number(),
 });
 
 export const ExpensesResponseSchema = z.object({

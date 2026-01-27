@@ -2,10 +2,10 @@ import {
   Link,
   Outlet,
   redirect,
-  useLocation,
   useLoaderData,
+  useLocation,
 } from "react-router";
-import { isAuthenticated, getTokenPayload } from "~/lib/auth";
+import { getTokenPayload, isAuthenticated } from "~/lib/auth";
 import { getUserInitials } from "~/lib/utils";
 
 export async function clientLoader() {
@@ -69,6 +69,12 @@ export default function DashboardLayout() {
                   <div className="px-4 py-2 text-sm text-gray-700 border-b">
                     {user?.username || "User"}
                   </div>
+                  <Link
+                    to="/dashboard/settings"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Settings
+                  </Link>
                   <Link
                     to="/logout"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
