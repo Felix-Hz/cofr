@@ -12,20 +12,7 @@ class ExpenseSchema(BaseModel):
     description: str
     created_at: datetime
     currency: str = Field(pattern="^[A-Z]{3}$")
-    telegram_user_id: int
-
-    @classmethod
-    def from_row(cls, row: dict, telegram_id: int):
-        """Transform database row to ExpenseSchema"""
-        return cls(
-            id=row["id"],
-            amount=row["amount"],
-            category=row["category"],
-            description=row["notes"] or "",
-            created_at=datetime.fromisoformat(row["timestamp"]),
-            currency=row["currency"],
-            telegram_user_id=telegram_id,
-        )
+    user_id: int
 
 
 class ExpensesResponse(BaseModel):
@@ -43,8 +30,13 @@ class CategoryTotal(BaseModel):
 
 class MonthlyStats(BaseModel):
     total_spent: float
+    total_income: float
+    total_savings: float
+    total_investment: float
     transaction_count: int
+    expense_count: int
     category_breakdown: list[CategoryTotal]
+    currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
 
 
 class TelegramAuthRequest(BaseModel):
@@ -60,3 +52,24 @@ class TelegramAuthRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class ExpenseCreateRequest(BaseModel):
+    amount: float = Field(ge=0)
+    category: str
+    description: str = ""
+    currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
+    created_at: datetime | None = None
+
+
+class ExpenseUpdateRequest(BaseModel):
+    amount: float | None = Field(default=None, ge=0)
+    category: str | None = None
+    description: str | None = None
+    currency: str | None = Field(default=None, pattern="^[A-Z]{3}$")
+    created_at: datetime | None = None
+
+
+class ExpenseDeleteResponse(BaseModel):
+    success: bool
+    message: str

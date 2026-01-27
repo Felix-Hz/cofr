@@ -1,18 +1,44 @@
-import libsql_client
+from urllib.parse import parse_qs, urlparse
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
 
-# Create libsql client for Turso
-client = libsql_client.create_client_sync(
-    url=settings.TURSO_DATABASE_URL, auth_token=settings.TURSO_AUTH_TOKEN
+
+def _build_connection_url() -> str:
+    parsed = urlparse(settings.TURSO_DATABASE_URL)
+    host = parsed.hostname or ""
+    port = f":{parsed.port}" if parsed.port else ""
+    path = parsed.path or ""
+
+    # Existing query params (exclude any authToken — passed via connect_args)
+    existing_params = parse_qs(parsed.query)
+
+    params = ["secure=true"]
+
+    for key, values in existing_params.items():
+        if key == "authToken":
+            continue
+        for value in values:
+            params.append(f"{key}={value}")
+
+    query_string = "&".join(params)
+    return f"sqlite+libsql://{host}{port}{path}?{query_string}"
+
+
+engine = create_engine(
+    _build_connection_url(),
+    echo=False,
+    connect_args={"auth_token": settings.TURSO_AUTH_TOKEN},
 )
+SessionLocal = sessionmaker(bind=engine)
 
 
-async def get_db():
-    """FastAPI dependency for database client"""
-    return client
-
-
-async def dispose_client():
-    """Close client on shutdown"""
-    client.close()
+def get_db():
+    """FastAPI dependency for database session"""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
