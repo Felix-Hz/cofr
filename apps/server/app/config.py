@@ -11,6 +11,20 @@ class Settings(BaseSettings):
     API_PORT: int = 5784
     ENV: str = "production"
 
+    # OAuth — Google
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
+    # OAuth — Apple
+    APPLE_CLIENT_ID: str = ""
+    APPLE_CLIENT_SECRET: str = ""
+    APPLE_TEAM_ID: str = ""
+    APPLE_KEY_ID: str = ""
+
+    # URLs
+    API_URL: str = "http://localhost:5784"
+    FRONTEND_URL: str = "http://localhost:5173"
+
     model_config = {"env_file": ".env", "case_sensitive": True}
 
 

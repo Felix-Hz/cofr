@@ -12,10 +12,18 @@ async def log_requests(request: Request, call_next):
     print("\n" + "=" * 60)
     print(f"→ {request.method} {request.url.path}")
 
-    if request.method == "POST":
-        print(f"  Body: {await request.body()}")
+    if request.method == "POST" or request.method == "OPTIONS":
+        body = await request.body()
+        print(f"  Body: {body}")
+
+        # Reconstruct request so FastAPI can parse it
+        async def receive():
+            return {"type": "http.request", "body": body}
+
+        request._receive = receive
 
     print(f"  Query: {dict(request.query_params)}")
+    print(f"  Origin: {request.headers.get('origin', 'N/A')}")
     print(f"  Headers: {dict(request.headers)}")
 
     response = await call_next(request)

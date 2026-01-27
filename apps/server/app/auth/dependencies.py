@@ -19,6 +19,6 @@ async def get_current_user(
     return payload
 
 
-async def get_telegram_id(user: dict = Depends(get_current_user)) -> str:
-    """Extract telegram_id from authenticated user"""
-    return user["telegram_id"]
+async def get_user_id(user: dict = Depends(get_current_user)) -> int:
+    """Extract user_id (internal DB ID) from authenticated user"""
+    return user["user_id"]
