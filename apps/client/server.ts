@@ -2,12 +2,6 @@ const port = Number(process.env.PORT) || 3000;
 
 Bun.serve({
   port,
-  // @ts-expect-error
-  static: {
-    "/*": new Response(Bun.file("build/client/index.html"), {
-      headers: { "Content-Type": "text/html" },
-    }),
-  },
   async fetch(req) {
     const path = new URL(req.url).pathname;
     const file = Bun.file(`build/client${path}`);

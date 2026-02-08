@@ -64,7 +64,7 @@ export default function DashboardLayout() {
               >
                 {getUserInitials(user?.username || "User")}
               </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border hidden group-hover:block z-10">
+              <div className="absolute right-0 mt-0.5 w-48 bg-white rounded-md shadow-lg border hidden group-hover:block z-10">
                 <div className="py-1">
                   <div className="px-4 py-2 text-sm text-gray-700 border-b">
                     {user?.username || "User"}
