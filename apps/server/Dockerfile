@@ -1,16 +1,33 @@
-# Build stage
-FROM python:3.12-slim AS builder
+# Build stage - need full Debian for proper build tools
+FROM python:3.12-bookworm AS builder
 
 WORKDIR /app
+
+# Install ALL build dependencies including pkg-config, SSL libs, and cmake
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    pkg-config \
+    libssl-dev \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust (required for libsql-experimental)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
+
+# Verify Rust and C compiler are available
+RUN rustc --version && cc --version
 
 # Copy uv from official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Copy dependency files
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock* ./
 
-# Install dependencies
-RUN uv sync --frozen --no-dev || uv sync --no-dev
+# Install dependencies with verbose output
+RUN uv sync --no-dev
 
 # Runtime stage
 FROM python:3.12-slim

@@ -176,10 +176,12 @@ def _resolve_user(
             return db.query(User).filter(User.id == existing_provider.user_id).first()
 
     # 3. Create new user + auth_provider
+    # Generate unique username from email or provider info
+    username = email if email else f"{provider}_{provider_user_id}"
     user = User(
         first_name=display_name or "",
         last_name="",
-        username="",
+        username=username,
     )
     db.add(user)
     db.flush()

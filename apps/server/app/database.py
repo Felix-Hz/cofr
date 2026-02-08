@@ -2,6 +2,7 @@ from urllib.parse import parse_qs, urlparse
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.config import settings
 
@@ -30,7 +31,11 @@ def _build_connection_url() -> str:
 engine = create_engine(
     _build_connection_url(),
     echo=False,
-    connect_args={"auth_token": settings.TURSO_AUTH_TOKEN},
+    connect_args={
+        "auth_token": settings.TURSO_AUTH_TOKEN,
+        "check_same_thread": False,  # Allow connection sharing across threads
+    },
+    poolclass=StaticPool,  # Single persistent connection with proper locking
 )
 SessionLocal = sessionmaker(bind=engine)
 
