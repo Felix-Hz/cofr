@@ -26,7 +26,7 @@ go mod tidy
 ### Docker
 ```bash
 # Build image
-docker build -t remind0 .
+docker build -t cofr-tg-bot .
 
 # Run container (production)
 docker run -d \
@@ -34,8 +34,8 @@ docker run -d \
   -e TURSO_DATABASE_URL=<url> \
   -e TURSO_AUTH_TOKEN=<token> \
   -e ENV=production \
-  --name expenses-telegram-bot \
-  remind0
+  --name cofr-tg-bot \
+  cofr-tg-bot
 
 # Run locally (in-memory DB)
 docker run -d \
@@ -43,8 +43,8 @@ docker run -d \
   -e TURSO_DATABASE_URL=dummy \
   -e TURSO_AUTH_TOKEN=dummy \
   -e ENV=local \
-  --name expenses-telegram-bot \
-  remind0
+  --name cofr-tg-bot \
+  cofr-tg-bot
 ```
 
 ## Architecture

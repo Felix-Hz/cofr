@@ -1,0 +1,19 @@
+# Docker Compose override for local development
+# Usage: docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up
+# Or simply: docker compose up (with COMPOSE_FILE env var set)
+
+services:
+  # Add volume mounts and dev servers for hot-reload in development
+  server:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 5784 --reload
+    volumes:
+      - ./apps/server:/app
+      - /app/.venv  # Exclude container's .venv from being overridden
+
+  client:
+    command: bun run dev --host 0.0.0.0
+    volumes:
+      - ./apps/client:/app
+      - /app/node_modules  # Exclude container's node_modules from being overridden
+    environment:
+      - VITE_API_BASE_URL=/api  # Ensure correct API URL in dev mode

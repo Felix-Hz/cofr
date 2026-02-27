@@ -1,0 +1,34 @@
+# Environment
+apps/*/.env
+!apps/*/.env.example
+
+# Cloudflare credentials (sensitive)
+infra/cloudflared/*.json
+infra/cloudflared/config.yml
+
+# Language-specific
+apps/server/.venv/
+apps/server/__pycache__/
+apps/server/*.py[cod]
+apps/server/.ruff_cache/
+apps/server/.pytest_cache/
+apps/client/node_modules/
+apps/client/build/
+apps/client/.react-router/
+
+# Docker volumes
+caddy_data/
+caddy_config/
+
+# OS
+.DS_Store
+
+# Logs
+scripts/logs/
+
+# IDE
+.idea/
+.vscode/
+.zed/
+*.swp
+*.swo

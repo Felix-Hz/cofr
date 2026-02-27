@@ -1,0 +1,10 @@
+# Cloudflare Tunnel Configuration
+# Copy this to config.yml and fill in your tunnel ID
+
+tunnel: YOUR_TUNNEL_ID
+credentials-file: /etc/cloudflared/YOUR_TUNNEL_ID.json
+
+ingress:
+  - hostname: uitzicht.online
+    service: http://caddy:80
+  - service: http_status:404
