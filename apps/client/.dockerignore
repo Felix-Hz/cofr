@@ -1,0 +1,9 @@
+node_modules
+.git
+.gitignore
+.env.local
+*.md
+.react-router
+.vscode
+.zed
+.DS_Store
