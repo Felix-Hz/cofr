@@ -1,0 +1,27 @@
+#
+# General Go files
+#
+
+# Build output
+*.exe
+*.exe~
+*.dll
+*.so
+
+*.test
+__debug*
+
+*.out
+/vendor/
+
+.idea/
+.vscode/
+*.sublime-workspace
+
+.DS_Store
+*.log
+*.db
+.env
+
+build/
+dist/

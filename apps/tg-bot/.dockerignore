@@ -1,0 +1,6 @@
+# ignore go binary
+main
+
+# ignore docker files
+Dockerfile
+.dockerignore
