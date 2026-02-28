@@ -2,6 +2,8 @@
 
 > Personal finance dashboard and expense tracking via Telegram bot with a UI.
 
+<img width="1536" height="649" alt="banner" src="https://github.com/user-attachments/assets/73ab85f0-9a72-481b-b185-cd4f06ccb41e" />
+
 ## Structure
 
 ```
