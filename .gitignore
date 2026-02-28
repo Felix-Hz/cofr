@@ -26,6 +26,9 @@ caddy_config/
 # Logs
 scripts/logs/
 
+# Claude
+CLAUDE.md
+
 # IDE
 .idea/
 .vscode/
