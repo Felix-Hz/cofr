@@ -21,7 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.create_table(
         "users",
-        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("id", sa.Uuid(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("user_id", sa.Integer(), nullable=True),
         sa.Column("first_name", sa.String(), nullable=False, server_default=""),
         sa.Column("last_name", sa.String(), nullable=False, server_default=""),
@@ -29,14 +29,11 @@ def upgrade() -> None:
         sa.Column("preferred_currency", sa.String(), nullable=False, server_default="NZD"),
     )
     op.create_index("ix_users_user_id", "users", ["user_id"], unique=True)
-    op.create_index("ix_users_first_name", "users", ["first_name"])
-    op.create_index("ix_users_last_name", "users", ["last_name"])
-    op.create_index("ix_users_username", "users", ["username"], unique=True)
 
     op.create_table(
         "transactions",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("id", sa.Uuid(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
+        sa.Column("user_id", sa.Uuid(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("category", sa.String(), nullable=False),
         sa.Column("amount", sa.Float(), nullable=False),
         sa.Column("currency", sa.String(), nullable=False, server_default="NZD"),
@@ -51,14 +48,14 @@ def upgrade() -> None:
 
     op.create_table(
         "offsets",
-        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("id", sa.Uuid(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("offset", sa.Integer(), nullable=False, server_default="0"),
     )
 
     op.create_table(
         "auth_providers",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("user_id", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("id", sa.Uuid(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
+        sa.Column("user_id", sa.Uuid(), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("provider", sa.String(), nullable=False),
         sa.Column("provider_user_id", sa.String(), nullable=False),
         sa.Column("email", sa.String(), nullable=True),

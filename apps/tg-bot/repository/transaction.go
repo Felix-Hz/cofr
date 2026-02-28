@@ -4,6 +4,7 @@ import (
 	. "remind0/db"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -15,13 +16,13 @@ type ITransactionRepository interface {
 	Create(transaction []*Transaction) ([]*Transaction, error)
 	Delete(transaction []*Transaction) error
 
-	GetById(id int64, userId uint) (*Transaction, error)
-	GetManyById(id []int64, userId uint) ([]*Transaction, error)
-	GetByHash(hash string, userId uint) (*Transaction, error)
+	GetById(id uuid.UUID, userId uuid.UUID) (*Transaction, error)
+	GetManyById(id []uuid.UUID, userId uuid.UUID) ([]*Transaction, error)
+	GetByHash(hash string, userId uuid.UUID) (*Transaction, error)
 
-	GetAll(userId uint, timestamp time.Time, limit int) ([]*Transaction, error)
-	GetManyByCategory(userId uint, category string, timestamp time.Time, limit int) ([]*Transaction, error)
-	GetManyByCurrency(userId uint, currency string, fromTime time.Time, limit int) ([]*Transaction, error)
+	GetAll(userId uuid.UUID, timestamp time.Time, limit int) ([]*Transaction, error)
+	GetManyByCategory(userId uuid.UUID, category string, timestamp time.Time, limit int) ([]*Transaction, error)
+	GetManyByCurrency(userId uuid.UUID, currency string, fromTime time.Time, limit int) ([]*Transaction, error)
 }
 
 // Factory method to initialise a repository.
@@ -45,7 +46,7 @@ func (r *transactionRepository) Delete(txs []*Transaction) error {
 	return nil
 }
 
-func (r *transactionRepository) GetById(id int64, userId uint) (*Transaction, error) {
+func (r *transactionRepository) GetById(id uuid.UUID, userId uuid.UUID) (*Transaction, error) {
 	var transaction Transaction
 	result := r.dbClient.Where("id = ? and user_id = ?", id, userId).First(&transaction)
 	if result.Error != nil {
@@ -54,7 +55,7 @@ func (r *transactionRepository) GetById(id int64, userId uint) (*Transaction, er
 	return &transaction, nil
 }
 
-func (r *transactionRepository) GetManyById(ids []int64, userId uint) ([]*Transaction, error) {
+func (r *transactionRepository) GetManyById(ids []uuid.UUID, userId uuid.UUID) ([]*Transaction, error) {
 	var transactions []*Transaction
 	result := r.dbClient.Where("id IN ? and user_id = ?", ids, userId).Find(&transactions)
 	if result.Error != nil {
@@ -63,7 +64,7 @@ func (r *transactionRepository) GetManyById(ids []int64, userId uint) ([]*Transa
 	return transactions, nil
 }
 
-func (r *transactionRepository) GetByHash(hash string, userId uint) (*Transaction, error) {
+func (r *transactionRepository) GetByHash(hash string, userId uuid.UUID) (*Transaction, error) {
 	var transaction Transaction
 	result := r.dbClient.Where("hash = ? and user_id = ?", hash, userId).First(&transaction)
 	if result.Error != nil {
@@ -72,7 +73,7 @@ func (r *transactionRepository) GetByHash(hash string, userId uint) (*Transactio
 	return &transaction, nil
 }
 
-func (r *transactionRepository) GetAll(userId uint, fromTime time.Time, limit int) ([]*Transaction, error) {
+func (r *transactionRepository) GetAll(userId uuid.UUID, fromTime time.Time, limit int) ([]*Transaction, error) {
 
 	var transactions []*Transaction
 
@@ -89,7 +90,7 @@ func (r *transactionRepository) GetAll(userId uint, fromTime time.Time, limit in
 	return transactions, nil
 }
 
-func (r *transactionRepository) GetManyByCategory(userId uint, category string, fromTime time.Time, limit int) ([]*Transaction, error) {
+func (r *transactionRepository) GetManyByCategory(userId uuid.UUID, category string, fromTime time.Time, limit int) ([]*Transaction, error) {
 
 	var transactions []*Transaction
 
@@ -106,7 +107,7 @@ func (r *transactionRepository) GetManyByCategory(userId uint, category string, 
 	return transactions, nil
 }
 
-func (r *transactionRepository) GetManyByCurrency(userId uint, currency string, fromTime time.Time, limit int) ([]*Transaction, error) {
+func (r *transactionRepository) GetManyByCurrency(userId uuid.UUID, currency string, fromTime time.Time, limit int) ([]*Transaction, error) {
 
 	var transactions []*Transaction
 

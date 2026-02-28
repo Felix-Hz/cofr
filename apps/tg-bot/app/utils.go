@@ -10,6 +10,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 /*                   dP                                   oo                  */
@@ -107,14 +109,14 @@ func validateMessage(message string) bool {
  * The batchIndex parameter ensures that duplicate amounts in batch adds generate unique hashes.
  * The currency parameter ensures same amount in different currencies are treated as different transactions.
  */
-func generateMessageHash(category string, amount float64, notes string, timestamp time.Time, userId uint, batchIndex int, currency string) string {
+func generateMessageHash(category string, amount float64, notes string, timestamp time.Time, userId uuid.UUID, batchIndex int, currency string) string {
 	hash := sha256.New()
 
 	hash.Write([]byte(category))
 	hash.Write([]byte(fmt.Sprintf("%f", amount)))
 	hash.Write([]byte(notes))
 	hash.Write([]byte(fmt.Sprintf("%d", timestamp.Unix())))
-	hash.Write([]byte(fmt.Sprintf("%d", userId)))
+	hash.Write([]byte(userId.String()))
 	hash.Write([]byte(fmt.Sprintf("%d", batchIndex)))
 	hash.Write([]byte(currency))
 

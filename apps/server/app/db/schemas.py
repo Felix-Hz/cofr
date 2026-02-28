@@ -6,13 +6,12 @@ from pydantic import BaseModel, ConfigDict, Field
 class ExpenseSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: str
     amount: float = Field(ge=0)
     category: str
     description: str
     created_at: datetime
     currency: str = Field(pattern="^[A-Z]{3}$")
-    user_id: int
 
 
 class ExpensesResponse(BaseModel):

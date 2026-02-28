@@ -3,6 +3,7 @@ package repository
 import (
 	. "remind0/db"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -14,7 +15,7 @@ type IUserRepository interface {
 	// Get user by Telegram ID, returns nil if not found.
 	GetByTelegramID(telegramID int64) (*User, error)
 	// Get user by internal ID
-	GetByID(id uint) (*User, error)
+	GetByID(id uuid.UUID) (*User, error)
 	// Update user
 	Update(user *User) error
 }
@@ -33,7 +34,7 @@ func (r *userRepository) GetByTelegramID(telegramID int64) (*User, error) {
 	return &user, nil
 }
 
-func (r *userRepository) GetByID(id uint) (*User, error) {
+func (r *userRepository) GetByID(id uuid.UUID) (*User, error) {
 	var user User
 	err := r.dbClient.Where("id = ?", id).First(&user).Error
 	return &user, err

@@ -19,7 +19,7 @@ class ExpenseService:
         self.db = db
 
     async def get_expenses(
-        self, user_id: int, limit: int = 50, offset: int = 0
+        self, user_id: str, limit: int = 50, offset: int = 0
     ) -> tuple[list[ExpenseSchema], int]:
         """Get paginated expenses for a user"""
         total = (
@@ -37,11 +37,11 @@ class ExpenseService:
             .all()
         )
 
-        expenses = [self._to_schema(t, user_id) for t in transactions]
+        expenses = [self._to_schema(t) for t in transactions]
         return expenses, total
 
     async def get_expenses_by_category(
-        self, user_id: int, category: str, limit: int = 50, offset: int = 0
+        self, user_id: str, category: str, limit: int = 50, offset: int = 0
     ) -> tuple[list[ExpenseSchema], int]:
         """Get paginated expenses filtered by category"""
         total = (
@@ -59,12 +59,12 @@ class ExpenseService:
             .all()
         )
 
-        expenses = [self._to_schema(t, user_id) for t in transactions]
+        expenses = [self._to_schema(t) for t in transactions]
         return expenses, total
 
     async def get_expenses_by_date_range(
         self,
-        user_id: int,
+        user_id: str,
         start_date: datetime,
         end_date: datetime,
         limit: int = 50,
@@ -92,11 +92,11 @@ class ExpenseService:
             .all()
         )
 
-        expenses = [self._to_schema(t, user_id) for t in transactions]
+        expenses = [self._to_schema(t) for t in transactions]
         return expenses, total
 
     async def get_monthly_stats(
-        self, user_id: int, month: int, year: int, currency: str | None = None
+        self, user_id: str, month: int, year: int, currency: str | None = None
     ) -> MonthlyStats:
         """Get monthly statistics with category breakdown, optionally filtered by currency"""
         base_filter = [
@@ -172,7 +172,7 @@ class ExpenseService:
             currency=currency or "NZD",
         )
 
-    async def get_expense_by_id(self, user_id: int, expense_id: int) -> ExpenseSchema:
+    async def get_expense_by_id(self, user_id: str, expense_id: str) -> ExpenseSchema:
         """Get single expense with ownership check"""
         transaction = (
             self.db.query(Transaction)
@@ -182,9 +182,9 @@ class ExpenseService:
         if not transaction:
             raise HTTPException(status_code=404, detail="Expense not found")
 
-        return self._to_schema(transaction, user_id)
+        return self._to_schema(transaction)
 
-    async def create_expense(self, user_id: int, data: ExpenseCreateRequest) -> ExpenseSchema:
+    async def create_expense(self, user_id: str, data: ExpenseCreateRequest) -> ExpenseSchema:
         """Create a new expense"""
         created_at = data.created_at or datetime.now()
 
@@ -200,10 +200,10 @@ class ExpenseService:
         self.db.commit()
         self.db.refresh(transaction)
 
-        return self._to_schema(transaction, user_id)
+        return self._to_schema(transaction)
 
     async def update_expense(
-        self, user_id: int, expense_id: int, data: ExpenseUpdateRequest
+        self, user_id: str, expense_id: str, data: ExpenseUpdateRequest
     ) -> ExpenseSchema:
         """Update an existing expense (partial updates)"""
         transaction = (
@@ -228,9 +228,9 @@ class ExpenseService:
         self.db.commit()
         self.db.refresh(transaction)
 
-        return self._to_schema(transaction, user_id)
+        return self._to_schema(transaction)
 
-    async def delete_expense(self, user_id: int, expense_id: int) -> bool:
+    async def delete_expense(self, user_id: str, expense_id: str) -> bool:
         """Delete an expense with ownership verification"""
         transaction = (
             self.db.query(Transaction)
@@ -245,14 +245,13 @@ class ExpenseService:
         return True
 
     @staticmethod
-    def _to_schema(transaction: Transaction, user_id: int) -> ExpenseSchema:
+    def _to_schema(transaction: Transaction) -> ExpenseSchema:
         """Convert a Transaction ORM object to ExpenseSchema"""
         return ExpenseSchema(
-            id=transaction.id,
+            id=str(transaction.id),
             amount=transaction.amount,
             category=transaction.category,
             description=transaction.notes or "",
             created_at=transaction.timestamp,
             currency=transaction.currency,
-            user_id=user_id,
         )

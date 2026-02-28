@@ -13,7 +13,7 @@ router = APIRouter(prefix="/account", tags=["Account"])
 
 
 class ProviderResponse(BaseModel):
-    id: int
+    id: str
     provider: str
     provider_user_id: str
     email: str | None
@@ -27,14 +27,14 @@ class UnlinkResponse(BaseModel):
 
 @router.get("/providers", response_model=list[ProviderResponse])
 async def get_linked_providers(
-    user_id: int = Depends(get_user_id),
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
 ):
     """List all linked auth providers for the current user"""
     providers = db.query(AuthProvider).filter(AuthProvider.user_id == user_id).all()
     return [
         ProviderResponse(
-            id=p.id,
+            id=str(p.id),
             provider=p.provider,
             provider_user_id=p.provider_user_id,
             email=p.email,
@@ -46,8 +46,8 @@ async def get_linked_providers(
 
 @router.delete("/providers/{provider_id}", response_model=UnlinkResponse)
 async def unlink_provider(
-    provider_id: int,
-    user_id: int = Depends(get_user_id),
+    provider_id: str,
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
 ):
     """Unlink an auth provider (must keep at least 1)"""
@@ -75,7 +75,7 @@ async def unlink_provider(
 @router.post("/link/telegram", response_model=ProviderResponse)
 async def link_telegram(
     data: TelegramAuthRequest,
-    user_id: int = Depends(get_user_id),
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
 ):
     """Link Telegram account to authenticated user"""
@@ -132,7 +132,7 @@ async def link_telegram(
     db.refresh(provider)
 
     return ProviderResponse(
-        id=provider.id,
+        id=str(provider.id),
         provider=provider.provider,
         provider_user_id=provider.provider_user_id,
         email=provider.email,

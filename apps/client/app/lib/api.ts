@@ -144,14 +144,14 @@ export async function createExpense(data: ExpenseCreate): Promise<Expense> {
   return ExpenseSchema.parse(json);
 }
 
-export async function getExpense(id: number): Promise<Expense> {
+export async function getExpense(id: string): Promise<Expense> {
   const response = await fetchWithAuth(`/expenses/${id}`);
   const json = await response.json();
   return ExpenseSchema.parse(json);
 }
 
 export async function updateExpense(
-  id: number,
+  id: string,
   data: ExpenseUpdate,
 ): Promise<Expense> {
   const response = await fetchWithAuth(`/expenses/${id}`, {
@@ -165,7 +165,7 @@ export async function updateExpense(
   return ExpenseSchema.parse(json);
 }
 
-export async function deleteExpense(id: number): Promise<ExpenseDeleteResponse> {
+export async function deleteExpense(id: string): Promise<ExpenseDeleteResponse> {
   const response = await fetchWithAuth(`/expenses/${id}`, {
     method: "DELETE",
   });
@@ -176,7 +176,7 @@ export async function deleteExpense(id: number): Promise<ExpenseDeleteResponse> 
 // Account / Provider Linking
 export async function getLinkedProviders(): Promise<
   {
-    id: number;
+    id: string;
     provider: string;
     provider_user_id: string;
     email: string | null;
@@ -188,7 +188,7 @@ export async function getLinkedProviders(): Promise<
 }
 
 export async function unlinkProvider(
-  id: number,
+  id: string,
 ): Promise<{ success: boolean; message: string }> {
   const response = await fetchWithAuth(`/account/providers/${id}`, {
     method: "DELETE",
@@ -198,7 +198,7 @@ export async function unlinkProvider(
 
 export async function linkTelegramAccount(
   data: TelegramAuthData,
-): Promise<{ id: number; provider: string; provider_user_id: string; email: string | null; display_name: string | null }> {
+): Promise<{ id: string; provider: string; provider_user_id: string; email: string | null; display_name: string | null }> {
   const response = await fetchWithAuth("/account/link/telegram", {
     method: "POST",
     body: JSON.stringify(data),

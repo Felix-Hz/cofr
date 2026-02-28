@@ -1,7 +1,7 @@
 # Remind-o
 
 >
-> A Telegram bot for expense tracking with `TursoDB`.
+> A Telegram bot for expense tracking with PostgreSQL.
 >
 
 <details>
@@ -15,7 +15,7 @@
 
 - Docker
 - Telegram Bot with @BotFather
-- Turso Database
+- PostgreSQL database
 
 ## Installation
 
@@ -62,8 +62,7 @@ Run the container with your credentials now
 ```zsh
 docker run -d \
  -e TELEGRAM_BOT_TOKEN=<tg_api_token> \
- -e TURSO_DATABASE_URL=<db_dsn> \
- -e TURSO_AUTH_TOKEN=<auth_jwt> \
+ -e DATABASE_URL=<postgresql_dsn> \
  -e ENV=production \
  --name expenses-telegram-bot \
  remind0

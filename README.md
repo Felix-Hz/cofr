@@ -40,6 +40,5 @@ cofr/
 
 ## Database
 
-All services share a [Turso](https://turso.tech/) (libsql) database. No local DB
-setup needed — set `ENV=local` in tg-bot for in-memory SQLite during
-development.
+All services share a PostgreSQL database, running as a Docker Compose service.
+Connection configured via `DATABASE_URL` in each app's `.env`.

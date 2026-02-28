@@ -1,6 +1,10 @@
 package db
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 /*
  * 							User Model
@@ -9,7 +13,7 @@ import "time"
  *
  */
 type User struct {
-	ID                uint          `gorm:"primaryKey"`
+	ID                uuid.UUID     `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	UserID            int64         `gorm:"uniqueIndex"`       // Index Telegram user IDs
 	FirstName         string        `gorm:"index"`             // Index first names
 	LastName          string        `gorm:"index"`             // Index last names
@@ -25,10 +29,10 @@ type User struct {
  *
  */
 type Transaction struct {
-	ID        uint   `gorm:"primaryKey"`
-	UserID    uint   `gorm:"index"`
-	User      User   `gorm:"constraint:OnDelete:CASCADE"`
-	Category  string `gorm:"index"`
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID    uuid.UUID `gorm:"type:uuid;index"`
+	User      User      `gorm:"constraint:OnDelete:CASCADE"`
+	Category  string    `gorm:"index"`
 	Amount    float64
 	Currency  string `gorm:"default:'NZD';index"` // ISO 4217 currency code
 	Notes     string
@@ -44,6 +48,6 @@ type Transaction struct {
  *
  */
 type Offset struct {
-	ID     uint `gorm:"primaryKey"`
+	ID     uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
 	Offset int
 }

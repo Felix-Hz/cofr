@@ -83,7 +83,7 @@ async def oauth_callback(provider: str, request: Request, db: Session = Depends(
     user = _resolve_user(db, provider, provider_user_id, email, display_name)
 
     # Create JWT
-    jwt_token = create_access_token(user_id=user.id, username=display_name or "User")
+    jwt_token = create_access_token(user_id=str(user.id), username=display_name or "User")
 
     return RedirectResponse(f"{settings.FRONTEND_URL}/auth/callback#token={jwt_token}")
 
@@ -127,24 +127,7 @@ def _resolve_user(
     if auth_provider:
         return db.query(User).filter(User.id == auth_provider.user_id).first()
 
-    # 2. Find user by email match in auth_providers — auto-link
-    if email:
-        existing_provider = (
-            db.query(AuthProvider).filter(AuthProvider.email == email).first()
-        )
-        if existing_provider:
-            new_provider = AuthProvider(
-                user_id=existing_provider.user_id,
-                provider=provider,
-                provider_user_id=provider_user_id,
-                email=email,
-                display_name=display_name,
-            )
-            db.add(new_provider)
-            db.commit()
-            return db.query(User).filter(User.id == existing_provider.user_id).first()
-
-    # 3. Create new user + auth_provider
+    # 2. Create new user + auth_provider
     # Generate unique username from email or provider info
     username = email if email else f"{provider}_{provider_user_id}"
     user = User(

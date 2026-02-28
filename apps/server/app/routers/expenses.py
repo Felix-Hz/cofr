@@ -20,7 +20,7 @@ router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
 @router.get("/", response_model=ExpensesResponse)
 async def get_expenses(
-    user_id: int = Depends(get_user_id),
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
@@ -34,7 +34,7 @@ async def get_expenses(
 @router.get("/category/{category}", response_model=ExpensesResponse)
 async def get_expenses_by_category(
     category: str,
-    user_id: int = Depends(get_user_id),
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
@@ -49,7 +49,7 @@ async def get_expenses_by_category(
 async def get_expenses_by_date_range(
     start_date: datetime,
     end_date: datetime,
-    user_id: int = Depends(get_user_id),
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
@@ -67,7 +67,7 @@ async def get_monthly_stats(
     month: int = Query(..., ge=1, le=12),
     year: int = Query(..., ge=2020),
     currency: str | None = Query(default=None, pattern="^[A-Z]{3}$"),
-    user_id: int = Depends(get_user_id),
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
 ):
     """Get monthly statistics with category breakdown, optionally filtered by currency"""
@@ -78,7 +78,7 @@ async def get_monthly_stats(
 @router.post("/", response_model=ExpenseSchema, status_code=201)
 async def create_expense(
     data: ExpenseCreateRequest,
-    user_id: int = Depends(get_user_id),
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
 ):
     """Create a new expense"""
@@ -88,8 +88,8 @@ async def create_expense(
 
 @router.get("/{expense_id}", response_model=ExpenseSchema)
 async def get_expense(
-    expense_id: int,
-    user_id: int = Depends(get_user_id),
+    expense_id: str,
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
 ):
     """Get a single expense by ID"""
@@ -99,9 +99,9 @@ async def get_expense(
 
 @router.put("/{expense_id}", response_model=ExpenseSchema)
 async def update_expense(
-    expense_id: int,
+    expense_id: str,
     data: ExpenseUpdateRequest,
-    user_id: int = Depends(get_user_id),
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
 ):
     """Update an existing expense"""
@@ -111,8 +111,8 @@ async def update_expense(
 
 @router.delete("/{expense_id}", response_model=ExpenseDeleteResponse)
 async def delete_expense(
-    expense_id: int,
-    user_id: int = Depends(get_user_id),
+    expense_id: str,
+    user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
 ):
     """Delete an expense"""
