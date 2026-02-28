@@ -19,8 +19,13 @@ export default function Login() {
     <div className="min-h-screen flex flex-col items-center justify-center gradient-page">
       <div className="max-w-lg w-full space-y-8 p-8">
         <div className="text-center">
+          <img
+            src="/logo.png"
+            alt="cofr"
+            className="h-16 w-16 mx-auto mb-4 logo-auto"
+          />
           <h2 className="text-3xl font-bold tracking-tight">
-            Sign in to cofr
+            Welcome to cofr
           </h2>
           <p className="mt-2 text-sm text-content-tertiary">
             Sign in with your Google account to continue
