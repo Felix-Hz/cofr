@@ -1,8 +1,7 @@
 import os
 
 # Set dummy env vars BEFORE any app imports (database.py runs at import time)
-os.environ.setdefault("TURSO_DATABASE_URL", "libsql://dummy.turso.io")
-os.environ.setdefault("TURSO_AUTH_TOKEN", "dummy-token")
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "123456:ABC-DEF-dummy")
 os.environ.setdefault("JWT_SECRET", "test-secret-key-at-least-32-chars-long")
 

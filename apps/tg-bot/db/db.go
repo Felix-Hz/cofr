@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/tursodatabase/libsql-client-go/libsql"
-
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 /**
- * Database client instance (Turso)
+ * Database client instance (PostgreSQL)
  */
 
 var DBClient *gorm.DB
@@ -19,11 +17,8 @@ var DBClient *gorm.DB
 func InitialiseDB(DSN string) (*gorm.DB, error) {
 	var err error
 
-	// Setup custom dialector for the sqlite provider:
-	tursoDialector := sqlite.Config{DriverName: "libsql", DSN: DSN}
-
 	// Connect to the database:
-	DBClient, err = gorm.Open(sqlite.New(tursoDialector), &gorm.Config{})
+	DBClient, err = gorm.Open(postgres.Open(DSN), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}

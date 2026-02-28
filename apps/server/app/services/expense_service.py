@@ -71,13 +71,10 @@ class ExpenseService:
         offset: int = 0,
     ) -> tuple[list[ExpenseSchema], int]:
         """Get paginated expenses within a date range"""
-        start_str = start_date.isoformat()
-        end_str = end_date.isoformat()
-
         base_filter = [
             Transaction.user_id == user_id,
-            Transaction.timestamp >= start_str,
-            Transaction.timestamp <= end_str,
+            Transaction.timestamp >= start_date,
+            Transaction.timestamp <= end_date,
         ]
 
         total = (
@@ -104,8 +101,8 @@ class ExpenseService:
         """Get monthly statistics with category breakdown, optionally filtered by currency"""
         base_filter = [
             Transaction.user_id == user_id,
-            func.strftime("%m", Transaction.timestamp) == f"{month:02d}",
-            func.strftime("%Y", Transaction.timestamp) == str(year),
+            func.extract("month", Transaction.timestamp) == month,
+            func.extract("year", Transaction.timestamp) == year,
         ]
 
         if currency:
@@ -250,15 +247,12 @@ class ExpenseService:
     @staticmethod
     def _to_schema(transaction: Transaction, user_id: int) -> ExpenseSchema:
         """Convert a Transaction ORM object to ExpenseSchema"""
-        ts = transaction.timestamp
-        if isinstance(ts, str):
-            ts = datetime.fromisoformat(ts)
         return ExpenseSchema(
             id=transaction.id,
             amount=transaction.amount,
             category=transaction.category,
             description=transaction.notes or "",
-            created_at=ts,
+            created_at=transaction.timestamp,
             currency=transaction.currency,
             user_id=user_id,
         )

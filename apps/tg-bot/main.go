@@ -18,7 +18,7 @@ func main() {
 	}
 
 	// Initialize database connection and run migrations.
-	db, err := DB.InitialiseDB(config.TursoDSN + "?authToken=" + config.TursoAuthToken)
+	db, err := DB.InitialiseDB(config.DatabaseURL)
 	if err != nil {
 		log.Panicf("⚠️ Database initialization error: %v", err)
 	}

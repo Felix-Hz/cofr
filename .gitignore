@@ -1,6 +1,7 @@
 # Environment
 apps/*/.env
 !apps/*/.env.example
+infra/.env
 
 # Cloudflare credentials (sensitive)
 infra/cloudflared/*.json

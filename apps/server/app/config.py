@@ -4,8 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    TURSO_DATABASE_URL: str
-    TURSO_AUTH_TOKEN: str
+    DATABASE_URL: str
     TELEGRAM_BOT_TOKEN: str
     JWT_SECRET: str
     API_PORT: int = 5784

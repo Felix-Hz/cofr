@@ -2,24 +2,17 @@
 # Stage 1: Build the Go binary
 #
 
-FROM golang:1.24 AS builder
-
-# Install musl-tools (includes musl-gcc)
-RUN apt-get update && apt-get install -y musl-tools
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
 COPY go.mod go.sum ./
-RUN go mod tidy
+RUN go mod download
 
 COPY . .
 
-# Set up musl-gcc as the compiler required for the alpine image
-ENV CC=musl-gcc
-
-# Build the app with a statically linked binary
-RUN CGO_ENABLED=1 GOOS=linux go build -o main .
-RUN ls -l /app
+# Pure Go build (pgx driver has no CGO dependency)
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 
 #
@@ -28,7 +21,6 @@ RUN ls -l /app
 
 FROM alpine:3.19 AS runner
 
-# Set the working directory in the new container
 WORKDIR /root/
 
 RUN apk add --no-cache ca-certificates

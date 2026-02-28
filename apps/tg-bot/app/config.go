@@ -10,9 +10,8 @@ import (
 )
 
 type Config struct {
-	TursoDSN       string
-	TursoAuthToken string
-	TelegramToken  string
+	DatabaseURL   string
+	TelegramToken string
 }
 
 func LoadConfig() (*Config, error) {
@@ -25,17 +24,13 @@ func LoadConfig() (*Config, error) {
 	}
 
 	config := &Config{
-		TursoDSN:       os.Getenv("TURSO_DATABASE_URL"),
-		TursoAuthToken: os.Getenv("TURSO_AUTH_TOKEN"),
-		TelegramToken:  os.Getenv("TELEGRAM_BOT_TOKEN"),
+		DatabaseURL:   os.Getenv("DATABASE_URL"),
+		TelegramToken: os.Getenv("TELEGRAM_BOT_TOKEN"),
 	}
 
 	missing := make([]string, 0)
-	if config.TursoDSN == "" {
-		missing = append(missing, "TURSO_DATABASE_URL")
-	}
-	if config.TursoAuthToken == "" {
-		missing = append(missing, "TURSO_AUTH_TOKEN")
+	if config.DatabaseURL == "" {
+		missing = append(missing, "DATABASE_URL")
 	}
 	if config.TelegramToken == "" {
 		missing = append(missing, "TELEGRAM_BOT_TOKEN")

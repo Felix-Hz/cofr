@@ -5,7 +5,7 @@
 services:
   # Add volume mounts and dev servers for hot-reload in development
   server:
-    command: uvicorn app.main:app --host 0.0.0.0 --port 5784 --reload
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 5784 --reload"
     volumes:
       - ../apps/server:/app
       - /app/.venv  # Exclude container's .venv from being overridden
