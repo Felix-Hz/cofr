@@ -85,7 +85,7 @@ async def telegram_callback(data: TelegramAuthRequest, db: Session = Depends(get
 
     # Create JWT token with internal user ID
     token = create_access_token(
-        user_id=user.id,
+        user_id=str(user.id),
         username=data.username or data.first_name,
     )
 

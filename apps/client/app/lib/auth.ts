@@ -19,7 +19,7 @@ export function isAuthenticated(): boolean {
 
 // Decode JWT payload (without verification - backend verifies)
 export function getTokenPayload(): {
-  user_id: number;
+  user_id: string;
   username: string;
   exp: number;
 } | null {

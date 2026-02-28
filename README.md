@@ -21,6 +21,10 @@ cofr/
 - Docker & Docker Compose
 - Environment files: copy `.env.example` values into `apps/server/.env`,
   `apps/tg-bot/.env`, `apps/client/.env`
+- Generate a Fernet encryption key for the server:
+  ```bash
+  python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+  ```
 
 ### Local development (Docker)
 
@@ -40,6 +44,12 @@ cofr/
 
 ## Database
 
-All services share a [Turso](https://turso.tech/) (libsql) database. No local DB
-setup needed — set `ENV=local` in tg-bot for in-memory SQLite during
-development.
+All services share a PostgreSQL database, running as a Docker Compose service.
+Connection configured via `DATABASE_URL` in each app's `.env`.
+
+## Security
+
+- UUID primary keys prevent ID enumeration
+- PII encrypted at rest (Fernet symmetric encryption)
+- OAuth email auto-linking disabled
+- CORS restricted to `FRONTEND_URL`

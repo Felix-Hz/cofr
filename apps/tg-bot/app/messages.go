@@ -37,7 +37,7 @@ func txSuccessMessage(operation Command, txs []*Transaction) string {
 
 	for _, tx := range txs {
 		msg += fmt.Sprintf(
-			"🪪 ID: %d\n"+
+			"🪪 ID: %s\n"+
 				"📥 Category: %s\n"+
 				"💰 Amount: %.2f %s\n"+
 				"📌 Notes: %s\n"+

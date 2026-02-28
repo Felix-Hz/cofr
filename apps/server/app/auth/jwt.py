@@ -5,7 +5,7 @@ from jose import JWTError, jwt
 from app.config import settings
 
 
-def create_access_token(user_id: int, username: str) -> str:
+def create_access_token(user_id: str, username: str) -> str:
     """Create JWT access token with 24-hour expiration"""
     expire = datetime.now(UTC) + timedelta(hours=24)
     to_encode = {"user_id": user_id, "username": username, "exp": expire}

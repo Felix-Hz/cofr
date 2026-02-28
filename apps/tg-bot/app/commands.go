@@ -4,9 +4,10 @@ import (
 	"fmt"
 	. "remind0/db"
 	r "remind0/repository"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Command string
@@ -33,7 +34,7 @@ type CommandResult struct {
 /**
  * Dispatcher that handles incoming commands from the user.
  */
-func dispatch(msg string, timestamp time.Time, userId uint) CommandResult {
+func dispatch(msg string, timestamp time.Time, userId uuid.UUID) CommandResult {
 	switch content := strings.Fields(msg); content[0] {
 	case "add", "a":
 		return add(strings.Join(content[1:], ""), timestamp, userId)
@@ -52,7 +53,7 @@ func dispatch(msg string, timestamp time.Time, userId uint) CommandResult {
 	}
 }
 
-func add(body string, timestamp time.Time, userId uint) CommandResult {
+func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 
 	/**
 	 * Get user to retrieve preferred currency.
@@ -106,18 +107,18 @@ func add(body string, timestamp time.Time, userId uint) CommandResult {
 	return CommandResult{Transactions: txs, Command: Add, Error: nil}
 }
 
-func remove(strIds []string, userId uint) CommandResult {
+func remove(strIds []string, userId uuid.UUID) CommandResult {
 
 	// Slice to hold validated IDs to delete
-	ids := []int64{}
+	ids := []uuid.UUID{}
 
 	/**
-	 * Validate and convert txId to int64
+	 * Validate and convert txId to UUID
 	 */
 	for _, strId := range strIds {
-		id, err := strconv.ParseInt(strId, 10, 64)
+		id, err := uuid.Parse(strId)
 		if err != nil {
-			return CommandResult{Command: Remove, Error: fmt.Errorf("ID must be a number"), UserError: userErrors[Remove]}
+			return CommandResult{Command: Remove, Error: fmt.Errorf("ID must be a valid UUID"), UserError: userErrors[Remove]}
 		}
 		ids = append(ids, id)
 	}
@@ -140,7 +141,7 @@ func remove(strIds []string, userId uint) CommandResult {
 	return CommandResult{Transactions: txs, Command: Remove, Error: nil}
 }
 
-func list(body []string, timestamp time.Time, userId uint) CommandResult {
+func list(body []string, timestamp time.Time, userId uuid.UUID) CommandResult {
 
 	opts, err := parseListOptions(body, timestamp)
 	if err != nil {
@@ -225,7 +226,7 @@ func help(args []string) CommandResult {
 	}
 }
 
-func config(args []string, userId uint) CommandResult {
+func config(args []string, userId uuid.UUID) CommandResult {
 	if len(args) < 2 {
 		return CommandResult{
 			Command:   Configuration,

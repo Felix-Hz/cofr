@@ -3,13 +3,12 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 
-engine = create_engine(
-    settings.DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
-)
+_kwargs = dict(echo=False, pool_pre_ping=True)
+
+if not settings.DATABASE_URL.startswith("sqlite"):
+    _kwargs.update(pool_size=5, max_overflow=10)
+
+engine = create_engine(settings.DATABASE_URL, **_kwargs)
 SessionLocal = sessionmaker(bind=engine)
 
 

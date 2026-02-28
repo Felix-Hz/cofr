@@ -5,13 +5,12 @@ import { z } from "zod";
 // ============================================================================
 
 export const ExpenseSchema = z.object({
-  id: z.number(),
+  id: z.string(),
   amount: z.number().min(0),
   category: z.string(),
   description: z.string(),
   created_at: z.coerce.date(),
   currency: z.string().length(3),
-  user_id: z.number(),
 });
 
 export const ExpensesResponseSchema = z.object({
