@@ -22,17 +22,6 @@ if settings.GOOGLE_CLIENT_ID:
         client_kwargs={"scope": "openid email profile"},
     )
 
-if settings.GITHUB_CLIENT_ID:
-    oauth.register(
-        name="github",
-        client_id=settings.GITHUB_CLIENT_ID,
-        client_secret=settings.GITHUB_CLIENT_SECRET,
-        authorize_url="https://github.com/login/oauth/authorize",
-        access_token_url="https://github.com/login/oauth/access_token",
-        api_base_url="https://api.github.com/",
-        client_kwargs={"scope": "user:email"},
-    )
-
 if settings.APPLE_CLIENT_ID:
     oauth.register(
         name="apple",
@@ -42,15 +31,13 @@ if settings.APPLE_CLIENT_ID:
         client_kwargs={"scope": "openid email name"},
     )
 
-SUPPORTED_PROVIDERS = {"google", "github", "apple"}
+SUPPORTED_PROVIDERS = {"google", "apple"}
 
 
 def _get_registered_providers() -> set[str]:
     providers = set()
     if settings.GOOGLE_CLIENT_ID:
         providers.add("google")
-    if settings.GITHUB_CLIENT_ID:
-        providers.add("github")
     if settings.APPLE_CLIENT_ID:
         providers.add("apple")
     return providers
@@ -108,24 +95,6 @@ async def _extract_user_info(
     if provider == "google":
         userinfo = token.get("userinfo", {})
         return userinfo.get("sub"), userinfo.get("email"), userinfo.get("name")
-
-    elif provider == "github":
-        resp = await client.get("user", token=token)
-        user_data = resp.json()
-        provider_user_id = str(user_data.get("id", ""))
-        email = user_data.get("email")
-        display_name = user_data.get("name") or user_data.get("login")
-
-        # GitHub may not return email in profile; fetch from /user/emails
-        if not email:
-            emails_resp = await client.get("user/emails", token=token)
-            emails = emails_resp.json()
-            for e in emails:
-                if e.get("primary") and e.get("verified"):
-                    email = e["email"]
-                    break
-
-        return provider_user_id, email, display_name
 
     elif provider == "apple":
         id_token = token.get("id_token", {})

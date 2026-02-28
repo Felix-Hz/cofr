@@ -18,7 +18,7 @@ Cofr is a monorepo for a personal finance dashboard. It contains three services 
 
 ```bash
 # Local dev with Docker (hot-reload)
-./scripts/dev.sh
+./scripts/run.sh
 
 # Local dev without Docker
 ./scripts/run-local.sh

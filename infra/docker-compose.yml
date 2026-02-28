@@ -1,11 +1,11 @@
 services:
   # Golang Telegram Bot
   tg-bot:
-    build: ./apps/tg-bot
+    build: ../apps/tg-bot
     container_name: cofr-tg-bot
     restart: unless-stopped
     env_file:
-      - ./apps/tg-bot/.env
+      - ../apps/tg-bot/.env
     networks:
       - cofr-network
     healthcheck:
@@ -17,11 +17,11 @@ services:
 
   # FastAPI Backend
   server:
-    build: ./apps/server
+    build: ../apps/server
     container_name: cofr-server
     restart: unless-stopped
     env_file:
-      - ./apps/server/.env
+      - ../apps/server/.env
     ports:
       - "5784:5784"
     # Volume mounts removed for production - uses built image
@@ -37,11 +37,11 @@ services:
 
   # React Router Frontend (SSR)
   client:
-    build: ./apps/client
+    build: ../apps/client
     container_name: cofr-client
     restart: unless-stopped
     env_file:
-      - ./apps/client/.env
+      - ../apps/client/.env
     ports:
       - "3000:3000"
     # Volume mounts removed for production - uses built image
@@ -57,7 +57,7 @@ services:
     image: caddy:2-alpine
     container_name: caddy-proxy
     volumes:
-      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     restart: unless-stopped
@@ -77,7 +77,7 @@ services:
     command: tunnel run
     restart: unless-stopped
     volumes:
-      - ./infra/cloudflared:/etc/cloudflared:ro
+      - ./cloudflared:/etc/cloudflared:ro
     environment:
       - TUNNEL_METRICS=0.0.0.0:9126
     networks:

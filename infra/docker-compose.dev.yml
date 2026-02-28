@@ -7,13 +7,13 @@ services:
   server:
     command: uvicorn app.main:app --host 0.0.0.0 --port 5784 --reload
     volumes:
-      - ./apps/server:/app
+      - ../apps/server:/app
       - /app/.venv  # Exclude container's .venv from being overridden
 
   client:
-    command: bun run dev --host 0.0.0.0
+    command: sh -c "bun install && bun run dev --host 0.0.0.0 --port 3000"
     volumes:
-      - ./apps/client:/app
-      - /app/node_modules  # Exclude container's node_modules from being overridden
+      - ../apps/client:/app
+      - /app/node_modules
     environment:
       - VITE_API_BASE_URL=/api  # Ensure correct API URL in dev mode
