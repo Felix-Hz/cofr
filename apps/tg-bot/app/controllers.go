@@ -49,12 +49,12 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	}
 
 	/**
-	 * Validate or create user.
+	 * Verify user is registered through the platform.
 	 */
-	user, err := r.UserRepo().GetOrCreate(tgUserID, update.Message.From)
+	user, err := r.UserRepo().GetByTelegramID(tgUserID)
 	if err != nil {
-		log.Printf("⚠️ Error getting user: %s", err)
-		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Failed to fetch or create user profile. Please try again later."))
+		log.Printf("⚠️ Unregistered user attempted access: %d", tgUserID)
+		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ You need to link your Telegram account through the platform before using this bot."))
 		return
 	}
 
