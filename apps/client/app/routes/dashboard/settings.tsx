@@ -18,10 +18,9 @@ interface LinkedProvider {
 const PROVIDER_LABELS: Record<string, string> = {
   telegram: "Telegram",
   google: "Google",
-  apple: "Apple",
 };
 
-const ALL_PROVIDERS = ["google", "apple", "telegram"];
+const ALL_PROVIDERS = ["google", "telegram"];
 
 export async function clientLoader() {
   if (!isAuthenticated()) {

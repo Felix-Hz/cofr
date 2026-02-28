@@ -22,24 +22,13 @@ if settings.GOOGLE_CLIENT_ID:
         client_kwargs={"scope": "openid email profile"},
     )
 
-if settings.APPLE_CLIENT_ID:
-    oauth.register(
-        name="apple",
-        client_id=settings.APPLE_CLIENT_ID,
-        client_secret=settings.APPLE_CLIENT_SECRET,
-        server_metadata_url="https://appleid.apple.com/.well-known/openid-configuration",
-        client_kwargs={"scope": "openid email name"},
-    )
-
-SUPPORTED_PROVIDERS = {"google", "apple"}
+SUPPORTED_PROVIDERS = {"google"}
 
 
 def _get_registered_providers() -> set[str]:
     providers = set()
     if settings.GOOGLE_CLIENT_ID:
         providers.add("google")
-    if settings.APPLE_CLIENT_ID:
-        providers.add("apple")
     return providers
 
 
@@ -95,14 +84,6 @@ async def _extract_user_info(
     if provider == "google":
         userinfo = token.get("userinfo", {})
         return userinfo.get("sub"), userinfo.get("email"), userinfo.get("name")
-
-    elif provider == "apple":
-        id_token = token.get("id_token", {})
-        if isinstance(id_token, str):
-            from jose import jwt as jose_jwt
-
-            id_token = jose_jwt.get_unverified_claims(id_token)
-        return id_token.get("sub"), id_token.get("email"), None
 
     return None, None, None
 
