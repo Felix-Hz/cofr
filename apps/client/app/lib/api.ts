@@ -4,7 +4,6 @@ import {
   ExpenseSchema,
   ExpensesResponseSchema,
   MonthlyStatsSchema,
-  TokenResponseSchema,
   type Expense,
   type ExpenseCreate,
   type ExpenseDeleteResponse,
@@ -12,7 +11,6 @@ import {
   type ExpenseUpdate,
   type MonthlyStats,
   type TelegramAuthData,
-  type TokenResponse,
 } from "./schemas";
 
 const API_BASE_URL =
@@ -63,27 +61,6 @@ async function fetchWithAuth(
   }
 
   return response;
-}
-
-// Authentication
-export async function authenticateWithTelegram(
-  data: TelegramAuthData,
-): Promise<TokenResponse> {
-  const response = await fetch(`${API_BASE_URL}/auth/telegram`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      detail: "Authentication failed",
-    }));
-    throw new ApiError(response.status, error.detail);
-  }
-
-  const json = await response.json();
-  return TokenResponseSchema.parse(json);
 }
 
 // Expenses Endpoints
@@ -215,6 +192,16 @@ export async function unlinkProvider(
 ): Promise<{ success: boolean; message: string }> {
   const response = await fetchWithAuth(`/account/providers/${id}`, {
     method: "DELETE",
+  });
+  return response.json();
+}
+
+export async function linkTelegramAccount(
+  data: TelegramAuthData,
+): Promise<{ id: number; provider: string; provider_user_id: string; email: string | null; display_name: string | null }> {
+  const response = await fetchWithAuth("/account/link/telegram", {
+    method: "POST",
+    body: JSON.stringify(data),
   });
   return response.json();
 }

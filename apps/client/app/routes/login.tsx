@@ -1,14 +1,10 @@
-import { redirect, useNavigate, useSearchParams } from "react-router";
-import { useEffect, useState } from "react";
-import { authenticateWithTelegram } from "~/lib/api";
-import { isAuthenticated, saveToken } from "~/lib/auth";
-import type { TelegramAuthData } from "~/lib/schemas";
+import { redirect, useSearchParams } from "react-router";
+import { isAuthenticated } from "~/lib/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
   "http://localhost:5784";
 
 export async function clientLoader() {
-  // Redirect if already authenticated
   if (isAuthenticated()) {
     throw redirect("/dashboard");
   }
@@ -16,60 +12,23 @@ export async function clientLoader() {
 }
 
 export default function Login() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [error, setError] = useState<string | null>(
-    searchParams.get("error"),
-  );
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    // Define callback for Telegram widget
-    // @ts-expect-error - Telegram widget callback
-    window.onTelegramAuth = async (user: TelegramAuthData) => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const { access_token } = await authenticateWithTelegram(user);
-        saveToken(access_token);
-        navigate("/dashboard");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Authentication failed");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Load Telegram widget script
-    const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.async = true;
-    script.setAttribute(
-      "data-telegram-login",
-      import.meta.env.VITE_TELEGRAM_BOT_NAME || "",
-    );
-    script.setAttribute("data-size", "large");
-    script.setAttribute("data-onauth", "onTelegramAuth(user)");
-    script.setAttribute("data-request-access", "write");
-
-    const container = document.getElementById("telegram-login-container");
-    container?.appendChild(script);
-
-    return () => {
-      script.remove();
-    };
-  }, [navigate]);
+  const error = searchParams.get("error");
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gradient-page">
       <div className="max-w-lg w-full space-y-8 p-8">
         <div className="text-center">
+          <img
+            src="/logo.png"
+            alt="cofr"
+            className="h-16 w-16 mx-auto mb-4 logo-auto"
+          />
           <h2 className="text-3xl font-bold tracking-tight">
-            Sign in to cofr
+            Welcome to cofr
           </h2>
           <p className="mt-2 text-sm text-content-tertiary">
-            Choose your preferred sign-in method
+            Sign in with your Google account to continue
           </p>
         </div>
 
@@ -80,7 +39,6 @@ export default function Login() {
         )}
 
         <div className="mt-8 space-y-4">
-          {/* OAuth buttons */}
           <a
             href={`${API_BASE_URL}/auth/oauth/google/login`}
             className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-edge-strong rounded-lg shadow-sm bg-surface-primary text-content-secondary hover:bg-surface-hover transition-colors"
@@ -116,27 +74,6 @@ export default function Login() {
             <span className="font-medium">Continue with Apple</span>
           </a> */
           }
-
-          {/* Divider */}
-          <div className="relative py-2">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-edge-strong" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-surface-primary text-content-tertiary">
-                or sign in with Telegram
-              </span>
-            </div>
-          </div>
-
-          {/* Telegram widget */}
-          <div id="telegram-login-container" className="flex justify-center" />
-
-          {loading && (
-            <div className="text-center text-sm text-content-tertiary">
-              Authenticating...
-            </div>
-          )}
         </div>
       </div>
     </div>

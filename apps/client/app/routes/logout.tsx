@@ -3,5 +3,5 @@ import { removeToken } from "~/lib/auth";
 
 export async function clientLoader() {
   removeToken();
-  throw redirect("/");
+  throw redirect("/login");
 }
