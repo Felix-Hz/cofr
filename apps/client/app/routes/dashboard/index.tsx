@@ -55,12 +55,12 @@ export default function DashboardOverview() {
         </div>
 
         {/* Allocated */}
-        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-          <div className="text-sm font-medium text-blue-700">Allocated</div>
-          <div className="text-2xl font-bold mt-2 text-blue-700">
+        <div className="bg-emerald-soft p-6 rounded-lg border border-emerald/20">
+          <div className="text-sm font-medium text-emerald-dark">Allocated</div>
+          <div className="text-2xl font-bold mt-2 text-emerald-dark">
             {formatCurrency(totalAllocated, monthlyStats.currency)}
           </div>
-          <p className="text-xs text-blue-600 mt-1">Savings & investments</p>
+          <p className="text-xs text-emerald mt-1">Savings & investments</p>
         </div>
 
         {/* Remaining */}

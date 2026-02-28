@@ -65,7 +65,7 @@ const CATEGORY_HEX_COLORS: Record<Category, string> = {
   [Category.SUBSCRIPTIONS]: "#a855f7", // purple-500
   [Category.RENT]: "#6366f1", // indigo-500
   [Category.HEALTH_FITNESS]: "#ef4444", // red-500
-  [Category.TRANSPORT]: "#3b82f6", // blue-500
+  [Category.TRANSPORT]: "#0284c7", // sky-600
   [Category.GROCERIES]: "#f97316", // orange-500
   [Category.GOING_OUT]: "#ec4899", // pink-500
   [Category.INVESTMENT]: "#a3e635", // lime-400

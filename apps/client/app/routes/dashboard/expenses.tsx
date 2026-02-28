@@ -177,7 +177,7 @@ export default function Expenses() {
             onClick={() => setIsFilterModalOpen(true)}
             className={`p-2 rounded-md transition-colors ${
               hasActiveFilters
-                ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                ? "bg-emerald-soft text-emerald-dark hover:bg-emerald-soft/80"
                 : "hover:bg-gray-100 text-gray-600"
             }`}
             aria-label="Filter transactions"
@@ -200,7 +200,7 @@ export default function Expenses() {
           {/* Add Button */}
           <button
             onClick={handleAdd}
-            className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="p-2 bg-emerald text-white rounded-md hover:bg-emerald-hover transition-colors"
             aria-label="Add transaction"
           >
             <svg
@@ -276,7 +276,7 @@ export default function Expenses() {
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                     <button
                       onClick={() => handleEdit(expense)}
-                      className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors mr-1"
+                      className="p-1 text-gray-500 hover:text-emerald-dark hover:bg-emerald-soft rounded transition-colors mr-1"
                       aria-label="Edit transaction"
                     >
                       <svg

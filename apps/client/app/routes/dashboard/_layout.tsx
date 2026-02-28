@@ -36,7 +36,9 @@ export default function DashboardLayout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-gray-900">Uitzicht</h1>
+              <Link to="/dashboard">
+                <img src="/logo.png" alt="cofr" className="h-8" />
+              </Link>
 
               {/* Navigation */}
               <nav className="hidden md:flex space-x-4">
@@ -46,8 +48,8 @@ export default function DashboardLayout() {
                     to={item.path}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       location.pathname === item.path
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                        ? "bg-emerald-soft text-navy"
+                        : "text-slate-500 hover:text-navy hover:bg-cloud"
                     }`}
                   >
                     {item.label}
@@ -60,7 +62,7 @@ export default function DashboardLayout() {
             <div className="relative group">
               <button
                 type="button"
-                className="h-10 w-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition-colors"
+                className="h-10 w-10 rounded-full bg-emerald text-white flex items-center justify-center hover:bg-emerald-hover transition-colors"
               >
                 {getUserInitials(user?.username || "User")}
               </button>

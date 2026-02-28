@@ -12,13 +12,13 @@ export async function clientLoader() {
 
 export default function Index() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-blue-50 to-white">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-cloud to-white">
       <div className="max-w-xl w-full space-y-8 p-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-            Uitzicht Expense Tracker
+          <h1 className="text-4xl font-bold tracking-tighter text-navy">
+            cofr
           </h1>
-          <p className="mt-4 text-lg text-gray-600">
+          <p className="mt-4 text-lg text-slate-500">
             Track your expenses effortlessly with Telegram integration
           </p>
         </div>
@@ -28,7 +28,7 @@ export default function Index() {
             Get Started
           </TelegramButton>
 
-          <div className="text-center text-sm text-gray-500">
+          <div className="text-center text-sm text-slate-500">
             Secure authentication via Telegram
           </div>
         </div>

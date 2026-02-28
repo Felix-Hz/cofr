@@ -136,7 +136,7 @@ export default function Statistics() {
           <select
             value={currentCurrency}
             onChange={(e) => handleCurrencyChange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
           >
             <option value="">All Currencies</option>
             {CURRENCIES.map((c) => (
@@ -160,7 +160,7 @@ export default function Statistics() {
             <select
               value={month}
               onChange={(e) => handleMonthChange(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
             >
               {months.map((m, i) => (
                 <option key={m} value={i + 1}>{m}</option>
@@ -170,7 +170,7 @@ export default function Statistics() {
             <select
               value={year}
               onChange={(e) => handleYearChange(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
             >
               {years.map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -220,12 +220,12 @@ export default function Statistics() {
         </div>
 
         {/* Allocated (Savings + Investment) */}
-        <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
-          <div className="text-sm font-medium text-blue-700">Allocated</div>
-          <div className="text-2xl font-bold mt-2 text-blue-700">
+        <div className="bg-emerald-soft p-6 rounded-lg border border-emerald/20">
+          <div className="text-sm font-medium text-emerald-dark">Allocated</div>
+          <div className="text-2xl font-bold mt-2 text-emerald-dark">
             {formatCurrency(totalAllocated, stats.currency)}
           </div>
-          <p className="text-xs text-blue-600 mt-1">
+          <p className="text-xs text-emerald mt-1">
             {allocationRate.toFixed(1)}% of income ({savingsRate.toFixed(0)}% saved, {investmentRate.toFixed(0)}% invested)
           </p>
         </div>
@@ -284,7 +284,7 @@ export default function Statistics() {
                       categoryType === "income"
                         ? "bg-green-50"
                         : categoryType === "allocation"
-                          ? "bg-blue-50"
+                          ? "bg-emerald-soft"
                           : ""
                     }
                   >
@@ -302,7 +302,7 @@ export default function Statistics() {
                         categoryType === "income"
                           ? "text-green-700"
                           : categoryType === "allocation"
-                            ? "text-blue-700"
+                            ? "text-emerald-dark"
                             : "text-gray-900"
                       }`}
                     >

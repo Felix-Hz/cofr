@@ -62,13 +62,13 @@ export default function Login() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-blue-50 to-white">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-linear-to-b from-cloud to-white">
       <div className="max-w-lg w-full space-y-8 p-8">
         <div className="text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-            Sign in to Uitzicht
+          <h2 className="text-3xl font-bold tracking-tight text-navy">
+            Sign in to cofr
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-slate-500">
             Choose your preferred sign-in method
           </p>
         </div>
