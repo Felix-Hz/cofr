@@ -68,32 +68,32 @@ export default function Settings() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-content-primary" />
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Settings</h2>
+      <h2 className="text-2xl font-bold text-content-primary mb-6">Settings</h2>
 
       {error && (
-        <div className="bg-red-50 border border-red-500 text-red-700 px-4 py-3 rounded-md mb-6">
+        <div className="bg-negative-bg border border-negative-text text-negative-text px-4 py-3 rounded-md mb-6">
           <p className="text-sm">{error}</p>
         </div>
       )}
 
-      <div className="bg-white rounded-lg border">
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-medium text-gray-900">
+      <div className="bg-surface-primary rounded-lg border border-edge-default">
+        <div className="px-6 py-4 border-b border-edge-default">
+          <h3 className="text-lg font-medium text-content-primary">
             Linked Accounts
           </h3>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-content-tertiary mt-1">
             Manage your connected authentication providers
           </p>
         </div>
 
-        <div className="divide-y">
+        <div className="divide-y divide-edge-default">
           {/* Linked providers */}
           {providers.map((provider) => (
             <div
@@ -101,10 +101,10 @@ export default function Settings() {
               className="px-6 py-4 flex items-center justify-between"
             >
               <div>
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-content-primary">
                   {PROVIDER_LABELS[provider.provider] || provider.provider}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-content-tertiary">
                   {provider.display_name || provider.email ||
                     provider.provider_user_id}
                 </p>
@@ -113,7 +113,7 @@ export default function Settings() {
                 type="button"
                 onClick={() => handleUnlink(provider.id)}
                 disabled={providers.length <= 1}
-                className="px-3 py-1.5 text-sm font-medium text-red-600 border border-red-300 rounded-md hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1.5 text-sm font-medium text-negative-text border border-negative-text/30 rounded-md hover:bg-negative-bg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Unlink
               </button>
@@ -127,21 +127,21 @@ export default function Settings() {
               className="px-6 py-4 flex items-center justify-between"
             >
               <div>
-                <p className="font-medium text-gray-400">
+                <p className="font-medium text-content-muted">
                   {PROVIDER_LABELS[provider] || provider}
                 </p>
-                <p className="text-sm text-gray-400">Not connected</p>
+                <p className="text-sm text-content-muted">Not connected</p>
               </div>
               {provider === "telegram"
                 ? (
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-content-muted">
                     Link via Telegram bot
                   </span>
                 )
                 : (
                   <a
                     href={`${API_BASE_URL}/auth/oauth/${provider}/login`}
-                    className="px-3 py-1.5 text-sm font-medium text-gray-500 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors pointer-events-none opacity-50"
+                    className="px-3 py-1.5 text-sm font-medium text-content-tertiary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors pointer-events-none opacity-50"
                   >
                     {/* TODO: Finish registering OAuth providers */}
                     Coming Soon
@@ -152,7 +152,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <p className="text-sm text-gray-500 mt-4">
+      <p className="text-sm text-content-tertiary mt-4">
         The Telegram bot requires a linked Telegram account to track expenses
         via chat.
       </p>

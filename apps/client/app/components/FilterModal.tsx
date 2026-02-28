@@ -49,14 +49,14 @@ export default function FilterModal({
         />
 
         {/* Modal */}
-        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6">
           <h3 className="text-lg font-semibold mb-4">Filter Transactions</h3>
 
           <div className="space-y-4">
             <div>
               <label
                 htmlFor="category-filter"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Category
               </label>
@@ -64,7 +64,7 @@ export default function FilterModal({
                 id="category-filter"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               >
                 <option value="">All Categories</option>
                 {Object.values(Category).map((cat) => (
@@ -78,7 +78,7 @@ export default function FilterModal({
             <div>
               <label
                 htmlFor="start-date"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Start Date
               </label>
@@ -87,14 +87,14 @@ export default function FilterModal({
                 id="start-date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               />
             </div>
 
             <div>
               <label
                 htmlFor="end-date"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-content-secondary mb-1"
               >
                 End Date
               </label>
@@ -103,7 +103,7 @@ export default function FilterModal({
                 id="end-date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               />
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function FilterModal({
                 <button
                   type="button"
                   onClick={handleClear}
-                  className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-800"
+                  className="px-4 py-2 text-sm font-medium text-negative-text hover:text-negative-text-strong"
                 >
                   Clear Filters
                 </button>
@@ -125,7 +125,7 @@ export default function FilterModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
+                className="px-4 py-2 text-sm font-medium text-content-secondary hover:bg-surface-hover rounded-md"
               >
                 Cancel
               </button>

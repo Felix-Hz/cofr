@@ -26,8 +26,10 @@ caddy_config/
 # Logs
 scripts/logs/
 
-# Claude
+# LLM
 CLAUDE.md
+.serena 
+.claude
 
 # IDE
 .idea/

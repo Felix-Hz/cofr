@@ -67,7 +67,7 @@ export default function ExpenseFormModal({
         />
 
         {/* Modal */}
-        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6">
           <h3 className="text-lg font-semibold mb-4">
             {isEditMode ? "Edit Transaction" : "Add Transaction"}
           </h3>
@@ -77,7 +77,7 @@ export default function ExpenseFormModal({
             <div>
               <label
                 htmlFor="amount"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Amount
               </label>
@@ -88,7 +88,7 @@ export default function ExpenseFormModal({
                 min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                 required
               />
             </div>
@@ -97,7 +97,7 @@ export default function ExpenseFormModal({
             <div>
               <label
                 htmlFor="category"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Category
               </label>
@@ -105,7 +105,7 @@ export default function ExpenseFormModal({
                 id="category"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               >
                 {Object.values(Category).map((cat) => (
                   <option key={cat} value={cat}>
@@ -119,7 +119,7 @@ export default function ExpenseFormModal({
             <div>
               <label
                 htmlFor="description"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Description
               </label>
@@ -128,7 +128,7 @@ export default function ExpenseFormModal({
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                 placeholder="Optional"
               />
             </div>
@@ -137,7 +137,7 @@ export default function ExpenseFormModal({
             <div>
               <label
                 htmlFor="currency"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Currency
               </label>
@@ -145,7 +145,7 @@ export default function ExpenseFormModal({
                 id="currency"
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               >
                 <option value="NZD">NZD</option>
                 <option value="EUR">EUR</option>
@@ -159,7 +159,7 @@ export default function ExpenseFormModal({
             <div>
               <label
                 htmlFor="date"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Date
               </label>
@@ -168,7 +168,7 @@ export default function ExpenseFormModal({
                 id="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               />
             </div>
 
@@ -177,7 +177,7 @@ export default function ExpenseFormModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
+                className="px-4 py-2 text-sm font-medium text-content-secondary hover:bg-surface-hover rounded-md"
                 disabled={isLoading}
               >
                 Cancel

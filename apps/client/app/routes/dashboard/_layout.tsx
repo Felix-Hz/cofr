@@ -7,6 +7,7 @@ import {
 } from "react-router";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
 import { getUserInitials } from "~/lib/utils";
+import ThemeToggle from "~/components/ThemeToggle";
 
 export async function clientLoader() {
   // Protect all dashboard routes
@@ -30,14 +31,14 @@ export default function DashboardLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface-page">
       {/* Header */}
-      <header className="bg-white border-b">
+      <header className="bg-surface-primary border-b border-edge-default">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-8">
               <Link to="/dashboard">
-                <img src="/logo.png" alt="cofr" className="h-8" />
+                <img src="/logo.png" alt="cofr" className="h-8 logo-auto" />
               </Link>
 
               {/* Navigation */}
@@ -48,8 +49,8 @@ export default function DashboardLayout() {
                     to={item.path}
                     className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                       location.pathname === item.path
-                        ? "bg-emerald-soft text-navy"
-                        : "text-slate-500 hover:text-navy hover:bg-cloud"
+                        ? "bg-accent-soft-bg text-content-heading"
+                        : "text-content-tertiary hover:text-content-heading hover:bg-surface-hover"
                     }`}
                   >
                     {item.label}
@@ -59,30 +60,33 @@ export default function DashboardLayout() {
             </div>
 
             {/* User menu */}
-            <div className="relative group">
-              <button
-                type="button"
-                className="h-10 w-10 rounded-full bg-emerald text-white flex items-center justify-center hover:bg-emerald-hover transition-colors"
-              >
-                {getUserInitials(user?.username || "User")}
-              </button>
-              <div className="absolute right-0 mt-0.5 w-48 bg-white rounded-md shadow-lg border hidden group-hover:block z-10">
-                <div className="py-1">
-                  <div className="px-4 py-2 text-sm text-gray-700 border-b">
-                    {user?.username || "User"}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <div className="relative group">
+                <button
+                  type="button"
+                  className="h-10 w-10 rounded-full bg-emerald text-white flex items-center justify-center hover:bg-emerald-hover transition-colors"
+                >
+                  {getUserInitials(user?.username || "User")}
+                </button>
+                <div className="absolute right-0 mt-0.5 w-48 bg-surface-primary rounded-md shadow-lg border border-edge-default hidden group-hover:block z-10">
+                  <div className="py-1">
+                    <div className="px-4 py-2 text-sm text-content-secondary border-b border-edge-default">
+                      {user?.username || "User"}
+                    </div>
+                    <Link
+                      to="/dashboard/settings"
+                      className="block px-4 py-2 text-sm text-content-secondary hover:bg-surface-hover"
+                    >
+                      Settings
+                    </Link>
+                    <Link
+                      to="/logout"
+                      className="block px-4 py-2 text-sm text-content-secondary hover:bg-surface-hover"
+                    >
+                      Log out
+                    </Link>
                   </div>
-                  <Link
-                    to="/dashboard/settings"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Settings
-                  </Link>
-                  <Link
-                    to="/logout"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    Log out
-                  </Link>
                 </div>
               </div>
             </div>
