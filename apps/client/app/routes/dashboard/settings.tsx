@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { redirect } from "react-router";
 import { isAuthenticated } from "~/lib/auth";
-import { getLinkedProviders, unlinkProvider } from "~/lib/api";
+import { getLinkedProviders, unlinkProvider, linkTelegramAccount } from "~/lib/api";
+import type { TelegramAuthData } from "~/lib/schemas";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
   "http://localhost:5784";
@@ -33,6 +34,8 @@ export default function Settings() {
   const [providers, setProviders] = useState<LinkedProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [linkingTelegram, setLinkingTelegram] = useState(false);
+  const telegramContainerRef = useRef<HTMLDivElement>(null);
 
   const fetchProviders = async () => {
     try {
@@ -49,6 +52,50 @@ export default function Settings() {
     fetchProviders();
   }, []);
 
+  const linkedProviderNames = providers.map((p) => p.provider);
+  const unlinkedProviders = ALL_PROVIDERS.filter(
+    (p) => !linkedProviderNames.includes(p),
+  );
+  const showTelegramWidget = unlinkedProviders.includes("telegram");
+
+  useEffect(() => {
+    if (!showTelegramWidget || !telegramContainerRef.current) return;
+
+    // @ts-expect-error - Telegram widget callback
+    window.onTelegramLink = async (user: TelegramAuthData) => {
+      setLinkingTelegram(true);
+      setError(null);
+      try {
+        await linkTelegramAccount(user);
+        await fetchProviders();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to link Telegram account");
+      } finally {
+        setLinkingTelegram(false);
+      }
+    };
+
+    const script = document.createElement("script");
+    script.src = "https://telegram.org/js/telegram-widget.js?22";
+    script.async = true;
+    script.setAttribute(
+      "data-telegram-login",
+      import.meta.env.VITE_TELEGRAM_BOT_NAME || "",
+    );
+    script.setAttribute("data-size", "medium");
+    script.setAttribute("data-onauth", "onTelegramLink(user)");
+    script.setAttribute("data-request-access", "write");
+
+    telegramContainerRef.current.innerHTML = "";
+    telegramContainerRef.current.appendChild(script);
+
+    return () => {
+      script.remove();
+      // @ts-expect-error - cleanup global callback
+      delete window.onTelegramLink;
+    };
+  }, [showTelegramWidget]);
+
   const handleUnlink = async (id: number) => {
     try {
       await unlinkProvider(id);
@@ -59,11 +106,6 @@ export default function Settings() {
       );
     }
   };
-
-  const linkedProviderNames = providers.map((p) => p.provider);
-  const unlinkedProviders = ALL_PROVIDERS.filter(
-    (p) => !linkedProviderNames.includes(p),
-  );
 
   if (loading) {
     return (
@@ -134,9 +176,13 @@ export default function Settings() {
               </div>
               {provider === "telegram"
                 ? (
-                  <span className="text-xs text-content-muted">
-                    Link via Telegram bot
-                  </span>
+                  linkingTelegram
+                    ? (
+                      <span className="text-xs text-content-muted">
+                        Linking...
+                      </span>
+                    )
+                    : <div ref={telegramContainerRef} />
                 )
                 : (
                   <a
