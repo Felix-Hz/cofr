@@ -27,15 +27,15 @@ export default function DeleteConfirmModal({
         />
 
         {/* Modal */}
-        <div className="relative bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-          <p className="text-sm text-gray-600 mb-6">{message}</p>
+        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-sm p-6">
+          <h3 className="text-lg font-semibold text-content-primary mb-2">{title}</h3>
+          <p className="text-sm text-content-secondary mb-6">{message}</p>
 
           <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md"
+              className="px-4 py-2 text-sm font-medium text-content-secondary hover:bg-surface-hover rounded-md"
               disabled={isLoading}
             >
               Cancel
@@ -43,7 +43,7 @@ export default function DeleteConfirmModal({
             <button
               type="button"
               onClick={onConfirm}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
               disabled={isLoading}
             >
               {isLoading ? "Deleting..." : "Delete"}

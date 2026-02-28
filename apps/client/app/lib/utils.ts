@@ -56,8 +56,8 @@ export enum Category {
   MISCELLANEOUS = "Miscellaneous",
 }
 
-// Category HEX color mapping
-const CATEGORY_HEX_COLORS: Record<Category, string> = {
+// Category HEX color mapping (light)
+const CATEGORY_COLORS_LIGHT: Record<Category, string> = {
   [Category.INCOME]: "#22c55e", // green-500
   [Category.ENTERTAINMENT]: "#14b8a6", // teal-500
   [Category.SAVINGS]: "#10b981", // emerald-500
@@ -75,10 +75,30 @@ const CATEGORY_HEX_COLORS: Record<Category, string> = {
   [Category.MISCELLANEOUS]: "#6b7280", // gray-500
 };
 
-export function getCategoryColor(category: string): string {
+// Category HEX color mapping (dark — shifted to -400 for contrast on dark bg)
+const CATEGORY_COLORS_DARK: Record<Category, string> = {
+  [Category.INCOME]: "#4ade80", // green-400
+  [Category.ENTERTAINMENT]: "#2dd4bf", // teal-400
+  [Category.SAVINGS]: "#34d399", // emerald-400
+  [Category.UTILITIES]: "#facc15", // yellow-400
+  [Category.SUBSCRIPTIONS]: "#c084fc", // purple-400
+  [Category.RENT]: "#818cf8", // indigo-400
+  [Category.HEALTH_FITNESS]: "#f87171", // red-400
+  [Category.TRANSPORT]: "#38bdf8", // sky-400
+  [Category.GROCERIES]: "#fb923c", // orange-400
+  [Category.GOING_OUT]: "#f472b6", // pink-400
+  [Category.INVESTMENT]: "#bef264", // lime-300
+  [Category.SHOPPING]: "#a78bfa", // violet-400
+  [Category.EDUCATION]: "#22d3ee", // cyan-400
+  [Category.TRAVEL]: "#38bdf8", // sky-400
+  [Category.MISCELLANEOUS]: "#9ca3af", // gray-400
+};
+
+export function getCategoryColor(category: string, isDark = false): string {
+  const colors = isDark ? CATEGORY_COLORS_DARK : CATEGORY_COLORS_LIGHT;
   return (
-    CATEGORY_HEX_COLORS[category as Category] ||
-    CATEGORY_HEX_COLORS[Category.MISCELLANEOUS]
+    colors[category as Category] ||
+    colors[Category.MISCELLANEOUS]
   );
 }
 

@@ -17,6 +17,7 @@ import type { Expense, ExpenseCreate } from "~/lib/schemas";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
 import FilterModal from "~/components/FilterModal";
+import { useTheme } from "~/lib/theme";
 
 export async function clientLoader({ request }: { request: Request }) {
   const url = new URL(request.url);
@@ -62,6 +63,8 @@ export default function Expenses() {
     currentStartDate,
     currentEndDate,
   } = useLoaderData<typeof clientLoader>();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -159,14 +162,14 @@ export default function Expenses() {
     }
   };
 
-  const hasActiveFilters = currentCategory || currentStartDate || currentEndDate;
+  const hasActiveFilters = !!(currentCategory || currentStartDate || currentEndDate);
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
-          <p className="text-gray-600">
+          <p className="text-content-secondary">
             Showing {expenses.length} of {total_count} transactions
             {hasActiveFilters && " (filtered)"}
           </p>
@@ -177,8 +180,8 @@ export default function Expenses() {
             onClick={() => setIsFilterModalOpen(true)}
             className={`p-2 rounded-md transition-colors ${
               hasActiveFilters
-                ? "bg-emerald-soft text-emerald-dark hover:bg-emerald-soft/80"
-                : "hover:bg-gray-100 text-gray-600"
+                ? "bg-accent-soft-bg text-accent-soft-text hover:bg-accent-soft-bg/80"
+                : "hover:bg-surface-hover text-content-secondary"
             }`}
             aria-label="Filter transactions"
           >
@@ -220,33 +223,33 @@ export default function Expenses() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className="bg-surface-primary rounded-lg border border-edge-default shadow-sm overflow-hidden">
+        <table className="min-w-full divide-y divide-edge-default">
+          <thead className="bg-surface-elevated">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 Description
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 Category
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 Amount
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-surface-primary divide-y divide-edge-default">
             {expenses.length === 0 ? (
               <tr>
                 <td
                   colSpan={5}
-                  className="px-6 py-8 text-center text-sm text-gray-500"
+                  className="px-6 py-8 text-center text-sm text-content-tertiary"
                 >
                   No transactions found
                 </td>
@@ -254,29 +257,29 @@ export default function Expenses() {
             ) : (
               expenses.map((expense: Expense) => (
                 <tr key={expense.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-content-tertiary">
                     {formatDate(expense.created_at)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-content-primary">
                     {expense.description || "—"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full text-white"
                       style={{
-                        backgroundColor: getCategoryColor(expense.category),
+                        backgroundColor: getCategoryColor(expense.category, isDark),
                       }}
                     >
                       {expense.category}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-content-primary text-right">
                     {formatCurrency(expense.amount, expense.currency)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                     <button
                       onClick={() => handleEdit(expense)}
-                      className="p-1 text-gray-500 hover:text-emerald-dark hover:bg-emerald-soft rounded transition-colors mr-1"
+                      className="p-1 text-content-tertiary hover:text-accent-soft-text hover:bg-accent-soft-bg rounded transition-colors mr-1"
                       aria-label="Edit transaction"
                     >
                       <svg
@@ -295,7 +298,7 @@ export default function Expenses() {
                     </button>
                     <button
                       onClick={() => handleDelete(expense)}
-                      className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      className="p-1 text-content-tertiary hover:text-negative-text hover:bg-negative-bg rounded transition-colors"
                       aria-label="Delete transaction"
                     >
                       <svg
@@ -325,17 +328,17 @@ export default function Expenses() {
         <button
           onClick={() => goToPage(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-4 py-2 border rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+          className="px-4 py-2 border border-edge-strong rounded-md text-sm font-medium text-content-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-hover"
         >
           Previous
         </button>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-content-tertiary">
           Page {currentPage} of {totalPages}
         </span>
         <button
           onClick={() => goToPage(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="px-4 py-2 border rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+          className="px-4 py-2 border border-edge-strong rounded-md text-sm font-medium text-content-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-surface-hover"
         >
           Next
         </button>

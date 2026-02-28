@@ -20,10 +20,10 @@ export default function AuthCallback() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-surface-page">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto" />
-        <p className="mt-4 text-sm text-gray-600">Completing authentication...</p>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-content-primary mx-auto" />
+        <p className="mt-4 text-sm text-content-secondary">Completing authentication...</p>
       </div>
     </div>
   );

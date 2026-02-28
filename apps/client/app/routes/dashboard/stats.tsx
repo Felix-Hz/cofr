@@ -1,6 +1,7 @@
 import { useLoaderData, useNavigate } from "react-router";
 import { getMonthlyStats } from "~/lib/api";
 import { formatCurrency, getCategoryColor } from "~/lib/utils";
+import { useTheme } from "~/lib/theme";
 
 const CURRENCIES = ["NZD", "EUR", "USD", "GBP", "AUD"];
 const ALLOCATION_CATEGORIES = ["Income", "Savings", "Investment"];
@@ -20,6 +21,8 @@ export default function Statistics() {
   const navigate = useNavigate();
   const { stats, month, year, currentCurrency } =
     useLoaderData<typeof clientLoader>();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   const months = [
     "January",
@@ -126,7 +129,7 @@ export default function Statistics() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Statistics</h2>
-          <p className="text-gray-600">
+          <p className="text-content-secondary">
             {months[month - 1]} {year} financial summary
           </p>
         </div>
@@ -136,7 +139,7 @@ export default function Statistics() {
           <select
             value={currentCurrency}
             onChange={(e) => handleCurrencyChange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
+            className="px-3 py-2 border border-edge-strong rounded-md text-sm text-content-primary bg-surface-primary focus:outline-none focus:ring-2 focus:ring-emerald"
           >
             <option value="">All Currencies</option>
             {CURRENCIES.map((c) => (
@@ -149,10 +152,10 @@ export default function Statistics() {
           <div className="flex items-center gap-2">
             <button
               onClick={goToPrevMonth}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              className="p-2 hover:bg-surface-hover rounded-md transition-colors"
               aria-label="Previous month"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
@@ -160,7 +163,7 @@ export default function Statistics() {
             <select
               value={month}
               onChange={(e) => handleMonthChange(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
+              className="px-3 py-2 border border-edge-strong rounded-md text-sm text-content-primary bg-surface-primary focus:outline-none focus:ring-2 focus:ring-emerald"
             >
               {months.map((m, i) => (
                 <option key={m} value={i + 1}>{m}</option>
@@ -170,7 +173,7 @@ export default function Statistics() {
             <select
               value={year}
               onChange={(e) => handleYearChange(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
+              className="px-3 py-2 border border-edge-strong rounded-md text-sm text-content-primary bg-surface-primary focus:outline-none focus:ring-2 focus:ring-emerald"
             >
               {years.map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -179,10 +182,10 @@ export default function Statistics() {
 
             <button
               onClick={goToNextMonth}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+              className="p-2 hover:bg-surface-hover rounded-md transition-colors"
               aria-label="Next month"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -192,7 +195,7 @@ export default function Statistics() {
 
       {/* Mixed currency warning */}
       {!currentCurrency && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-md text-sm">
+        <div className="bg-warning-bg border border-warning-border text-warning-text px-4 py-3 rounded-md text-sm">
           Showing all currencies without conversion. Select a specific currency for accurate totals.
         </div>
       )}
@@ -200,75 +203,75 @@ export default function Statistics() {
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Income */}
-        <div className="bg-green-50 p-6 rounded-lg border border-green-200">
-          <div className="text-sm font-medium text-green-700">Income</div>
-          <div className="text-2xl font-bold mt-2 text-green-700">
+        <div className="bg-positive-bg p-6 rounded-lg border border-positive-border">
+          <div className="text-sm font-medium text-positive-text-strong">Income</div>
+          <div className="text-2xl font-bold mt-2 text-positive-text-strong">
             {formatCurrency(stats.total_income, stats.currency)}
           </div>
-          <p className="text-xs text-green-600 mt-1">Money received</p>
+          <p className="text-xs text-positive-text mt-1">Money received</p>
         </div>
 
         {/* Spent */}
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <div className="text-sm font-medium text-gray-600">Spent</div>
-          <div className="text-2xl font-bold mt-2 text-gray-900">
+        <div className="bg-surface-primary p-6 rounded-lg border border-edge-default shadow-sm">
+          <div className="text-sm font-medium text-content-secondary">Spent</div>
+          <div className="text-2xl font-bold mt-2 text-content-primary">
             {formatCurrency(stats.total_spent, stats.currency)}
           </div>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-content-tertiary mt-1">
             {stats.expense_count} transactions • Avg {formatCurrency(averagePerExpense, stats.currency)}
           </p>
         </div>
 
         {/* Allocated (Savings + Investment) */}
-        <div className="bg-emerald-soft p-6 rounded-lg border border-emerald/20">
-          <div className="text-sm font-medium text-emerald-dark">Allocated</div>
-          <div className="text-2xl font-bold mt-2 text-emerald-dark">
+        <div className="bg-accent-soft-bg p-6 rounded-lg border border-accent/20">
+          <div className="text-sm font-medium text-accent-soft-text">Allocated</div>
+          <div className="text-2xl font-bold mt-2 text-accent-soft-text">
             {formatCurrency(totalAllocated, stats.currency)}
           </div>
-          <p className="text-xs text-emerald mt-1">
+          <p className="text-xs text-accent mt-1">
             {allocationRate.toFixed(1)}% of income ({savingsRate.toFixed(0)}% saved, {investmentRate.toFixed(0)}% invested)
           </p>
         </div>
 
         {/* Remaining */}
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-          <div className="text-sm font-medium text-gray-600">Remaining</div>
-          <div className={`text-2xl font-bold mt-2 ${netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+        <div className="bg-surface-primary p-6 rounded-lg border border-edge-default shadow-sm">
+          <div className="text-sm font-medium text-content-secondary">Remaining</div>
+          <div className={`text-2xl font-bold mt-2 ${netBalance >= 0 ? "text-positive-text-strong" : "text-negative-text"}`}>
             {formatCurrency(netBalance, stats.currency)}
           </div>
-          <p className="text-xs text-gray-500 mt-1">Unallocated funds</p>
+          <p className="text-xs text-content-tertiary mt-1">Unallocated funds</p>
         </div>
       </div>
 
       {/* Category Breakdown Table */}
-      <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b bg-gray-50">
-          <h3 className="font-semibold text-gray-900">Category Breakdown</h3>
+      <div className="bg-surface-primary rounded-lg border border-edge-default shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-edge-default bg-surface-elevated">
+          <h3 className="font-semibold text-content-primary">Category Breakdown</h3>
         </div>
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-edge-default">
+          <thead className="bg-surface-elevated">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 Category
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 Total
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 Count
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 Average
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-content-tertiary uppercase tracking-wider">
                 %
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-surface-primary divide-y divide-edge-default">
             {stats.category_breakdown.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500">
+                <td colSpan={5} className="px-6 py-8 text-center text-sm text-content-tertiary">
                   No transactions found
                 </td>
               </tr>
@@ -282,17 +285,17 @@ export default function Statistics() {
                     key={cat.category}
                     className={
                       categoryType === "income"
-                        ? "bg-green-50"
+                        ? "bg-positive-bg"
                         : categoryType === "allocation"
-                          ? "bg-emerald-soft"
+                          ? "bg-accent-soft-bg"
                           : ""
                     }
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-content-primary">
                       <div className="flex items-center gap-3">
                         <div
                           className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: getCategoryColor(cat.category) }}
+                          style={{ backgroundColor: getCategoryColor(cat.category, isDark) }}
                         />
                         {cat.category}
                       </div>
@@ -300,21 +303,21 @@ export default function Statistics() {
                     <td
                       className={`px-6 py-4 whitespace-nowrap text-sm text-right font-medium ${
                         categoryType === "income"
-                          ? "text-green-700"
+                          ? "text-positive-text-strong"
                           : categoryType === "allocation"
-                            ? "text-emerald-dark"
-                            : "text-gray-900"
+                            ? "text-accent-soft-text"
+                            : "text-content-primary"
                       }`}
                     >
                       {formatCurrency(cat.total, stats.currency)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-content-primary text-right">
                       {cat.count}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-content-primary text-right">
                       {formatCurrency(avg, stats.currency)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-content-tertiary text-right">
                       {getPercentageDisplay(cat.category, cat.total)}
                     </td>
                   </tr>

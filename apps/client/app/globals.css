@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
+  /* Static brand colors */
   --color-navy: #0F172A;
   --color-navy-deep: #0B1220;
   --color-emerald: #10B981;
@@ -12,26 +15,125 @@
   --color-warning: #F59E0B;
   --color-error: #EF4444;
   --font-sans: "Manrope", system-ui, sans-serif;
+
+  /* Semantic tokens — auto-switch via .dark class */
+  --color-surface-page: var(--surface-page);
+  --color-surface-primary: var(--surface-primary);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-hover: var(--surface-hover);
+  --color-content-primary: var(--content-primary);
+  --color-content-secondary: var(--content-secondary);
+  --color-content-tertiary: var(--content-tertiary);
+  --color-content-muted: var(--content-muted);
+  --color-content-heading: var(--content-heading);
+  --color-edge-default: var(--edge-default);
+  --color-edge-strong: var(--edge-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft-bg: var(--accent-soft-bg);
+  --color-accent-soft-text: var(--accent-soft-text);
+  --color-positive-bg: var(--positive-bg);
+  --color-positive-border: var(--positive-border);
+  --color-positive-text: var(--positive-text);
+  --color-positive-text-strong: var(--positive-text-strong);
+  --color-negative-bg: var(--negative-bg);
+  --color-negative-text: var(--negative-text);
+  --color-negative-text-strong: var(--negative-text-strong);
+  --color-negative-btn: var(--negative-btn);
+  --color-negative-btn-hover: var(--negative-btn-hover);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-border: var(--warning-border);
+  --color-warning-text: var(--warning-text);
 }
 
+/* Light theme (default) */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --border: 214.3 31.8% 91.4%;
+  --surface-page: #F9FAFB;
+  --surface-primary: #FFFFFF;
+  --surface-elevated: #F9FAFB;
+  --surface-hover: #F3F4F6;
+  --content-primary: #111827;
+  --content-secondary: #4B5563;
+  --content-tertiary: #6B7280;
+  --content-muted: #9CA3AF;
+  --content-heading: #0F172A;
+  --edge-default: #E5E7EB;
+  --edge-strong: #D1D5DB;
+  --accent: #10B981;
+  --accent-hover: #0EA371;
+  --accent-soft-bg: #D1FAE5;
+  --accent-soft-text: #059669;
+  --positive-bg: #F0FDF4;
+  --positive-border: #BBF7D0;
+  --positive-text: #15803D;
+  --positive-text-strong: #16A34A;
+  --negative-bg: #FEF2F2;
+  --negative-text: #DC2626;
+  --negative-text-strong: #B91C1C;
+  --negative-btn: #DC2626;
+  --negative-btn-hover: #B91C1C;
+  --warning-bg: #FFFBEB;
+  --warning-border: #FDE68A;
+  --warning-text: #92400E;
   --radius: 0.5rem;
 }
 
+/* Dark theme */
+.dark {
+  --surface-page: #0B1220;
+  --surface-primary: #131C2E;
+  --surface-elevated: #182235;
+  --surface-hover: #1E293B;
+  --content-primary: #F1F5F9;
+  --content-secondary: #94A3B8;
+  --content-tertiary: #64748B;
+  --content-muted: #475569;
+  --content-heading: #F8FAFC;
+  --edge-default: #1E293B;
+  --edge-strong: #334155;
+  --accent: #34D399;
+  --accent-hover: #2DD4A0;
+  --accent-soft-bg: rgba(16, 185, 129, 0.15);
+  --accent-soft-text: #6EE7B7;
+  --positive-bg: rgba(34, 197, 94, 0.1);
+  --positive-border: rgba(34, 197, 94, 0.2);
+  --positive-text: #15803D;
+  --positive-text-strong: #22C55E;
+  --negative-bg: rgba(239, 68, 68, 0.1);
+  --negative-text: #F87171;
+  --negative-text-strong: #EF4444;
+  --negative-btn: #EF4444;
+  --negative-btn-hover: #DC2626;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-border: rgba(245, 158, 11, 0.2);
+  --warning-text: #FCD34D;
+  color-scheme: dark;
+}
+
 * {
-  border-color: hsl(var(--border));
+  border-color: var(--edge-default);
 }
 
 body {
   font-family: "Manrope", system-ui, sans-serif;
-  background-color: hsl(var(--background));
-  color: var(--color-slate-700);
+  background-color: var(--surface-page);
+  color: var(--content-secondary);
   font-feature-settings: "tnum" 1;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  color: var(--color-navy);
+  color: var(--content-heading);
+}
+
+/* Logo visibility in dark mode */
+.logo-auto {
+  transition: filter 0.2s;
+}
+.dark .logo-auto {
+  filter: invert(1) hue-rotate(180deg) brightness(1.2);
+}
+
+/* Page gradient (login + landing) */
+.gradient-page {
+  background: linear-gradient(to bottom, var(--surface-elevated), var(--surface-primary));
 }

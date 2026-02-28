@@ -24,7 +24,7 @@ export function TelegramButton({
     "hover:bg-emerald-hover hover:shadow-xl hover:shadow-emerald/50 hover:scale-[1.02]",
     "active:scale-[0.98] active:brightness-95",
     "transition-all duration-300 ease-out",
-    "focus:outline-none focus:ring-2 focus:ring-emerald/50 focus:ring-offset-2",
+    "focus:outline-none focus:ring-2 focus:ring-emerald/50 focus:ring-offset-2 focus:ring-offset-surface-page",
     "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
     className,
   );
