@@ -14,12 +14,32 @@ import (
  */
 type User struct {
 	ID                uuid.UUID     `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	UserID            int64         `gorm:"uniqueIndex"`       // Index Telegram user IDs
 	FirstName         string        `gorm:"index"`             // Index first names
 	LastName          string        `gorm:"index"`             // Index last names
 	Username          string        `gorm:"uniqueIndex"`       // Index usernames
 	PreferredCurrency string        `gorm:"default:'NZD'"`     // User's preferred currency
+	LinkCode          *string       `gorm:"column:link_code"`
+	LinkCodeExpires   *time.Time    `gorm:"column:link_code_expires"`
 	Expenses          []Transaction `gorm:"foreignKey:UserID"` // One-to-Many Relationship
+}
+
+/*
+ * 							AuthProvider Model
+ *
+ * Maps external auth identities (Google, Telegram) to internal users.
+ *
+ */
+type AuthProvider struct {
+	ID             uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID         uuid.UUID `gorm:"type:uuid;index"`
+	Provider       string    `gorm:"index"`
+	ProviderUserID string    `gorm:"column:provider_user_id"`
+	Email          *string
+	DisplayName    *string   `gorm:"column:display_name"`
+}
+
+func (AuthProvider) TableName() string {
+	return "auth_providers"
 }
 
 /*

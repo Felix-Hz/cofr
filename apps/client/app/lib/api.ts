@@ -10,7 +10,6 @@ import {
   type ExpensesResponse,
   type ExpenseUpdate,
   type MonthlyStats,
-  type TelegramAuthData,
 } from "./schemas";
 
 const API_BASE_URL =
@@ -196,12 +195,9 @@ export async function unlinkProvider(
   return response.json();
 }
 
-export async function linkTelegramAccount(
-  data: TelegramAuthData,
-): Promise<{ id: string; provider: string; provider_user_id: string; email: string | null; display_name: string | null }> {
-  const response = await fetchWithAuth("/account/link/telegram", {
+export async function initTelegramLink(): Promise<{ code: string; deep_link: string }> {
+  const response = await fetchWithAuth("/account/link/telegram/init", {
     method: "POST",
-    body: JSON.stringify(data),
   });
   return response.json();
 }

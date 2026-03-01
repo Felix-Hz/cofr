@@ -25,7 +25,7 @@ func InitialiseDB(DSN string) (*gorm.DB, error) {
 	log.Println("✅ Database connection established")
 
 	// Run required migrations:
-	err = DBClient.AutoMigrate(&User{}, &Transaction{}, &Offset{})
+	err = DBClient.AutoMigrate(&User{}, &AuthProvider{}, &Transaction{}, &Offset{})
 	if err != nil {
 		return nil, fmt.Errorf("⚠️ Migration failed: %v", err)
 	}

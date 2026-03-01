@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { redirect } from "react-router";
 import { isAuthenticated } from "~/lib/auth";
-import { getLinkedProviders, unlinkProvider, linkTelegramAccount } from "~/lib/api";
-import type { TelegramAuthData } from "~/lib/schemas";
+import { getLinkedProviders, unlinkProvider, initTelegramLink } from "~/lib/api";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
   "http://localhost:5784";
 
 interface LinkedProvider {
-  id: number;
+  id: string;
   provider: string;
   provider_user_id: string;
   email: string | null;
@@ -33,8 +32,8 @@ export default function Settings() {
   const [providers, setProviders] = useState<LinkedProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [linkingTelegram, setLinkingTelegram] = useState(false);
-  const telegramContainerRef = useRef<HTMLDivElement>(null);
+  const [linkData, setLinkData] = useState<{ code: string; deep_link: string } | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchProviders = async () => {
     try {
@@ -49,53 +48,49 @@ export default function Settings() {
 
   useEffect(() => {
     fetchProviders();
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
   }, []);
 
   const linkedProviderNames = providers.map((p) => p.provider);
   const unlinkedProviders = ALL_PROVIDERS.filter(
     (p) => !linkedProviderNames.includes(p),
   );
-  const showTelegramWidget = unlinkedProviders.includes("telegram");
 
-  useEffect(() => {
-    if (!showTelegramWidget || !telegramContainerRef.current) return;
+  const handleLinkTelegram = async () => {
+    setError(null);
+    try {
+      const data = await initTelegramLink();
+      setLinkData(data);
+      window.open(data.deep_link, "_blank");
 
-    // @ts-expect-error - Telegram widget callback
-    window.onTelegramLink = async (user: TelegramAuthData) => {
-      setLinkingTelegram(true);
-      setError(null);
-      try {
-        await linkTelegramAccount(user);
-        await fetchProviders();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to link Telegram account");
-      } finally {
-        setLinkingTelegram(false);
-      }
-    };
+      // Poll for linking completion
+      pollingRef.current = setInterval(async () => {
+        try {
+          const updated = await getLinkedProviders();
+          if (updated.some((p) => p.provider === "telegram")) {
+            if (pollingRef.current) clearInterval(pollingRef.current);
+            pollingRef.current = null;
+            setLinkData(null);
+            setProviders(updated);
+          }
+        } catch {
+          // Silently retry
+        }
+      }, 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to initiate Telegram link");
+    }
+  };
 
-    const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.async = true;
-    script.setAttribute(
-      "data-telegram-login",
-      import.meta.env.VITE_TELEGRAM_BOT_NAME || "",
-    );
-    script.setAttribute("data-size", "medium");
-    script.setAttribute("data-onauth", "onTelegramLink(user)");
-    script.setAttribute("data-request-access", "write");
+  const handleCancelLink = () => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    pollingRef.current = null;
+    setLinkData(null);
+  };
 
-    telegramContainerRef.current.innerHTML = "";
-    telegramContainerRef.current.appendChild(script);
-
-    return () => {
-      script.remove();
-      // @ts-expect-error - cleanup global callback
-      delete window.onTelegramLink;
-    };
-  }, [showTelegramWidget]);
-
-  const handleUnlink = async (id: number) => {
+  const handleUnlink = async (id: string) => {
     try {
       await unlinkProvider(id);
       setProviders((prev) => prev.filter((p) => p.id !== id));
@@ -175,21 +170,42 @@ export default function Settings() {
               </div>
               {provider === "telegram"
                 ? (
-                  linkingTelegram
+                  linkData
                     ? (
-                      <span className="text-xs text-content-muted">
-                        Linking...
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={linkData.deep_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
+                        >
+                          Open Telegram
+                        </a>
+                        <button
+                          type="button"
+                          onClick={handleCancelLink}
+                          className="px-3 py-1.5 text-sm font-medium text-content-tertiary border border-edge-default rounded-md hover:bg-surface-hover transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     )
-                    : <div ref={telegramContainerRef} />
+                    : (
+                      <button
+                        type="button"
+                        onClick={handleLinkTelegram}
+                        className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
+                      >
+                        Link Telegram
+                      </button>
+                    )
                 )
                 : (
                   <a
                     href={`${API_BASE_URL}/auth/oauth/${provider}/login`}
-                    className="px-3 py-1.5 text-sm font-medium text-content-tertiary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors pointer-events-none opacity-50"
+                    className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
                   >
-                    {/* TODO: Finish registering OAuth providers */}
-                    Coming Soon
+                    Link
                   </a>
                 )}
             </div>
@@ -201,6 +217,12 @@ export default function Settings() {
         The Telegram bot requires a linked Telegram account to track expenses
         via chat.
       </p>
+
+      {linkData && (
+        <p className="text-sm text-content-tertiary mt-2">
+          Or send <code className="bg-surface-hover px-1 py-0.5 rounded text-xs">/start {linkData.code}</code> to the bot manually. Code expires in 10 minutes.
+        </p>
+      )}
     </div>
   );
 }

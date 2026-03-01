@@ -37,21 +37,6 @@ export const MonthlyStatsSchema = z.object({
   currency: z.string().length(3),
 });
 
-export const TokenResponseSchema = z.object({
-  access_token: z.string(),
-  token_type: z.string(),
-});
-
-export const TelegramAuthDataSchema = z.object({
-  id: z.string(),
-  first_name: z.string(),
-  last_name: z.string().optional(),
-  username: z.string().optional(),
-  photo_url: z.string().optional(),
-  auth_date: z.number(),
-  hash: z.string(),
-});
-
 export const ExpenseCreateSchema = z.object({
   amount: z.number().min(0),
   category: z.string(),
@@ -82,8 +67,6 @@ export type Expense = z.infer<typeof ExpenseSchema>;
 export type ExpensesResponse = z.infer<typeof ExpensesResponseSchema>;
 export type CategoryTotal = z.infer<typeof CategoryTotalSchema>;
 export type MonthlyStats = z.infer<typeof MonthlyStatsSchema>;
-export type TokenResponse = z.infer<typeof TokenResponseSchema>;
-export type TelegramAuthData = z.infer<typeof TelegramAuthDataSchema>;
 export type ExpenseCreate = z.infer<typeof ExpenseCreateSchema>;
 export type ExpenseUpdate = z.infer<typeof ExpenseUpdateSchema>;
 export type ExpenseDeleteResponse = z.infer<typeof ExpenseDeleteResponseSchema>;

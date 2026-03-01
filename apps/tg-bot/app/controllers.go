@@ -41,6 +41,14 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	})
 
 	/**
+	 * Handle /start command (deep-link Telegram linking).
+	 */
+	if strings.HasPrefix(body, "/start") {
+		handleStartCommand(bot, tgUserID, body)
+		return
+	}
+
+	/**
 	 * Validate the message: non-empty and within length limits (160 chars).
 	 */
 	if !validateMessage(body) {
@@ -86,4 +94,42 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	}
 	log.Printf("✅ Processed command: %+v", result)
 	bot.Send(telegramClient.NewMessage(tgUserID, generateSuccessMessage(result)))
+}
+
+func handleStartCommand(bot *telegramClient.BotAPI, tgUserID int64, body string) {
+	parts := strings.SplitN(body, " ", 2)
+
+	// Plain /start with no code
+	if len(parts) < 2 || strings.TrimSpace(parts[1]) == "" {
+		bot.Send(telegramClient.NewMessage(tgUserID,
+			"Welcome to Cofr! To link your account, use the 'Link Telegram' button in Settings on the web app."))
+		return
+	}
+
+	code := strings.TrimSpace(parts[1])
+
+	// Check if this Telegram ID is already linked
+	existingUser, err := r.UserRepo().GetByTelegramID(tgUserID)
+	if err == nil && existingUser != nil {
+		bot.Send(telegramClient.NewMessage(tgUserID, "Your Telegram account is already linked."))
+		return
+	}
+
+	// Look up user by link code
+	user, err := r.UserRepo().GetByLinkCode(code)
+	if err != nil {
+		log.Printf("⚠️ Invalid or expired link code: %s", code)
+		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Invalid or expired link code. Please generate a new one from Settings."))
+		return
+	}
+
+	// Link Telegram to user
+	if err := r.UserRepo().LinkTelegram(user.ID, tgUserID); err != nil {
+		log.Printf("⚠️ Failed to link Telegram for user %s: %v", user.ID, err)
+		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Failed to link your account. Please try again."))
+		return
+	}
+
+	log.Printf("✅ Linked Telegram user %d to account %s", tgUserID, user.ID)
+	bot.Send(telegramClient.NewMessage(tgUserID, "✅ Your Telegram account has been linked! You can now track expenses here."))
 }
