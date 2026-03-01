@@ -50,7 +50,7 @@ export async function clientLoader({ request }: { request: Request }) {
   const currency = url.searchParams.get("currency") || undefined;
 
   // Transaction params
-  const limit = Number(url.searchParams.get("limit")) || 50;
+  const limit = Number(url.searchParams.get("limit")) || 10;
   const offset = Number(url.searchParams.get("offset")) || 0;
   const category = url.searchParams.get("category") || "";
   const startDate = url.searchParams.get("startDate") || "";
@@ -395,7 +395,7 @@ export default function Dashboard() {
         </div>
 
         {/* Pie chart + legend */}
-        <div className="rounded-xl border border-edge-default bg-surface-primary shadow-sm overflow-hidden p-4 sm:p-5">
+        <div className="rounded-xl border border-edge-default bg-surface-primary shadow-sm overflow-hidden p-2 sm:p-4">
           {pieData.length > 0 ? (
             <div className="flex flex-col h-full">
 
@@ -411,7 +411,7 @@ export default function Dashboard() {
               <div className="flex flex-col sm:flex-row flex-1 mt-3 gap-4">
                 {/* Donut */}
                 <div className="flex items-center justify-center flex-1 min-h-0">
-                  <ResponsiveContainer width="100%" height={170}>
+                  <ResponsiveContainer width="100%" height={275}>
                     <PieChart>
                       <Pie
                         data={pieData}
@@ -419,8 +419,8 @@ export default function Dashboard() {
                         nameKey="category"
                         cx="50%"
                         cy="50%"
-                        innerRadius="42%"
-                        outerRadius="85%"
+                        innerRadius="45%"
+                        outerRadius="100%"
                         paddingAngle={2}
                         strokeWidth={0}
                       >
@@ -553,7 +553,7 @@ export default function Dashboard() {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {total_count >= 10 && (
           <div className="flex items-center justify-between pt-1">
             <button
               onClick={() => goToPage(currentPage - 1)}
@@ -562,9 +562,20 @@ export default function Dashboard() {
             >
               Previous
             </button>
-            <span className="text-xs text-content-tertiary tabular-nums">
-              {currentPage} / {totalPages}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-content-tertiary tabular-nums">
+                {currentPage} / {totalPages}
+              </span>
+              <select
+                value={currentLimit}
+                onChange={(e) => navigate(buildUrl({ limit: Number(e.target.value), offset: 0 }))}
+                className="h-7 px-1.5 border border-edge-strong rounded-md text-xs text-content-tertiary bg-surface-primary focus:outline-none focus:ring-2 focus:ring-emerald/40 transition-shadow"
+              >
+                {[10, 25, 50].map((n) => (
+                  <option key={n} value={n}>{n} / page</option>
+                ))}
+              </select>
+            </div>
             <button
               onClick={() => goToPage(currentPage + 1)}
               disabled={currentPage === totalPages}
