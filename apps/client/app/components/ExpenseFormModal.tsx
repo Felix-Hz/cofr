@@ -31,13 +31,18 @@ export default function ExpenseFormModal({
       setCategory(expense.category);
       setDescription(expense.description);
       setCurrency(expense.currency);
-      setDate(new Date(expense.created_at).toISOString().split("T")[0]);
+      const d = new Date(expense.created_at);
+      // Format as local datetime-local value (YYYY-MM-DDTHH:MM)
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      setDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
     } else {
       setAmount("");
       setCategory(Category.MISCELLANEOUS);
       setDescription("");
       setCurrency("NZD");
-      setDate(new Date().toISOString().split("T")[0]);
+      const now = new Date();
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      setDate(`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`);
     }
   }, [expense, isOpen]);
 
@@ -164,7 +169,7 @@ export default function ExpenseFormModal({
                 Date
               </label>
               <input
-                type="date"
+                type="datetime-local"
                 id="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}

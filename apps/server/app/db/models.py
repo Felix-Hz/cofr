@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy import Uuid as SaUuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
@@ -54,7 +54,10 @@ class Transaction(Base):
     amount: Mapped[float] = mapped_column(Float)
     currency: Mapped[str] = mapped_column(String, default="NZD", index=True)
     notes: Mapped[str] = mapped_column(String, default="")
-    timestamp: Mapped[datetime] = mapped_column(DateTime)
+    timestamp: Mapped[datetime] = mapped_column(DateTime)  # user-controlled: when the transaction happened
+    inserted_at: Mapped[datetime] = mapped_column(  # system-controlled: when the row was created (sort tiebreaker)
+        DateTime, server_default=func.now(), nullable=False
+    )
     hash: Mapped[str | None] = mapped_column(String, unique=True, index=True, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="transactions")
