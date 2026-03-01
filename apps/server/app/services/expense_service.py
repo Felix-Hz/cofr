@@ -31,7 +31,7 @@ class ExpenseService:
         transactions = (
             self.db.query(Transaction)
             .filter(Transaction.user_id == user_id)
-            .order_by(Transaction.timestamp.desc(), Transaction.id.desc())
+            .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
             .offset(offset)
             .all()
@@ -53,7 +53,7 @@ class ExpenseService:
         transactions = (
             self.db.query(Transaction)
             .filter(Transaction.user_id == user_id, Transaction.category == category)
-            .order_by(Transaction.timestamp.desc(), Transaction.id.desc())
+            .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
             .offset(offset)
             .all()
@@ -86,7 +86,7 @@ class ExpenseService:
         transactions = (
             self.db.query(Transaction)
             .filter(*base_filter)
-            .order_by(Transaction.timestamp.desc(), Transaction.id.desc())
+            .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
             .offset(offset)
             .all()

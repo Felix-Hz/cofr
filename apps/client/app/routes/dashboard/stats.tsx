@@ -4,7 +4,6 @@ import { formatCurrency, getCategoryColor } from "~/lib/utils";
 import { useTheme } from "~/lib/theme";
 
 const CURRENCIES = ["NZD", "EUR", "USD", "GBP", "AUD"];
-const ALLOCATION_CATEGORIES = ["Income", "Savings", "Investment"];
 
 export async function clientLoader({ request }: { request: Request }) {
   const url = new URL(request.url);
@@ -229,7 +228,7 @@ export default function Statistics() {
             {formatCurrency(totalAllocated, stats.currency)}
           </div>
           <p className="text-xs text-accent mt-1">
-            {allocationRate.toFixed(1)}% of income ({savingsRate.toFixed(0)}% saved, {investmentRate.toFixed(0)}% invested)
+            {allocationRate.toFixed(1)}% of income ({savingsRate.toFixed(1)}% saved, {investmentRate.toFixed(1)}% invested)
           </p>
         </div>
 
