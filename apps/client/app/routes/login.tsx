@@ -17,6 +17,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gradient-page">
+      <title>Cofr | Login</title>
       <div className="max-w-lg w-full space-y-8 p-8">
         <div className="text-center">
           <img

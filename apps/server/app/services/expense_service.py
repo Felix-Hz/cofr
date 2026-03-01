@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import case, func
@@ -186,7 +186,7 @@ class ExpenseService:
 
     async def create_expense(self, user_id: str, data: ExpenseCreateRequest) -> ExpenseSchema:
         """Create a new expense"""
-        created_at = data.created_at or datetime.now()
+        created_at = data.created_at or datetime.now(timezone.utc)
 
         transaction = Transaction(
             user_id=user_id,
