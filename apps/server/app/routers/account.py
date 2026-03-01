@@ -67,6 +67,12 @@ async def unlink_provider(
             detail="Cannot unlink last provider. Link another provider first.",
         )
 
+    # If unlinking Telegram, clear User.user_id so tg-bot lookup fails
+    if provider.provider == "telegram":
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            user.user_id = None
+
     db.delete(provider)
     db.commit()
     return UnlinkResponse(success=True, message="Provider unlinked successfully")
@@ -116,7 +122,7 @@ async def link_telegram(
             status_code=409, detail="Telegram account already linked to another user"
         )
 
-    # Also update the user's telegram user_id for backward compatibility with remind0
+    # Also update the user's telegram user_id for tg-bot
     user = db.query(User).filter(User.id == user_id).first()
     if user:
         user.user_id = data.id

@@ -7,7 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings
 from app.database import engine
 from app.middleware import log_requests
-from app.routers import account, auth, expenses, oauth
+from app.routers import account, expenses, oauth
 
 
 @asynccontextmanager
@@ -18,8 +18,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Bezorgen - Expense Dashboard API",
-    description="Read-only API for expense tracking with Telegram authentication",
+    title="Cofr — Expense Dashboard API",
+    description="API for expense tracking with Google OAuth and Telegram bot integration",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -43,7 +43,6 @@ async def health_check():
     return {"status": "ok", "version": "1.0.0"}
 
 
-app.include_router(auth.router)
 app.include_router(expenses.router)
 app.include_router(oauth.router)
 app.include_router(account.router)
