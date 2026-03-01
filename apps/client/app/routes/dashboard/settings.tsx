@@ -220,7 +220,16 @@ export default function Settings() {
 
       {linkData && (
         <p className="text-sm text-content-tertiary mt-2">
-          Or send <code className="bg-surface-hover px-1 py-0.5 rounded text-xs">/start {linkData.code}</code> to the bot manually. Code expires in 10 minutes.
+          Or send <code className="bg-surface-hover px-1 py-0.5 rounded text-xs">/start {linkData.code}</code> to the bot in{" "}
+          <a
+            href={linkData.deep_link.split("?")[0]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-content-secondary"
+          >
+            Telegram
+          </a>
+          . Code expires in 10 minutes.
         </p>
       )}
     </div>
