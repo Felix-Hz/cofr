@@ -1,7 +1,6 @@
 package db
 
 import (
-	"fmt"
 	"log"
 
 	"gorm.io/driver/postgres"
@@ -23,13 +22,6 @@ func InitialiseDB(DSN string) (*gorm.DB, error) {
 		return nil, err
 	}
 	log.Println("✅ Database connection established")
-
-	// Run required migrations:
-	err = DBClient.AutoMigrate(&User{}, &AuthProvider{}, &Transaction{}, &Offset{})
-	if err != nil {
-		return nil, fmt.Errorf("⚠️ Migration failed: %v", err)
-	}
-	log.Println("✅ Database migrated successfully")
 
 	return DBClient, nil
 }
