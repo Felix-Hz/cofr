@@ -4,9 +4,9 @@
 }
 
 :80 {
-    # Redirect non-www to www (Telegram widget requires exact domain match)
-    @nonwww header Host uitzicht.online
-    redir @nonwww https://www.uitzicht.online{uri} permanent
+    # Redirect www to non-www
+    @www header Host www.cofr.cash
+    redir @www https://cofr.cash{uri} permanent
 
     # API routes - strip /api prefix before forwarding
     handle /api/* {

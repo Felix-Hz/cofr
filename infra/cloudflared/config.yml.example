@@ -5,6 +5,6 @@ tunnel: YOUR_TUNNEL_ID
 credentials-file: /etc/cloudflared/YOUR_TUNNEL_ID.json
 
 ingress:
-  - hostname: uitzicht.online
+  - hostname: cofr.cash
     service: http://caddy:80
   - service: http_status:404
