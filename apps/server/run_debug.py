@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Debug runner for Bezorgen API
+Debug runner for Cofr API
 Run with: uv run python run_debug.py
 """
 

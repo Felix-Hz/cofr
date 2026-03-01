@@ -1,14 +1,6 @@
-```
- _   _ _ _       _      _     _   
-| | | (_) |_ ___(_) ___| |__ | |_ 
-| | | | | __|_  / |/ __| '_ \| __|
-| |_| | | |_ / /| | (__| | | | |_ 
- \___/|_|\__/___|_|\___|_| |_|\__|
-```
+# Cofr — Expense Tracker Dashboard
 
-# Uitzicht - Expense Tracker Dashboard
-
-A modern expense tracking dashboard with Telegram authentication integration. Track your expenses, view analytics, and manage categories with a clean, professional interface. Powered by the Bezorgen backend API.
+A modern expense tracking dashboard. Track your expenses, view analytics, and manage categories with a clean, professional interface.
 
 ## Features
 
