@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     DATABASE_URL: str
     TELEGRAM_BOT_TOKEN: str
+    TELEGRAM_BOT_NAME: str = ""
     JWT_SECRET: str
     ENCRYPTION_KEY: str
     API_PORT: int = 5784
@@ -14,12 +15,6 @@ class Settings(BaseSettings):
     # OAuth — Google
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-
-    # OAuth — Apple
-    APPLE_CLIENT_ID: str = ""
-    APPLE_CLIENT_SECRET: str = ""
-    APPLE_TEAM_ID: str = ""
-    APPLE_KEY_ID: str = ""
 
     # URLs
     API_URL: str = "http://localhost:5784"

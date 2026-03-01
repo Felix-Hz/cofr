@@ -52,7 +52,6 @@ Edit `.env` and add your configuration:
 
 ```env
 VITE_API_BASE_URL=http://localhost:5784
-VITE_TELEGRAM_BOT_NAME=your_bot_name
 ```
 
 ### Development

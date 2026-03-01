@@ -34,11 +34,12 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[int | None] = mapped_column(Integer, unique=True, index=True, nullable=True)
     first_name: Mapped[str] = mapped_column(EncryptedString, default="")
     last_name: Mapped[str] = mapped_column(EncryptedString, default="")
     username: Mapped[str] = mapped_column(EncryptedString, default="")
     preferred_currency: Mapped[str] = mapped_column(String, default="NZD")
+    link_code: Mapped[str | None] = mapped_column(String, nullable=True)
+    link_code_expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="user")
     auth_providers: Mapped[list["AuthProvider"]] = relationship(back_populates="user")

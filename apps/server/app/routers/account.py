@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import secrets
+from datetime import datetime, timezone, timedelta
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_user_id
-from app.auth.telegram import verify_telegram_auth
 from app.config import settings
 from app.database import get_db
 from app.db.models import AuthProvider, User
-from app.db.schemas import TelegramAuthRequest
 
 router = APIRouter(prefix="/account", tags=["Account"])
 
@@ -23,6 +24,11 @@ class ProviderResponse(BaseModel):
 class UnlinkResponse(BaseModel):
     success: bool
     message: str
+
+
+class TelegramLinkInitResponse(BaseModel):
+    code: str
+    deep_link: str
 
 
 @router.get("/providers", response_model=list[ProviderResponse])
@@ -72,69 +78,30 @@ async def unlink_provider(
     return UnlinkResponse(success=True, message="Provider unlinked successfully")
 
 
-@router.post("/link/telegram", response_model=ProviderResponse)
-async def link_telegram(
-    data: TelegramAuthRequest,
+@router.post("/link/telegram/init", response_model=TelegramLinkInitResponse)
+async def init_telegram_link(
     user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
 ):
-    """Link Telegram account to authenticated user"""
-    auth_data = {
-        "id": data.id,
-        "first_name": data.first_name,
-        "auth_date": str(data.auth_date),
-        "hash": data.hash,
-    }
-    if data.last_name:
-        auth_data["last_name"] = data.last_name
-    if data.username:
-        auth_data["username"] = data.username
-    if data.photo_url:
-        auth_data["photo_url"] = data.photo_url
-
-    if not verify_telegram_auth(auth_data, settings.TELEGRAM_BOT_TOKEN):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Telegram authentication",
-        )
-
-    telegram_id_str = str(data.id)
-
-    # Check if this Telegram ID is already linked to another account
+    """Generate a deep-link code for Telegram account linking"""
+    # Check if already linked
     existing = (
         db.query(AuthProvider)
-        .filter(
-            AuthProvider.provider == "telegram",
-            AuthProvider.provider_user_id == telegram_id_str,
-        )
+        .filter(AuthProvider.user_id == user_id, AuthProvider.provider == "telegram")
         .first()
     )
     if existing:
-        if existing.user_id == user_id:
-            raise HTTPException(status_code=400, detail="Telegram already linked to this account")
-        raise HTTPException(
-            status_code=409, detail="Telegram account already linked to another user"
-        )
+        raise HTTPException(status_code=400, detail="Telegram already linked to this account")
 
-    # Also update the user's telegram user_id for backward compatibility with remind0
     user = db.query(User).filter(User.id == user_id).first()
-    if user:
-        user.user_id = data.id
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    provider = AuthProvider(
-        user_id=user_id,
-        provider="telegram",
-        provider_user_id=telegram_id_str,
-        display_name=data.username or data.first_name,
-    )
-    db.add(provider)
+    code = secrets.token_urlsafe(6)
+    user.link_code = code
+    user.link_code_expires = datetime.now(timezone.utc) + timedelta(minutes=10)
     db.commit()
-    db.refresh(provider)
 
-    return ProviderResponse(
-        id=str(provider.id),
-        provider=provider.provider,
-        provider_user_id=provider.provider_user_id,
-        email=provider.email,
-        display_name=provider.display_name,
-    )
+    deep_link = f"https://t.me/{settings.TELEGRAM_BOT_NAME}?start={code}"
+
+    return TelegramLinkInitResponse(code=code, deep_link=deep_link)

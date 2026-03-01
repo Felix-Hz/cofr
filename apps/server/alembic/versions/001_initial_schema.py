@@ -1,6 +1,6 @@
 """initial_schema
 
-Revision ID: 001_initial
+Revision ID: 001
 Revises:
 Create Date: 2026-02-28
 
@@ -12,7 +12,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-revision: str = "001_initial"
+revision: str = "001"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -22,13 +22,13 @@ def upgrade() -> None:
     op.create_table(
         "users",
         sa.Column("id", sa.Uuid(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("user_id", sa.Integer(), nullable=True),
         sa.Column("first_name", sa.String(), nullable=False, server_default=""),
         sa.Column("last_name", sa.String(), nullable=False, server_default=""),
         sa.Column("username", sa.String(), nullable=False, server_default=""),
         sa.Column("preferred_currency", sa.String(), nullable=False, server_default="NZD"),
+        sa.Column("link_code", sa.String(), nullable=True),
+        sa.Column("link_code_expires", sa.DateTime(), nullable=True),
     )
-    op.create_index("ix_users_user_id", "users", ["user_id"], unique=True)
 
     op.create_table(
         "transactions",

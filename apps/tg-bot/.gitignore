@@ -3,6 +3,7 @@
 #
 
 # Build output
+main
 *.exe
 *.exe~
 *.dll
