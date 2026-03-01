@@ -2,6 +2,7 @@ import {
   type RouteConfig,
   route,
   index,
+  layout,
 } from "@react-router/dev/routes";
 
 export default [
@@ -10,12 +11,10 @@ export default [
   route("login", "./routes/login.tsx"),
   route("auth/callback", "./routes/auth-callback.tsx"),
 
-  // Protected dashboard routes with shared layout
-  route("dashboard", "./routes/dashboard/_layout.tsx", [
-    index("./routes/dashboard/index.tsx"),
-    route("expenses", "./routes/dashboard/expenses.tsx"),
-    route("stats", "./routes/dashboard/stats.tsx"),
-    route("settings", "./routes/dashboard/settings.tsx"),
+  // Protected routes with shared layout (auth guard + header/nav)
+  layout("./routes/_authenticated.tsx", [
+    route("dashboard", "./routes/dashboard/index.tsx"),
+    route("settings", "./routes/settings.tsx"),
   ]),
 
   // Logout action route

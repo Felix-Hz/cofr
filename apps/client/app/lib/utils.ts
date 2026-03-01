@@ -104,6 +104,12 @@ export function getCategoryColor(category: string, isDark = false): string {
   );
 }
 
+// Text truncation
+export function truncateText(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen) + "...";
+}
+
 // Get initials from name
 export function getUserInitials(name: string): string {
   return name
