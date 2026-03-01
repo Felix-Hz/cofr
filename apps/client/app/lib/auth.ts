@@ -1,4 +1,4 @@
-const TOKEN_KEY = "uitzicht_token";
+const TOKEN_KEY = "cofr_token";
 
 export function saveToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
@@ -28,8 +28,7 @@ export function getTokenPayload(): {
 
   try {
     const payload = token.split(".")[1];
-    const decoded = JSON.parse(atob(payload));
-    return decoded;
+    return JSON.parse(atob(payload));
   } catch {
     return null;
   }

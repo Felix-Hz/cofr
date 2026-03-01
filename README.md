@@ -41,7 +41,7 @@ cofr/
 | tg-bot      | Go                                | —    | Telegram bot for expense tracking                |
 | client      | TypeScript / React Router 7 / Bun | 3000 | Web dashboard with SSR                           |
 | caddy       | Caddy 2                           | 80   | Reverse proxy (`/api/*` → server, `/*` → client) |
-| cloudflared | Cloudflare Tunnel                 | —    | Exposes services at `uitzicht.online`            |
+| cloudflared | Cloudflare Tunnel                 | —    | Exposes services at `cofr.cash`                  |
 
 ## Database
 
