@@ -1,12 +1,7 @@
-import {
-  Link,
-  Outlet,
-  redirect,
-  useLoaderData,
-} from "react-router";
+import { Link, Outlet, redirect, useLoaderData } from "react-router";
+import ThemeToggle from "~/components/ThemeToggle";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
 import { getUserInitials } from "~/lib/utils";
-import ThemeToggle from "~/components/ThemeToggle";
 
 export async function clientLoader() {
   if (!isAuthenticated()) {

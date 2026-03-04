@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx";
+import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 // Tailwind class merging utility
@@ -107,10 +107,7 @@ const CATEGORY_COLORS_DARK: Record<Category, string> = {
 
 export function getCategoryColor(category: string, isDark = false): string {
   const colors = isDark ? CATEGORY_COLORS_DARK : CATEGORY_COLORS_LIGHT;
-  return (
-    colors[category as Category] ||
-    colors[Category.MISCELLANEOUS]
-  );
+  return colors[category as Category] || colors[Category.MISCELLANEOUS];
 }
 
 // Text truncation

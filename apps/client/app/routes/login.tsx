@@ -1,8 +1,7 @@
 import { redirect, useSearchParams } from "react-router";
 import { isAuthenticated } from "~/lib/auth";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5784";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
 
 export async function clientLoader() {
   if (isAuthenticated()) {
@@ -20,14 +19,8 @@ export default function Login() {
       <title>Cofr | Login</title>
       <div className="max-w-lg w-full space-y-8 p-8">
         <div className="text-center">
-          <img
-            src="/logo.png"
-            alt="cofr"
-            className="h-16 w-16 mx-auto mb-4 logo-auto"
-          />
-          <h2 className="text-3xl font-bold tracking-tight">
-            Welcome to cofr
-          </h2>
+          <img src="/logo.png" alt="cofr" className="h-16 w-16 mx-auto mb-4 logo-auto" />
+          <h2 className="text-3xl font-bold tracking-tight">Welcome to cofr</h2>
           <p className="mt-2 text-sm text-content-tertiary">
             Sign in with your Google account to continue
           </p>

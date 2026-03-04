@@ -11,6 +11,13 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
     port: 5173,
-    allowedHosts: ["localhost", "127.0.0.1", ".ngrok.io", ".ngrok-free.app", "cofr.cash", "www.cofr.cash"],
+    allowedHosts: [
+      "localhost",
+      "127.0.0.1",
+      ".ngrok.io",
+      ".ngrok-free.app",
+      "cofr.cash",
+      "www.cofr.cash",
+    ],
   },
 });

@@ -1,0 +1,22 @@
+repos:
+  - repo: local
+    hooks:
+      - id: biome-check
+        name: biome check (client)
+        entry: bash -c 'cd apps/client && bunx biome check --write .'
+        language: system
+        files: ^apps/client/.*\.(ts|tsx|js|jsx|json)$
+        pass_filenames: false
+
+      - id: ruff-format
+        name: ruff format (server)
+        entry: bash -c 'cd apps/server && uv run ruff format && uv run ruff check --fix'
+        language: system
+        files: ^apps/server/.*\.py$
+        pass_filenames: false
+
+      - id: gofmt
+        name: gofmt (tg-bot)
+        entry: gofmt -w
+        language: system
+        files: ^apps/tg-bot/.*\.go$

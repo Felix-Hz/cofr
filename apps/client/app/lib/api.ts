@@ -1,19 +1,18 @@
 import { getToken, removeToken } from "./auth";
 import {
-  ExpenseDeleteResponseSchema,
-  ExpenseSchema,
-  ExpensesResponseSchema,
-  MonthlyStatsSchema,
   type Expense,
   type ExpenseCreate,
   type ExpenseDeleteResponse,
+  ExpenseDeleteResponseSchema,
+  ExpenseSchema,
   type ExpensesResponse,
+  ExpensesResponseSchema,
   type ExpenseUpdate,
   type MonthlyStats,
+  MonthlyStatsSchema,
 } from "./schemas";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5173";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5173";
 
 export class ApiError extends Error {
   constructor(
@@ -25,10 +24,7 @@ export class ApiError extends Error {
   }
 }
 
-async function fetchWithAuth(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<Response> {
+async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const token = getToken();
 
   const headers: Record<string, string> = {
@@ -53,9 +49,7 @@ async function fetchWithAuth(
   }
 
   if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ detail: "Unknown error" }));
+    const error = await response.json().catch(() => ({ detail: "Unknown error" }));
     throw new ApiError(response.status, error.detail || "API request failed");
   }
 
@@ -82,10 +76,8 @@ export async function getExpenses(
   if (options.startDate) params.set("start_date", options.startDate);
   if (options.endDate) params.set("end_date", options.endDate);
   if (options.category) params.set("category", options.category);
-  if (options.minAmount !== undefined)
-    params.set("min_amount", options.minAmount.toString());
-  if (options.maxAmount !== undefined)
-    params.set("max_amount", options.maxAmount.toString());
+  if (options.minAmount !== undefined) params.set("min_amount", options.minAmount.toString());
+  if (options.maxAmount !== undefined) params.set("max_amount", options.maxAmount.toString());
 
   const response = await fetchWithAuth(`/expenses/?${params}`);
   const json = await response.json();
@@ -148,10 +140,7 @@ export async function getExpense(id: string): Promise<Expense> {
   return ExpenseSchema.parse(json);
 }
 
-export async function updateExpense(
-  id: string,
-  data: ExpenseUpdate,
-): Promise<Expense> {
+export async function updateExpense(id: string, data: ExpenseUpdate): Promise<Expense> {
   const response = await fetchWithAuth(`/expenses/${id}`, {
     method: "PUT",
     body: JSON.stringify({
@@ -185,9 +174,7 @@ export async function getLinkedProviders(): Promise<
   return response.json();
 }
 
-export async function unlinkProvider(
-  id: string,
-): Promise<{ success: boolean; message: string }> {
+export async function unlinkProvider(id: string): Promise<{ success: boolean; message: string }> {
   const response = await fetchWithAuth(`/account/providers/${id}`, {
     method: "DELETE",
   });

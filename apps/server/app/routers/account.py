@@ -1,5 +1,5 @@
 import secrets
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -99,7 +99,7 @@ async def init_telegram_link(
 
     code = secrets.token_urlsafe(6)
     user.link_code = code
-    user.link_code_expires = datetime.now(timezone.utc) + timedelta(minutes=10)
+    user.link_code_expires = datetime.now(UTC) + timedelta(minutes=10)
     db.commit()
 
     deep_link = f"https://t.me/{settings.TELEGRAM_BOT_NAME}?start={code}"

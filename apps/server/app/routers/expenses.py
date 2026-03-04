@@ -33,7 +33,9 @@ async def get_expenses(
     """Get paginated expenses for authenticated user with optional filters"""
     service = ExpenseService(db)
     expenses, total = await service.get_expenses(
-        user_id, limit, offset,
+        user_id,
+        limit,
+        offset,
         start_date=start_date,
         end_date=end_date,
         category=category,

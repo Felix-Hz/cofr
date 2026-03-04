@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { redirect } from "react-router";
+import { getLinkedProviders, initTelegramLink, unlinkProvider } from "~/lib/api";
 import { isAuthenticated } from "~/lib/auth";
-import { getLinkedProviders, unlinkProvider, initTelegramLink } from "~/lib/api";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5784";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
 
 interface LinkedProvider {
   id: string;
@@ -54,9 +53,7 @@ export default function Settings() {
   }, []);
 
   const linkedProviderNames = providers.map((p) => p.provider);
-  const unlinkedProviders = ALL_PROVIDERS.filter(
-    (p) => !linkedProviderNames.includes(p),
-  );
+  const unlinkedProviders = ALL_PROVIDERS.filter((p) => !linkedProviderNames.includes(p));
 
   const handleLinkTelegram = async () => {
     setError(null);
@@ -95,9 +92,7 @@ export default function Settings() {
       await unlinkProvider(id);
       setProviders((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to unlink provider",
-      );
+      setError(err instanceof Error ? err.message : "Failed to unlink provider");
     }
   };
 
@@ -122,9 +117,7 @@ export default function Settings() {
 
       <div className="bg-surface-primary rounded-lg border border-edge-default">
         <div className="px-6 py-4 border-b border-edge-default">
-          <h3 className="text-lg font-medium text-content-primary">
-            Linked Accounts
-          </h3>
+          <h3 className="text-lg font-medium text-content-primary">Linked Accounts</h3>
           <p className="text-sm text-content-tertiary mt-1">
             Manage your connected authentication providers
           </p>
@@ -133,17 +126,13 @@ export default function Settings() {
         <div className="divide-y divide-edge-default">
           {/* Linked providers */}
           {providers.map((provider) => (
-            <div
-              key={provider.id}
-              className="px-6 py-4 flex items-center justify-between"
-            >
+            <div key={provider.id} className="px-6 py-4 flex items-center justify-between">
               <div>
                 <p className="font-medium text-content-primary">
                   {PROVIDER_LABELS[provider.provider] || provider.provider}
                 </p>
                 <p className="text-sm text-content-tertiary">
-                  {provider.display_name || provider.email ||
-                    provider.provider_user_id}
+                  {provider.display_name || provider.email || provider.provider_user_id}
                 </p>
               </div>
               <button
@@ -159,69 +148,65 @@ export default function Settings() {
 
           {/* Unlinked providers */}
           {unlinkedProviders.map((provider) => (
-            <div
-              key={provider}
-              className="px-6 py-4 flex items-center justify-between"
-            >
+            <div key={provider} className="px-6 py-4 flex items-center justify-between">
               <div>
                 <p className="font-medium text-content-muted">
                   {PROVIDER_LABELS[provider] || provider}
                 </p>
                 <p className="text-sm text-content-muted">Not connected</p>
               </div>
-              {provider === "telegram"
-                ? (
-                  linkData
-                    ? (
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={linkData.deep_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
-                        >
-                          Open Telegram
-                        </a>
-                        <button
-                          type="button"
-                          onClick={handleCancelLink}
-                          className="px-3 py-1.5 text-sm font-medium text-content-tertiary border border-edge-default rounded-md hover:bg-surface-hover transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )
-                    : (
-                      <button
-                        type="button"
-                        onClick={handleLinkTelegram}
-                        className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
-                      >
-                        Link Telegram
-                      </button>
-                    )
-                )
-                : (
-                  <a
-                    href={`${API_BASE_URL}/auth/oauth/${provider}/login`}
+              {provider === "telegram" ? (
+                linkData ? (
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={linkData.deep_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
+                    >
+                      Open Telegram
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleCancelLink}
+                      className="px-3 py-1.5 text-sm font-medium text-content-tertiary border border-edge-default rounded-md hover:bg-surface-hover transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleLinkTelegram}
                     className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
                   >
-                    Link
-                  </a>
-                )}
+                    Link Telegram
+                  </button>
+                )
+              ) : (
+                <a
+                  href={`${API_BASE_URL}/auth/oauth/${provider}/login`}
+                  className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
+                >
+                  Link
+                </a>
+              )}
             </div>
           ))}
         </div>
       </div>
 
       <p className="text-sm text-content-tertiary mt-4">
-        The Telegram bot requires a linked Telegram account to track expenses
-        via chat.
+        The Telegram bot requires a linked Telegram account to track expenses via chat.
       </p>
 
       {linkData && (
         <p className="text-sm text-content-tertiary mt-2">
-          Or send <code className="bg-surface-hover px-1 py-0.5 rounded text-xs">/start {linkData.code}</code> to the bot in{" "}
+          Or send{" "}
+          <code className="bg-surface-hover px-1 py-0.5 rounded text-xs">
+            /start {linkData.code}
+          </code>{" "}
+          to the bot in{" "}
           <a
             href={linkData.deep_link.split("?")[0]}
             target="_blank"

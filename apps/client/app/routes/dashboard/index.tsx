@@ -1,37 +1,20 @@
 import { useState } from "react";
 import { useLoaderData, useNavigate, useRevalidator } from "react-router";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import {
-  getExpenses,
-  getRangeStats,
-  createExpense,
-  updateExpense,
-  deleteExpense,
-} from "~/lib/api";
-import {
-  formatCurrency,
-  formatDate,
-  getCategoryColor,
-  truncateText,
-} from "~/lib/utils";
-import type { Expense, ExpenseCreate } from "~/lib/schemas";
-import ExpenseFormModal from "~/components/ExpenseFormModal";
-import DeleteConfirmModal from "~/components/DeleteConfirmModal";
-import FilterModal from "~/components/FilterModal";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import CategoryPieTooltip from "~/components/CategoryPieTooltip";
 import ControlsPanel, {
   getPresetDates,
   getPresetLabel,
-  shiftPreset,
   type Preset,
+  shiftPreset,
 } from "~/components/ControlsPanel";
+import DeleteConfirmModal from "~/components/DeleteConfirmModal";
+import ExpenseFormModal from "~/components/ExpenseFormModal";
+import FilterModal from "~/components/FilterModal";
+import { createExpense, deleteExpense, getExpenses, getRangeStats, updateExpense } from "~/lib/api";
+import type { Expense, ExpenseCreate } from "~/lib/schemas";
 import { useTheme } from "~/lib/theme";
+import { formatCurrency, formatDate, getCategoryColor, truncateText } from "~/lib/utils";
 
 const CURRENCIES = ["NZD", "EUR", "USD", "GBP", "AUD"];
 const POSITIVE_CATEGORIES = ["Income", "Savings", "Investment"];
@@ -127,10 +110,18 @@ export default function Dashboard() {
   // Stats calculations
   const totalAllocated = monthlyStats.total_savings + monthlyStats.total_investment;
   const netBalance = monthlyStats.total_income - monthlyStats.total_spent - totalAllocated;
-  const averagePerExpense = monthlyStats.expense_count > 0 ? monthlyStats.total_spent / monthlyStats.expense_count : 0;
-  const savingsRate = monthlyStats.total_income > 0 ? (monthlyStats.total_savings / monthlyStats.total_income) * 100 : 0;
-  const investmentRate = monthlyStats.total_income > 0 ? (monthlyStats.total_investment / monthlyStats.total_income) * 100 : 0;
-  const allocationRate = monthlyStats.total_income > 0 ? (totalAllocated / monthlyStats.total_income) * 100 : 0;
+  const averagePerExpense =
+    monthlyStats.expense_count > 0 ? monthlyStats.total_spent / monthlyStats.expense_count : 0;
+  const savingsRate =
+    monthlyStats.total_income > 0
+      ? (monthlyStats.total_savings / monthlyStats.total_income) * 100
+      : 0;
+  const investmentRate =
+    monthlyStats.total_income > 0
+      ? (monthlyStats.total_investment / monthlyStats.total_income) * 100
+      : 0;
+  const allocationRate =
+    monthlyStats.total_income > 0 ? (totalAllocated / monthlyStats.total_income) * 100 : 0;
 
   // --- URL helpers ---
   const buildUrl = (overrides: Record<string, string | number | undefined>) => {
@@ -158,7 +149,9 @@ export default function Dashboard() {
 
   const handlePresetChange = (newPreset: Preset) => {
     if (newPreset === "custom") {
-      navigate(buildUrl({ preset: "custom", startDate: customStart, endDate: customEnd, offset: 0 }));
+      navigate(
+        buildUrl({ preset: "custom", startDate: customStart, endDate: customEnd, offset: 0 }),
+      );
     } else {
       const { startDate: sd, endDate: ed } = getPresetDates(newPreset);
       setCustomStart(sd);
@@ -204,7 +197,14 @@ export default function Dashboard() {
   };
 
   const applyFilters = () => {
-    navigate(buildUrl({ offset: 0, category: filterCategory, minAmount: filterMinAmount, maxAmount: filterMaxAmount }));
+    navigate(
+      buildUrl({
+        offset: 0,
+        category: filterCategory,
+        minAmount: filterMinAmount,
+        maxAmount: filterMaxAmount,
+      }),
+    );
   };
 
   const clearFilters = () => {
@@ -239,8 +239,14 @@ export default function Dashboard() {
     }));
 
   // CRUD
-  const handleAdd = () => { setSelectedExpense(null); setIsFormModalOpen(true); };
-  const handleRowClick = (expense: Expense) => { setSelectedExpense(expense); setIsFormModalOpen(true); };
+  const handleAdd = () => {
+    setSelectedExpense(null);
+    setIsFormModalOpen(true);
+  };
+  const handleRowClick = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setIsFormModalOpen(true);
+  };
 
   const handleFormSubmit = async (data: ExpenseCreate) => {
     setIsLoading(true);
@@ -249,7 +255,9 @@ export default function Dashboard() {
       else await createExpense(data);
       setIsFormModalOpen(false);
       revalidator.revalidate();
-    } finally { setIsLoading(false); }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteFromModal = async () => {
@@ -259,7 +267,9 @@ export default function Dashboard() {
       await deleteExpense(selectedExpense.id);
       setIsFormModalOpen(false);
       revalidator.revalidate();
-    } finally { setIsLoading(false); }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -269,7 +279,9 @@ export default function Dashboard() {
       await deleteExpense(selectedExpense.id);
       setIsDeleteModalOpen(false);
       revalidator.revalidate();
-    } finally { setIsLoading(false); }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const hasActiveFilters = !!(currentCategory || currentMinAmount || currentMaxAmount);
@@ -291,7 +303,12 @@ export default function Dashboard() {
               aria-label="Previous period"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
           )}
@@ -300,7 +317,9 @@ export default function Dashboard() {
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-content-heading truncate">
               {periodLabel}
             </h2>
-            <p className="text-sm text-content-tertiary mt-0.5 hidden sm:block">Financial overview</p>
+            <p className="text-sm text-content-tertiary mt-0.5 hidden sm:block">
+              Financial overview
+            </p>
           </div>
 
           {/* Next arrow */}
@@ -311,7 +330,12 @@ export default function Dashboard() {
               aria-label="Next period"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           )}
@@ -337,7 +361,15 @@ export default function Dashboard() {
               aria-label="Controls"
             >
               {/* Sliders icon */}
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <line x1="4" y1="7" x2="20" y2="7" />
                 <line x1="4" y1="12" x2="20" y2="12" />
                 <line x1="4" y1="17" x2="20" y2="17" />
@@ -369,7 +401,12 @@ export default function Dashboard() {
             aria-label="Add transaction"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
           </button>
         </div>
@@ -379,7 +416,12 @@ export default function Dashboard() {
       {!currentCurrency && (
         <div className="flex items-center gap-2.5 bg-warning-bg border border-warning-border text-warning-text px-4 py-2.5 rounded-lg text-xs">
           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
           </svg>
           Mixed currencies — select one for accurate totals.
         </div>
@@ -392,8 +434,18 @@ export default function Dashboard() {
           {/* Income */}
           <div className="rounded-xl border border-positive-border bg-positive-bg p-4 sm:p-5">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-positive-text-strong/70">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l2.828 2.818L15 13.182" />
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6v12m-3-2.818l2.828 2.818L15 13.182"
+                />
               </svg>
               Income
             </div>
@@ -406,8 +458,18 @@ export default function Dashboard() {
           {/* Spent */}
           <div className="rounded-xl border border-edge-default bg-surface-primary p-4 sm:p-5 shadow-sm">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 18V6m3 2.818L12.172 6 9 8.818" />
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 18V6m3 2.818L12.172 6 9 8.818"
+                />
               </svg>
               Spent
             </div>
@@ -415,15 +477,26 @@ export default function Dashboard() {
               {formatCurrency(monthlyStats.total_spent, monthlyStats.currency)}
             </div>
             <p className="mt-1 text-[11px] text-content-tertiary">
-              {monthlyStats.expense_count} tx · avg {formatCurrency(averagePerExpense, monthlyStats.currency)}
+              {monthlyStats.expense_count} tx · avg{" "}
+              {formatCurrency(averagePerExpense, monthlyStats.currency)}
             </p>
           </div>
 
           {/* Allocated */}
           <div className="rounded-xl border border-accent/20 bg-accent-soft-bg p-4 sm:p-5">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-accent-soft-text/70">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
               </svg>
               Allocated
             </div>
@@ -431,26 +504,50 @@ export default function Dashboard() {
               {formatCurrency(totalAllocated, monthlyStats.currency)}
             </div>
             <p className="mt-1 text-[11px] text-accent">
-              {allocationRate.toFixed(0)}% · {savingsRate.toFixed(0)}% saved, {investmentRate.toFixed(0)}% invested
+              {allocationRate.toFixed(0)}% · {savingsRate.toFixed(0)}% saved,{" "}
+              {investmentRate.toFixed(0)}% invested
             </p>
           </div>
 
           {/* Remaining */}
           <div className="rounded-xl border border-edge-default bg-surface-primary p-4 sm:p-5 shadow-sm">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+                />
               </svg>
               Remaining
             </div>
-            <div className={`mt-2 text-xl sm:text-2xl font-bold tabular-nums ${netBalance >= 0 ? "text-positive-text-strong" : "text-negative-text"}`}>
+            <div
+              className={`mt-2 text-xl sm:text-2xl font-bold tabular-nums ${netBalance >= 0 ? "text-positive-text-strong" : "text-negative-text"}`}
+            >
               {formatCurrency(netBalance, monthlyStats.currency)}
             </div>
             <p className="mt-1 text-[11px] text-content-tertiary">
               {netBalance >= 0
-                ? ["Vibes intact", "Wallet's breathing", "Still in the game", "Living within means", "Budget boss"][Math.abs(Math.floor(netBalance * 7)) % 5]
-                : ["Wallet says ouch", "Ramen month activated", "Uh oh spaghettio", "Budget has left the chat", "Money machine broke"][Math.abs(Math.floor(netBalance * 7)) % 5]
-              }
+                ? [
+                    "Vibes intact",
+                    "Wallet's breathing",
+                    "Still in the game",
+                    "Living within means",
+                    "Budget boss",
+                  ][Math.abs(Math.floor(netBalance * 7)) % 5]
+                : [
+                    "Wallet says ouch",
+                    "Ramen month activated",
+                    "Uh oh spaghettio",
+                    "Budget has left the chat",
+                    "Money machine broke",
+                  ][Math.abs(Math.floor(netBalance * 7)) % 5]}
             </p>
           </div>
         </div>
@@ -459,12 +556,25 @@ export default function Dashboard() {
         <div className="rounded-xl border border-edge-default bg-surface-primary shadow-sm overflow-hidden p-2 sm:p-4">
           {pieData.length > 0 ? (
             <div className="flex flex-col h-full">
-
               {/* Title */}
               <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" />
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z"
+                  />
                 </svg>
                 Category Breakdown
               </div>
@@ -502,7 +612,9 @@ export default function Dashboard() {
                         className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: entry.fill }}
                       />
-                      <span className="text-xs text-content-secondary truncate flex-1">{entry.category}</span>
+                      <span className="text-xs text-content-secondary truncate flex-1">
+                        {entry.category}
+                      </span>
                       <span className="text-[11px] font-medium text-content-primary tabular-nums shrink-0">
                         {entry.formatted}
                       </span>
@@ -548,7 +660,12 @@ export default function Dashboard() {
               aria-label="Filter transactions"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
               </svg>
             </button>
             <button
@@ -557,7 +674,12 @@ export default function Dashboard() {
               aria-label="Add transaction"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
               </svg>
             </button>
           </div>
@@ -568,10 +690,18 @@ export default function Dashboard() {
           <table className="min-w-full divide-y divide-edge-default">
             <thead>
               <tr className="bg-surface-elevated">
-                <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Date</th>
-                <th className="hidden sm:table-cell px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Description</th>
-                <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Category</th>
-                <th className="px-3 sm:px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Amount</th>
+                <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+                  Date
+                </th>
+                <th className="hidden sm:table-cell px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+                  Description
+                </th>
+                <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+                  Category
+                </th>
+                <th className="px-3 sm:px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+                  Amount
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-edge-default">
@@ -595,11 +725,17 @@ export default function Dashboard() {
                       }`}
                     >
                       <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-xs text-content-tertiary tabular-nums">
-                        <span className="sm:hidden">{formatDate(expense.created_at, "compact")}</span>
+                        <span className="sm:hidden">
+                          {formatDate(expense.created_at, "compact")}
+                        </span>
                         <span className="hidden sm:inline">{formatDate(expense.created_at)}</span>
                       </td>
                       <td className="hidden sm:table-cell px-5 py-3 whitespace-nowrap text-sm text-content-primary">
-                        {expense.description ? truncateText(expense.description, 40) : <span className="text-content-muted">—</span>}
+                        {expense.description ? (
+                          truncateText(expense.description, 40)
+                        ) : (
+                          <span className="text-content-muted">—</span>
+                        )}
                       </td>
                       <td className="px-3 sm:px-5 py-3 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary">
@@ -641,7 +777,9 @@ export default function Dashboard() {
                 className="h-7 px-1.5 border border-edge-strong rounded-md text-xs text-content-tertiary bg-surface-primary focus:outline-none focus:ring-2 focus:ring-emerald/40 transition-shadow"
               >
                 {[10, 25, 50].map((n) => (
-                  <option key={n} value={n}>{n} / page</option>
+                  <option key={n} value={n}>
+                    {n} / page
+                  </option>
                 ))}
               </select>
             </div>

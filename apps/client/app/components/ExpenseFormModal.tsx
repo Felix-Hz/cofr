@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Category } from "~/lib/utils";
+import { useEffect, useState } from "react";
 import type { Expense, ExpenseCreate } from "~/lib/schemas";
+import { Category } from "~/lib/utils";
 
 interface ExpenseFormModalProps {
   isOpen: boolean;
@@ -38,7 +38,9 @@ export default function ExpenseFormModal({
       const d = new Date(expense.created_at);
       // Format as local datetime-local value (YYYY-MM-DDTHH:MM)
       const pad = (n: number) => n.toString().padStart(2, "0");
-      setDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+      setDate(
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`,
+      );
     } else {
       setAmount("");
       setCategory(Category.MISCELLANEOUS);
@@ -47,7 +49,9 @@ export default function ExpenseFormModal({
       setShowDeleteConfirm(false);
       const now = new Date();
       const pad = (n: number) => n.toString().padStart(2, "0");
-      setDate(`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`);
+      setDate(
+        `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
+      );
     }
   }, [expense, isOpen]);
 
@@ -71,10 +75,7 @@ export default function ExpenseFormModal({
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
         {/* Backdrop */}
-        <div
-          className="fixed inset-0 bg-black/50 transition-opacity"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
 
         {/* Modal */}
         <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6">
@@ -189,13 +190,17 @@ export default function ExpenseFormModal({
             {/* Actions */}
             <div className="flex justify-between pt-4">
               <div>
-                {isEditMode && onDelete && (
-                  showDeleteConfirm ? (
+                {isEditMode &&
+                  onDelete &&
+                  (showDeleteConfirm ? (
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-negative-text">Delete?</span>
                       <button
                         type="button"
-                        onClick={() => { setShowDeleteConfirm(false); onDelete(); }}
+                        onClick={() => {
+                          setShowDeleteConfirm(false);
+                          onDelete();
+                        }}
                         className="px-3 py-1.5 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
                         disabled={isLoading}
                       >
@@ -219,8 +224,7 @@ export default function ExpenseFormModal({
                     >
                       Delete
                     </button>
-                  )
-                )}
+                  ))}
               </div>
               <div className="flex gap-3">
                 <button
@@ -236,11 +240,7 @@ export default function ExpenseFormModal({
                   className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50"
                   disabled={isLoading}
                 >
-                  {isLoading
-                    ? "Saving..."
-                    : isEditMode
-                      ? "Update"
-                      : "Add"}
+                  {isLoading ? "Saving..." : isEditMode ? "Update" : "Add"}
                 </button>
               </div>
             </div>

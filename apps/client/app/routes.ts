@@ -1,9 +1,4 @@
-import {
-  type RouteConfig,
-  route,
-  index,
-  layout,
-} from "@react-router/dev/routes";
+import { index, layout, type RouteConfig, route } from "@react-router/dev/routes";
 
 export default [
   // Public routes
