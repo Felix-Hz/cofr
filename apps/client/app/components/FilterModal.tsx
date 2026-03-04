@@ -49,7 +49,7 @@ export default function FilterModal({
 
       <div className="flex min-h-full items-center justify-center p-4">
         {/* Modal */}
-        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6">
+        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6 overflow-hidden">
           <h3 className="text-lg font-semibold mb-4">Filter Transactions</h3>
 
           <div className="space-y-4">
@@ -88,9 +88,9 @@ export default function FilterModal({
                   onChange={(e) => setMinAmount(e.target.value)}
                   min="0"
                   step="0.01"
-                  className="flex-1 px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald tabular-nums"
+                  className="min-w-0 flex-1 px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald tabular-nums"
                 />
-                <span className="text-content-tertiary text-sm">–</span>
+                <span className="text-content-tertiary text-sm shrink-0">–</span>
                 <input
                   type="number"
                   placeholder="Max"
@@ -98,7 +98,7 @@ export default function FilterModal({
                   onChange={(e) => setMaxAmount(e.target.value)}
                   min="0"
                   step="0.01"
-                  className="flex-1 px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald tabular-nums"
+                  className="min-w-0 flex-1 px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald tabular-nums"
                 />
               </div>
             </div>
