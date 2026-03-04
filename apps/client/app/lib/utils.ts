@@ -17,7 +17,7 @@ export function formatCurrency(amount: number, currency: string): string {
 // Date formatting
 export function formatDate(
   date: string | Date,
-  format: "short" | "long" = "short",
+  format: "short" | "long" | "compact" = "short",
 ): string {
   const d = typeof date === "string" ? new Date(date) : date;
 
@@ -25,6 +25,15 @@ export function formatDate(
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+  }
+
+  if (format === "compact") {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
@@ -102,6 +111,12 @@ export function getCategoryColor(category: string, isDark = false): string {
     colors[category as Category] ||
     colors[Category.MISCELLANEOUS]
   );
+}
+
+// Text truncation
+export function truncateText(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen) + "...";
 }
 
 // Get initials from name

@@ -38,8 +38,8 @@ def upgrade() -> None:
         sa.Column("amount", sa.Float(), nullable=False),
         sa.Column("currency", sa.String(), nullable=False, server_default="NZD"),
         sa.Column("notes", sa.String(), nullable=False, server_default=""),
-        sa.Column("timestamp", sa.DateTime(), nullable=False),
-        sa.Column("inserted_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column("timestamp", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("inserted_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("hash", sa.String(), nullable=True),
     )
     op.create_index("ix_transactions_user_id", "transactions", ["user_id"])

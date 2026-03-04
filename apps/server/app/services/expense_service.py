@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import case, func
@@ -19,18 +19,39 @@ class ExpenseService:
         self.db = db
 
     async def get_expenses(
-        self, user_id: str, limit: int = 50, offset: int = 0
+        self,
+        user_id: str,
+        limit: int = 50,
+        offset: int = 0,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
+        category: str | None = None,
+        min_amount: float | None = None,
+        max_amount: float | None = None,
     ) -> tuple[list[ExpenseSchema], int]:
-        """Get paginated expenses for a user"""
+        """Get paginated expenses for a user with optional filters"""
+        filters = [Transaction.user_id == user_id]
+
+        if start_date:
+            filters.append(Transaction.timestamp >= start_date)
+        if end_date:
+            filters.append(Transaction.timestamp <= end_date)
+        if category:
+            filters.append(Transaction.category == category)
+        if min_amount is not None:
+            filters.append(Transaction.amount >= min_amount)
+        if max_amount is not None:
+            filters.append(Transaction.amount <= max_amount)
+
         total = (
             self.db.query(func.count(Transaction.id))
-            .filter(Transaction.user_id == user_id)
+            .filter(*filters)
             .scalar()
         )
 
         transactions = (
             self.db.query(Transaction)
-            .filter(Transaction.user_id == user_id)
+            .filter(*filters)
             .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
             .offset(offset)
@@ -172,6 +193,83 @@ class ExpenseService:
             currency=currency or "NZD",
         )
 
+    async def get_range_stats(
+        self, user_id: str, start_date: datetime, end_date: datetime, currency: str | None = None
+    ) -> MonthlyStats:
+        """Get statistics for a date range with category breakdown, optionally filtered by currency"""
+        base_filter = [
+            Transaction.user_id == user_id,
+            Transaction.timestamp >= start_date,
+            Transaction.timestamp <= end_date,
+        ]
+
+        if currency:
+            base_filter.append(Transaction.currency == currency)
+
+        excluded_cats = ("Income", "Savings", "Investment")
+
+        summary = self.db.query(
+            func.coalesce(
+                func.sum(
+                    case(
+                        (Transaction.category.not_in(excluded_cats), Transaction.amount),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("total_spent"),
+            func.coalesce(
+                func.sum(
+                    case((Transaction.category == "Income", Transaction.amount), else_=0)
+                ),
+                0,
+            ).label("total_income"),
+            func.coalesce(
+                func.sum(
+                    case((Transaction.category == "Savings", Transaction.amount), else_=0)
+                ),
+                0,
+            ).label("total_savings"),
+            func.coalesce(
+                func.sum(
+                    case((Transaction.category == "Investment", Transaction.amount), else_=0)
+                ),
+                0,
+            ).label("total_investment"),
+            func.count(
+                case((Transaction.category.not_in(excluded_cats), 1))
+            ).label("expense_count"),
+            func.count(Transaction.id).label("transaction_count"),
+        ).filter(*base_filter).first()
+
+        breakdown = (
+            self.db.query(
+                Transaction.category,
+                func.sum(Transaction.amount).label("total"),
+                func.count(Transaction.id).label("count"),
+            )
+            .filter(*base_filter)
+            .group_by(Transaction.category)
+            .order_by(func.sum(Transaction.amount).desc())
+            .all()
+        )
+
+        category_breakdown = [
+            CategoryTotal(category=row.category, total=row.total, count=row.count)
+            for row in breakdown
+        ]
+
+        return MonthlyStats(
+            total_spent=summary.total_spent if summary else 0,
+            total_income=summary.total_income if summary else 0,
+            total_savings=summary.total_savings if summary else 0,
+            total_investment=summary.total_investment if summary else 0,
+            transaction_count=summary.transaction_count if summary else 0,
+            expense_count=summary.expense_count if summary else 0,
+            category_breakdown=category_breakdown,
+            currency=currency or "NZD",
+        )
+
     async def get_expense_by_id(self, user_id: str, expense_id: str) -> ExpenseSchema:
         """Get single expense with ownership check"""
         transaction = (
@@ -186,7 +284,7 @@ class ExpenseService:
 
     async def create_expense(self, user_id: str, data: ExpenseCreateRequest) -> ExpenseSchema:
         """Create a new expense"""
-        created_at = data.created_at or datetime.now()
+        created_at = data.created_at or datetime.now(timezone.utc)
 
         transaction = Transaction(
             user_id=user_id,

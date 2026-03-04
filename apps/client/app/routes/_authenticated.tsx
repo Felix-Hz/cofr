@@ -3,14 +3,12 @@ import {
   Outlet,
   redirect,
   useLoaderData,
-  useLocation,
 } from "react-router";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
 import { getUserInitials } from "~/lib/utils";
 import ThemeToggle from "~/components/ThemeToggle";
 
 export async function clientLoader() {
-  // Protect all dashboard routes
   if (!isAuthenticated()) {
     throw redirect("/login");
   }
@@ -19,16 +17,9 @@ export async function clientLoader() {
   return { user: payload };
 }
 
-export default function DashboardLayout() {
+export default function AuthenticatedLayout() {
   const loaderData = useLoaderData<typeof clientLoader>();
-  const location = useLocation();
   const { user } = loaderData;
-
-  const navItems = [
-    { path: "/dashboard", label: "Overview" },
-    { path: "/dashboard/expenses", label: "Transactions" },
-    { path: "/dashboard/stats", label: "Statistics" },
-  ];
 
   return (
     <div className="min-h-screen bg-surface-page">
@@ -36,28 +27,9 @@ export default function DashboardLayout() {
       <header className="bg-surface-primary border-b border-edge-default">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <Link to="/dashboard">
-                <img src="/logo.png" alt="cofr" className="h-8 logo-auto" />
-              </Link>
-
-              {/* Navigation */}
-              <nav className="hidden md:flex space-x-4">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      location.pathname === item.path
-                        ? "bg-accent-soft-bg text-content-heading"
-                        : "text-content-tertiary hover:text-content-heading hover:bg-surface-hover"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </div>
+            <Link to="/dashboard">
+              <img src="/logo.png" alt="cofr" className="h-8 logo-auto" />
+            </Link>
 
             {/* User menu */}
             <div className="flex items-center gap-2">
@@ -75,7 +47,7 @@ export default function DashboardLayout() {
                       {user?.username || "User"}
                     </div>
                     <Link
-                      to="/dashboard/settings"
+                      to="/settings"
                       className="block px-4 py-2 text-sm text-content-secondary hover:bg-surface-hover"
                     >
                       Settings

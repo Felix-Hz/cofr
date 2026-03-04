@@ -41,7 +41,7 @@ class MonthlyStats(BaseModel):
 class ExpenseCreateRequest(BaseModel):
     amount: float = Field(ge=0)
     category: str
-    description: str = ""
+    description: str = Field(default="", max_length=360)
     currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
     created_at: datetime | None = None
 
@@ -49,7 +49,7 @@ class ExpenseCreateRequest(BaseModel):
 class ExpenseUpdateRequest(BaseModel):
     amount: float | None = Field(default=None, ge=0)
     category: str | None = None
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=360)
     currency: str | None = Field(default=None, pattern="^[A-Z]{3}$")
     created_at: datetime | None = None
 

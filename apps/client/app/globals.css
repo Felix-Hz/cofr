@@ -137,3 +137,9 @@ h1, h2, h3, h4, h5, h6 {
 .gradient-page {
   background: linear-gradient(to bottom, var(--surface-elevated), var(--surface-primary));
 }
+
+/* Bottom sheet slide-up */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}

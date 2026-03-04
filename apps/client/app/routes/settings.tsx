@@ -111,6 +111,7 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl">
+      <title>Cofr | Settings</title>
       <h2 className="text-2xl font-bold text-content-primary mb-6">Settings</h2>
 
       {error && (

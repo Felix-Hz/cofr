@@ -7,10 +7,10 @@ interface FilterModalProps {
   onClear: () => void;
   category: string;
   setCategory: (value: string) => void;
-  startDate: string;
-  setStartDate: (value: string) => void;
-  endDate: string;
-  setEndDate: (value: string) => void;
+  minAmount: string;
+  setMinAmount: (value: string) => void;
+  maxAmount: string;
+  setMaxAmount: (value: string) => void;
   hasActiveFilters: boolean;
 }
 
@@ -21,10 +21,10 @@ export default function FilterModal({
   onClear,
   category,
   setCategory,
-  startDate,
-  setStartDate,
-  endDate,
-  setEndDate,
+  minAmount,
+  setMinAmount,
+  maxAmount,
+  setMaxAmount,
   hasActiveFilters,
 }: FilterModalProps) {
   if (!isOpen) return null;
@@ -41,15 +41,15 @@ export default function FilterModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0 bg-black/50 transition-opacity"
-          onClick={onClose}
-        />
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/50 transition-opacity"
+        onClick={onClose}
+      />
 
+      <div className="flex min-h-full items-center justify-center p-4">
         {/* Modal */}
-        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6">
+        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6 overflow-hidden">
           <h3 className="text-lg font-semibold mb-4">Filter Transactions</h3>
 
           <div className="space-y-4">
@@ -75,36 +75,32 @@ export default function FilterModal({
               </select>
             </div>
 
+            {/* Price range */}
             <div>
-              <label
-                htmlFor="start-date"
-                className="block text-sm font-medium text-content-secondary mb-1"
-              >
-                Start Date
+              <label className="block text-sm font-medium text-content-secondary mb-1">
+                Amount Range
               </label>
-              <input
-                type="date"
-                id="start-date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="end-date"
-                className="block text-sm font-medium text-content-secondary mb-1"
-              >
-                End Date
-              </label>
-              <input
-                type="date"
-                id="end-date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  className="min-w-0 flex-1 px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald tabular-nums"
+                />
+                <span className="text-content-tertiary text-sm shrink-0">–</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  className="min-w-0 flex-1 px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald tabular-nums"
+                />
+              </div>
             </div>
           </div>
 

@@ -6,6 +6,7 @@ interface ExpenseFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: ExpenseCreate) => Promise<void>;
+  onDelete?: () => Promise<void>;
   expense?: Expense | null;
   isLoading?: boolean;
 }
@@ -14,6 +15,7 @@ export default function ExpenseFormModal({
   isOpen,
   onClose,
   onSubmit,
+  onDelete,
   expense,
   isLoading = false,
 }: ExpenseFormModalProps) {
@@ -22,6 +24,7 @@ export default function ExpenseFormModal({
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("NZD");
   const [date, setDate] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isEditMode = !!expense;
 
@@ -31,6 +34,7 @@ export default function ExpenseFormModal({
       setCategory(expense.category);
       setDescription(expense.description);
       setCurrency(expense.currency);
+      setShowDeleteConfirm(false);
       const d = new Date(expense.created_at);
       // Format as local datetime-local value (YYYY-MM-DDTHH:MM)
       const pad = (n: number) => n.toString().padStart(2, "0");
@@ -40,6 +44,7 @@ export default function ExpenseFormModal({
       setCategory(Category.MISCELLANEOUS);
       setDescription("");
       setCurrency("NZD");
+      setShowDeleteConfirm(false);
       const now = new Date();
       const pad = (n: number) => n.toString().padStart(2, "0");
       setDate(`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`);
@@ -128,14 +133,18 @@ export default function ExpenseFormModal({
               >
                 Description
               </label>
-              <input
-                type="text"
+              <textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                maxLength={360}
+                rows={2}
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald resize-none"
                 placeholder="Optional"
               />
+              <p className="text-xs text-content-tertiary text-right mt-1">
+                {description.length}/360
+              </p>
             </div>
 
             {/* Currency */}
@@ -178,26 +187,62 @@ export default function ExpenseFormModal({
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-content-secondary hover:bg-surface-hover rounded-md"
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50"
-                disabled={isLoading}
-              >
-                {isLoading
-                  ? "Saving..."
-                  : isEditMode
-                    ? "Update"
-                    : "Add"}
-              </button>
+            <div className="flex justify-between pt-4">
+              <div>
+                {isEditMode && onDelete && (
+                  showDeleteConfirm ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-negative-text">Delete?</span>
+                      <button
+                        type="button"
+                        onClick={() => { setShowDeleteConfirm(false); onDelete(); }}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Deleting..." : "Yes"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="px-3 py-1.5 text-sm font-medium text-content-secondary hover:bg-surface-hover rounded-md"
+                        disabled={isLoading}
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="px-4 py-2 text-sm font-medium text-negative-text hover:bg-negative-bg rounded-md"
+                      disabled={isLoading}
+                    >
+                      Delete
+                    </button>
+                  )
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm font-medium text-content-secondary hover:bg-surface-hover rounded-md"
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  {isLoading
+                    ? "Saving..."
+                    : isEditMode
+                      ? "Update"
+                      : "Add"}
+                </button>
+              </div>
             </div>
           </form>
         </div>
