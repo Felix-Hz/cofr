@@ -82,17 +82,19 @@ export default function ControlsPanel({
         onClick={onClose}
       />
 
-      {/* Panel — dropdown on desktop, bottom sheet on mobile */}
-      <div
-        ref={panelRef}
-        className="
-          fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-y-auto
-          sm:absolute sm:inset-auto sm:top-full sm:right-0 sm:mt-2 sm:max-h-none sm:overflow-visible
-          bg-surface-primary border border-edge-default rounded-t-2xl sm:rounded-xl
-          shadow-xl w-full sm:w-80 p-5 pb-8 sm:pb-5
-        "
-        style={{ animation: "slideUp 0.2s ease-out" }}
-      >
+      {/* Wrapper — full-viewport flex on mobile, vanishes on desktop */}
+      <div className="fixed inset-0 z-50 flex items-end sm:contents">
+        {/* Panel — bottom sheet on mobile, dropdown on desktop */}
+        <div
+          ref={panelRef}
+          className="
+            w-full max-h-[85dvh] overflow-y-auto
+            sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:w-80 sm:max-h-none sm:overflow-visible
+            bg-surface-primary border border-edge-default rounded-t-2xl sm:rounded-xl
+            shadow-xl p-5 pb-8 sm:pb-5
+          "
+          style={{ animation: "slideUp 0.2s ease-out" }}
+        >
         {/* Drag handle — mobile */}
         <div className="flex justify-center sm:hidden -mx-5 -mt-5 pt-3 pb-1">
           <div className="w-10 h-1 rounded-full bg-edge-strong" />
@@ -180,6 +182,7 @@ export default function ControlsPanel({
               ))}
             </select>
           </div>
+        </div>
         </div>
       </div>
     </>
