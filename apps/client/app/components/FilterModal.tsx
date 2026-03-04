@@ -41,13 +41,13 @@ export default function FilterModal({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0 bg-black/50 transition-opacity"
-          onClick={onClose}
-        />
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/50 transition-opacity"
+        onClick={onClose}
+      />
 
+      <div className="flex min-h-full items-center justify-center p-4">
         {/* Modal */}
         <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6">
           <h3 className="text-lg font-semibold mb-4">Filter Transactions</h3>

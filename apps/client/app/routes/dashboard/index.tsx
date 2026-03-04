@@ -277,17 +277,17 @@ export default function Dashboard() {
   const showArrows = preset !== "custom";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-16">
       <title>Cofr | Dashboard</title>
 
       {/* ─── Header ─── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Prev arrow */}
           {showArrows && (
             <button
               onClick={goToPrev}
-              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary"
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary shrink-0"
               aria-label="Previous period"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,18 +296,18 @@ export default function Dashboard() {
             </button>
           )}
 
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-content-heading">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-content-heading truncate">
               {periodLabel}
             </h2>
-            <p className="text-sm text-content-tertiary mt-0.5">Financial overview</p>
+            <p className="text-sm text-content-tertiary mt-0.5 hidden sm:block">Financial overview</p>
           </div>
 
           {/* Next arrow */}
           {showArrows && (
             <button
               onClick={goToNext}
-              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary"
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary shrink-0"
               aria-label="Next period"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -317,7 +317,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Active filter chips */}
           {currentCurrency && (
             <span className="h-7 px-2.5 flex items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
@@ -361,6 +361,17 @@ export default function Dashboard() {
               currencies={CURRENCIES}
             />
           </div>
+
+          {/* Mobile-only add button */}
+          <button
+            onClick={handleAdd}
+            className="h-9 w-9 flex items-center justify-center bg-emerald text-white rounded-lg hover:bg-emerald-hover transition-colors sm:hidden"
+            aria-label="Add transaction"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -557,10 +568,10 @@ export default function Dashboard() {
           <table className="min-w-full divide-y divide-edge-default">
             <thead>
               <tr className="bg-surface-elevated">
-                <th className="px-4 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Date</th>
-                <th className="px-4 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Description</th>
-                <th className="px-4 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Category</th>
-                <th className="px-4 sm:px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Amount</th>
+                <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Date</th>
+                <th className="hidden sm:table-cell px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Description</th>
+                <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Category</th>
+                <th className="px-3 sm:px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-edge-default">
@@ -583,13 +594,14 @@ export default function Dashboard() {
                           : "hover:bg-surface-hover"
                       }`}
                     >
-                      <td className="px-4 sm:px-5 py-3 whitespace-nowrap text-xs text-content-tertiary tabular-nums">
-                        {formatDate(expense.created_at)}
+                      <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-xs text-content-tertiary tabular-nums">
+                        <span className="sm:hidden">{formatDate(expense.created_at, "compact")}</span>
+                        <span className="hidden sm:inline">{formatDate(expense.created_at)}</span>
                       </td>
-                      <td className="px-4 sm:px-5 py-3 whitespace-nowrap text-sm text-content-primary">
+                      <td className="hidden sm:table-cell px-5 py-3 whitespace-nowrap text-sm text-content-primary">
                         {expense.description ? truncateText(expense.description, 40) : <span className="text-content-muted">—</span>}
                       </td>
-                      <td className="px-4 sm:px-5 py-3 whitespace-nowrap">
+                      <td className="px-3 sm:px-5 py-3 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary">
                           <span
                             className="w-1.5 h-1.5 rounded-full"
@@ -598,7 +610,7 @@ export default function Dashboard() {
                           {expense.category}
                         </span>
                       </td>
-                      <td className="px-4 sm:px-5 py-3 whitespace-nowrap text-sm font-medium text-content-primary text-right tabular-nums">
+                      <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-content-primary text-right tabular-nums">
                         {formatCurrency(expense.amount, expense.currency)}
                       </td>
                     </tr>
