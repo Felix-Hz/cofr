@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 
-_kwargs = dict(echo=False, pool_pre_ping=True)
+_kwargs = {"echo": False, "pool_pre_ping": True}
 
 if not settings.DATABASE_URL.startswith("sqlite"):
     _kwargs.update(pool_size=5, max_overflow=10)

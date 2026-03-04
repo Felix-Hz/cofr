@@ -4,16 +4,16 @@
 
 @theme {
   /* Static brand colors */
-  --color-navy: #0F172A;
-  --color-navy-deep: #0B1220;
-  --color-emerald: #10B981;
-  --color-emerald-hover: #0EA371;
+  --color-navy: #0f172a;
+  --color-navy-deep: #0b1220;
+  --color-emerald: #10b981;
+  --color-emerald-hover: #0ea371;
   --color-emerald-dark: #059669;
-  --color-emerald-soft: #D1FAE5;
-  --color-fog: #E2E8F0;
-  --color-cloud: #F1F5F9;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
+  --color-emerald-soft: #d1fae5;
+  --color-fog: #e2e8f0;
+  --color-cloud: #f1f5f9;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
   --font-sans: "Manrope", system-ui, sans-serif;
 
   /* Semantic tokens — auto-switch via .dark class */
@@ -48,65 +48,65 @@
 
 /* Light theme (default) */
 :root {
-  --surface-page: #F9FAFB;
-  --surface-primary: #FFFFFF;
-  --surface-elevated: #F9FAFB;
-  --surface-hover: #F3F4F6;
+  --surface-page: #f9fafb;
+  --surface-primary: #ffffff;
+  --surface-elevated: #f9fafb;
+  --surface-hover: #f3f4f6;
   --content-primary: #111827;
-  --content-secondary: #4B5563;
-  --content-tertiary: #6B7280;
-  --content-muted: #9CA3AF;
-  --content-heading: #0F172A;
-  --edge-default: #E5E7EB;
-  --edge-strong: #D1D5DB;
-  --accent: #10B981;
-  --accent-hover: #0EA371;
-  --accent-soft-bg: #D1FAE5;
+  --content-secondary: #4b5563;
+  --content-tertiary: #6b7280;
+  --content-muted: #9ca3af;
+  --content-heading: #0f172a;
+  --edge-default: #e5e7eb;
+  --edge-strong: #d1d5db;
+  --accent: #10b981;
+  --accent-hover: #0ea371;
+  --accent-soft-bg: #d1fae5;
   --accent-soft-text: #059669;
-  --positive-bg: #F0FDF4;
-  --positive-border: #BBF7D0;
-  --positive-text: #15803D;
-  --positive-text-strong: #16A34A;
-  --negative-bg: #FEF2F2;
-  --negative-text: #DC2626;
-  --negative-text-strong: #B91C1C;
-  --negative-btn: #DC2626;
-  --negative-btn-hover: #B91C1C;
-  --warning-bg: #FFFBEB;
-  --warning-border: #FDE68A;
-  --warning-text: #92400E;
+  --positive-bg: #f0fdf4;
+  --positive-border: #bbf7d0;
+  --positive-text: #15803d;
+  --positive-text-strong: #16a34a;
+  --negative-bg: #fef2f2;
+  --negative-text: #dc2626;
+  --negative-text-strong: #b91c1c;
+  --negative-btn: #dc2626;
+  --negative-btn-hover: #b91c1c;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-text: #92400e;
   --radius: 0.5rem;
 }
 
 /* Dark theme */
 .dark {
-  --surface-page: #0B1220;
-  --surface-primary: #131C2E;
+  --surface-page: #0b1220;
+  --surface-primary: #131c2e;
   --surface-elevated: #182235;
-  --surface-hover: #1E293B;
-  --content-primary: #F1F5F9;
-  --content-secondary: #94A3B8;
-  --content-tertiary: #64748B;
+  --surface-hover: #1e293b;
+  --content-primary: #f1f5f9;
+  --content-secondary: #94a3b8;
+  --content-tertiary: #64748b;
   --content-muted: #475569;
-  --content-heading: #F8FAFC;
-  --edge-default: #1E293B;
+  --content-heading: #f8fafc;
+  --edge-default: #1e293b;
   --edge-strong: #334155;
-  --accent: #34D399;
-  --accent-hover: #2DD4A0;
+  --accent: #34d399;
+  --accent-hover: #2dd4a0;
   --accent-soft-bg: rgba(16, 185, 129, 0.15);
-  --accent-soft-text: #6EE7B7;
+  --accent-soft-text: #6ee7b7;
   --positive-bg: rgba(34, 197, 94, 0.1);
   --positive-border: rgba(34, 197, 94, 0.2);
-  --positive-text: #15803D;
-  --positive-text-strong: #22C55E;
+  --positive-text: #15803d;
+  --positive-text-strong: #22c55e;
   --negative-bg: rgba(239, 68, 68, 0.1);
-  --negative-text: #F87171;
-  --negative-text-strong: #EF4444;
-  --negative-btn: #EF4444;
-  --negative-btn-hover: #DC2626;
+  --negative-text: #f87171;
+  --negative-text-strong: #ef4444;
+  --negative-btn: #ef4444;
+  --negative-btn-hover: #dc2626;
   --warning-bg: rgba(245, 158, 11, 0.1);
   --warning-border: rgba(245, 158, 11, 0.2);
-  --warning-text: #FCD34D;
+  --warning-text: #fcd34d;
   color-scheme: dark;
 }
 
@@ -121,7 +121,12 @@ body {
   font-feature-settings: "tnum" 1;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   color: var(--content-heading);
 }
 
@@ -140,6 +145,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Bottom sheet slide-up */
 @keyframes slideUp {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }

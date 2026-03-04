@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlalchemy import case, func
@@ -43,11 +43,7 @@ class ExpenseService:
         if max_amount is not None:
             filters.append(Transaction.amount <= max_amount)
 
-        total = (
-            self.db.query(func.count(Transaction.id))
-            .filter(*filters)
-            .scalar()
-        )
+        total = self.db.query(func.count(Transaction.id)).filter(*filters).scalar()
 
         transactions = (
             self.db.query(Transaction)
@@ -98,11 +94,7 @@ class ExpenseService:
             Transaction.timestamp <= end_date,
         ]
 
-        total = (
-            self.db.query(func.count(Transaction.id))
-            .filter(*base_filter)
-            .scalar()
-        )
+        total = self.db.query(func.count(Transaction.id)).filter(*base_filter).scalar()
 
         transactions = (
             self.db.query(Transaction)
@@ -131,39 +123,41 @@ class ExpenseService:
 
         excluded_cats = ("Income", "Savings", "Investment")
 
-        summary = self.db.query(
-            func.coalesce(
-                func.sum(
-                    case(
-                        (Transaction.category.not_in(excluded_cats), Transaction.amount),
-                        else_=0,
-                    )
+        summary = (
+            self.db.query(
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Transaction.category.not_in(excluded_cats), Transaction.amount),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("total_spent"),
+                func.coalesce(
+                    func.sum(case((Transaction.category == "Income", Transaction.amount), else_=0)),
+                    0,
+                ).label("total_income"),
+                func.coalesce(
+                    func.sum(
+                        case((Transaction.category == "Savings", Transaction.amount), else_=0)
+                    ),
+                    0,
+                ).label("total_savings"),
+                func.coalesce(
+                    func.sum(
+                        case((Transaction.category == "Investment", Transaction.amount), else_=0)
+                    ),
+                    0,
+                ).label("total_investment"),
+                func.count(case((Transaction.category.not_in(excluded_cats), 1))).label(
+                    "expense_count"
                 ),
-                0,
-            ).label("total_spent"),
-            func.coalesce(
-                func.sum(
-                    case((Transaction.category == "Income", Transaction.amount), else_=0)
-                ),
-                0,
-            ).label("total_income"),
-            func.coalesce(
-                func.sum(
-                    case((Transaction.category == "Savings", Transaction.amount), else_=0)
-                ),
-                0,
-            ).label("total_savings"),
-            func.coalesce(
-                func.sum(
-                    case((Transaction.category == "Investment", Transaction.amount), else_=0)
-                ),
-                0,
-            ).label("total_investment"),
-            func.count(
-                case((Transaction.category.not_in(excluded_cats), 1))
-            ).label("expense_count"),
-            func.count(Transaction.id).label("transaction_count"),
-        ).filter(*base_filter).first()
+                func.count(Transaction.id).label("transaction_count"),
+            )
+            .filter(*base_filter)
+            .first()
+        )
 
         breakdown = (
             self.db.query(
@@ -208,39 +202,41 @@ class ExpenseService:
 
         excluded_cats = ("Income", "Savings", "Investment")
 
-        summary = self.db.query(
-            func.coalesce(
-                func.sum(
-                    case(
-                        (Transaction.category.not_in(excluded_cats), Transaction.amount),
-                        else_=0,
-                    )
+        summary = (
+            self.db.query(
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (Transaction.category.not_in(excluded_cats), Transaction.amount),
+                            else_=0,
+                        )
+                    ),
+                    0,
+                ).label("total_spent"),
+                func.coalesce(
+                    func.sum(case((Transaction.category == "Income", Transaction.amount), else_=0)),
+                    0,
+                ).label("total_income"),
+                func.coalesce(
+                    func.sum(
+                        case((Transaction.category == "Savings", Transaction.amount), else_=0)
+                    ),
+                    0,
+                ).label("total_savings"),
+                func.coalesce(
+                    func.sum(
+                        case((Transaction.category == "Investment", Transaction.amount), else_=0)
+                    ),
+                    0,
+                ).label("total_investment"),
+                func.count(case((Transaction.category.not_in(excluded_cats), 1))).label(
+                    "expense_count"
                 ),
-                0,
-            ).label("total_spent"),
-            func.coalesce(
-                func.sum(
-                    case((Transaction.category == "Income", Transaction.amount), else_=0)
-                ),
-                0,
-            ).label("total_income"),
-            func.coalesce(
-                func.sum(
-                    case((Transaction.category == "Savings", Transaction.amount), else_=0)
-                ),
-                0,
-            ).label("total_savings"),
-            func.coalesce(
-                func.sum(
-                    case((Transaction.category == "Investment", Transaction.amount), else_=0)
-                ),
-                0,
-            ).label("total_investment"),
-            func.count(
-                case((Transaction.category.not_in(excluded_cats), 1))
-            ).label("expense_count"),
-            func.count(Transaction.id).label("transaction_count"),
-        ).filter(*base_filter).first()
+                func.count(Transaction.id).label("transaction_count"),
+            )
+            .filter(*base_filter)
+            .first()
+        )
 
         breakdown = (
             self.db.query(
@@ -284,7 +280,7 @@ class ExpenseService:
 
     async def create_expense(self, user_id: str, data: ExpenseCreateRequest) -> ExpenseSchema:
         """Create a new expense"""
-        created_at = data.created_at or datetime.now(timezone.utc)
+        created_at = data.created_at or datetime.now(UTC)
 
         transaction = Transaction(
             user_id=user_id,

@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router";
 import { useEffect } from "react";
+import { useNavigate } from "react-router";
 import { saveToken } from "~/lib/auth";
 
 export default function AuthCallback() {

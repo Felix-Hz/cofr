@@ -1,12 +1,6 @@
 import { useEffect, useRef } from "react";
 
-export type Preset =
-  | "thisMonth"
-  | "lastMonth"
-  | "thisWeek"
-  | "last7Days"
-  | "last30Days"
-  | "custom";
+export type Preset = "thisMonth" | "lastMonth" | "thisWeek" | "last7Days" | "last30Days" | "custom";
 
 interface ControlsPanelProps {
   isOpen: boolean;
@@ -77,10 +71,7 @@ export default function ControlsPanel({
   return (
     <>
       {/* Mobile backdrop */}
-      <div
-        className="fixed inset-0 bg-black/40 z-40 sm:hidden"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/40 z-40 sm:hidden" onClick={onClose} />
 
       {/* Wrapper — full-viewport flex on mobile, vanishes on desktop */}
       <div className="fixed inset-0 z-50 flex items-end sm:contents">
@@ -95,94 +86,94 @@ export default function ControlsPanel({
           "
           style={{ animation: "slideUp 0.2s ease-out" }}
         >
-        {/* Drag handle — mobile */}
-        <div className="flex justify-center sm:hidden -mx-5 -mt-5 pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-edge-strong" />
-        </div>
-
-        <div className="space-y-4">
-          {/* Period presets */}
-          <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-2">
-              Period
-            </label>
-            <div className="grid grid-cols-3 sm:grid-cols-2 gap-1.5">
-              {PRESETS.map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  onClick={() => onPresetChange(p.value)}
-                  className={`px-2 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                    preset === p.value
-                      ? "bg-emerald text-white"
-                      : "bg-surface-elevated text-content-secondary hover:bg-surface-hover"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
+          {/* Drag handle — mobile */}
+          <div className="flex justify-center sm:hidden -mx-5 -mt-5 pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-edge-strong" />
           </div>
 
-          {/* Custom range inputs */}
-          {preset === "custom" && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label
-                  htmlFor="ctrl-start"
-                  className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
-                >
-                  Start
-                </label>
-                <input
-                  id="ctrl-start"
-                  type="date"
-                  value={customStart}
-                  onChange={(e) => onCustomStartChange(e.target.value)}
-                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="ctrl-end"
-                  className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
-                >
-                  End
-                </label>
-                <input
-                  id="ctrl-end"
-                  type="date"
-                  value={customEnd}
-                  onChange={(e) => onCustomEndChange(e.target.value)}
-                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
-                />
+          <div className="space-y-4">
+            {/* Period presets */}
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-2">
+                Period
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-2 gap-1.5">
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => onPresetChange(p.value)}
+                    className={`px-2 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                      preset === p.value
+                        ? "bg-emerald text-white"
+                        : "bg-surface-elevated text-content-secondary hover:bg-surface-hover"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
               </div>
             </div>
-          )}
 
-          {/* Currency */}
-          <div>
-            <label
-              htmlFor="ctrl-currency"
-              className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
-            >
-              Currency
-            </label>
-            <select
-              id="ctrl-currency"
-              value={currency}
-              onChange={(e) => onCurrencyChange(e.target.value)}
-              className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs font-medium bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
-            >
-              <option value="">All Currencies</option>
-              {currencies.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+            {/* Custom range inputs */}
+            {preset === "custom" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    htmlFor="ctrl-start"
+                    className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
+                  >
+                    Start
+                  </label>
+                  <input
+                    id="ctrl-start"
+                    type="date"
+                    value={customStart}
+                    onChange={(e) => onCustomStartChange(e.target.value)}
+                    className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="ctrl-end"
+                    className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
+                  >
+                    End
+                  </label>
+                  <input
+                    id="ctrl-end"
+                    type="date"
+                    value={customEnd}
+                    onChange={(e) => onCustomEndChange(e.target.value)}
+                    className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Currency */}
+            <div>
+              <label
+                htmlFor="ctrl-currency"
+                className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
+              >
+                Currency
+              </label>
+              <select
+                id="ctrl-currency"
+                value={currency}
+                onChange={(e) => onCurrencyChange(e.target.value)}
+                className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs font-medium bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              >
+                <option value="">All Currencies</option>
+                {currencies.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
         </div>
       </div>
     </>
@@ -190,7 +181,10 @@ export default function ControlsPanel({
 }
 
 /** Compute start/end dates for a preset */
-export function getPresetDates(preset: Preset, referenceDate?: Date): { startDate: string; endDate: string } {
+export function getPresetDates(
+  preset: Preset,
+  referenceDate?: Date,
+): { startDate: string; endDate: string } {
   const now = referenceDate ?? new Date();
 
   switch (preset) {
@@ -232,15 +226,24 @@ export function getPresetDates(preset: Preset, referenceDate?: Date): { startDat
 /** Get display label for the current period */
 export function getPresetLabel(preset: Preset, startDate: string, endDate: string): string {
   const MONTHS_FULL = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   if (preset === "custom" && startDate && endDate) {
     const s = new Date(startDate + "T00:00:00");
     const e = new Date(endDate + "T00:00:00");
-    const fmt = (d: Date) =>
-      `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3)}`;
+    const fmt = (d: Date) => `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3)}`;
     if (s.getFullYear() !== e.getFullYear()) {
       return `${fmt(s)} ${s.getFullYear()} – ${fmt(e)} ${e.getFullYear()}`;
     }
@@ -257,8 +260,7 @@ export function getPresetLabel(preset: Preset, startDate: string, endDate: strin
       case "last7Days":
       case "last30Days": {
         const e = new Date(endDate + "T00:00:00");
-        const fmt = (d: Date) =>
-          `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3)}`;
+        const fmt = (d: Date) => `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3)}`;
         return `${fmt(s)} – ${fmt(e)}`;
       }
     }

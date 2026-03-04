@@ -64,9 +64,7 @@ async def oauth_callback(provider: str, request: Request, db: Session = Depends(
     provider_user_id, email, display_name = await _extract_user_info(provider, client, token)
 
     if not provider_user_id:
-        return RedirectResponse(
-            f"{settings.FRONTEND_URL}/login?error=Could+not+retrieve+user+info"
-        )
+        return RedirectResponse(f"{settings.FRONTEND_URL}/login?error=Could+not+retrieve+user+info")
 
     # User resolution logic
     user = _resolve_user(db, provider, provider_user_id, email, display_name)

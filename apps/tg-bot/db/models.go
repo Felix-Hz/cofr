@@ -14,10 +14,10 @@ import (
  */
 type User struct {
 	ID                uuid.UUID     `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	FirstName         string        `gorm:"index"`             // Index first names
-	LastName          string        `gorm:"index"`             // Index last names
-	Username          string        `gorm:"uniqueIndex"`       // Index usernames
-	PreferredCurrency string        `gorm:"default:'NZD'"`     // User's preferred currency
+	FirstName         string        `gorm:"index"`         // Index first names
+	LastName          string        `gorm:"index"`         // Index last names
+	Username          string        `gorm:"uniqueIndex"`   // Index usernames
+	PreferredCurrency string        `gorm:"default:'NZD'"` // User's preferred currency
 	LinkCode          *string       `gorm:"column:link_code"`
 	LinkCodeExpires   *time.Time    `gorm:"column:link_code_expires"`
 	Expenses          []Transaction `gorm:"foreignKey:UserID"` // One-to-Many Relationship
@@ -35,7 +35,7 @@ type AuthProvider struct {
 	Provider       string    `gorm:"index"`
 	ProviderUserID string    `gorm:"column:provider_user_id"`
 	Email          *string
-	DisplayName    *string   `gorm:"column:display_name"`
+	DisplayName    *string `gorm:"column:display_name"`
 }
 
 func (AuthProvider) TableName() string {

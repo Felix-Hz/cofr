@@ -54,9 +54,13 @@ class Transaction(Base):
     amount: Mapped[float] = mapped_column(Float)
     currency: Mapped[str] = mapped_column(String, default="NZD", index=True)
     notes: Mapped[str] = mapped_column(String, default="")
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))  # user-controlled: when the transaction happened
-    inserted_at: Mapped[datetime] = mapped_column(  # system-controlled: when the row was created (sort tiebreaker)
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True)
+    )  # user-controlled: when the transaction happened
+    inserted_at: Mapped[datetime] = (
+        mapped_column(  # system-controlled: when the row was created (sort tiebreaker)
+            DateTime(timezone=True), server_default=func.now(), nullable=False
+        )
     )
     hash: Mapped[str | None] = mapped_column(String, unique=True, index=True, nullable=True)
 
