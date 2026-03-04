@@ -24,10 +24,22 @@ async def get_expenses(
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
+    start_date: datetime | None = Query(default=None),
+    end_date: datetime | None = Query(default=None),
+    category: str | None = Query(default=None),
+    min_amount: float | None = Query(default=None, ge=0),
+    max_amount: float | None = Query(default=None, ge=0),
 ):
-    """Get paginated expenses for authenticated user"""
+    """Get paginated expenses for authenticated user with optional filters"""
     service = ExpenseService(db)
-    expenses, total = await service.get_expenses(user_id, limit, offset)
+    expenses, total = await service.get_expenses(
+        user_id, limit, offset,
+        start_date=start_date,
+        end_date=end_date,
+        category=category,
+        min_amount=min_amount,
+        max_amount=max_amount,
+    )
     return ExpensesResponse(expenses=expenses, total_count=total, limit=limit, offset=offset)
 
 
@@ -73,6 +85,19 @@ async def get_monthly_stats(
     """Get monthly statistics with category breakdown, optionally filtered by currency"""
     service = ExpenseService(db)
     return await service.get_monthly_stats(user_id, month, year, currency)
+
+
+@router.get("/stats/range", response_model=MonthlyStats)
+async def get_range_stats(
+    start_date: datetime = Query(...),
+    end_date: datetime = Query(...),
+    currency: str | None = Query(default=None, pattern="^[A-Z]{3}$"),
+    user_id: str = Depends(get_user_id),
+    db: Session = Depends(get_db),
+):
+    """Get statistics for a date range with category breakdown"""
+    service = ExpenseService(db)
+    return await service.get_range_stats(user_id, start_date, end_date, currency)
 
 
 @router.post("/", response_model=ExpenseSchema, status_code=201)

@@ -7,10 +7,10 @@ interface FilterModalProps {
   onClear: () => void;
   category: string;
   setCategory: (value: string) => void;
-  startDate: string;
-  setStartDate: (value: string) => void;
-  endDate: string;
-  setEndDate: (value: string) => void;
+  minAmount: string;
+  setMinAmount: (value: string) => void;
+  maxAmount: string;
+  setMaxAmount: (value: string) => void;
   hasActiveFilters: boolean;
 }
 
@@ -21,10 +21,10 @@ export default function FilterModal({
   onClear,
   category,
   setCategory,
-  startDate,
-  setStartDate,
-  endDate,
-  setEndDate,
+  minAmount,
+  setMinAmount,
+  maxAmount,
+  setMaxAmount,
   hasActiveFilters,
 }: FilterModalProps) {
   if (!isOpen) return null;
@@ -75,36 +75,32 @@ export default function FilterModal({
               </select>
             </div>
 
+            {/* Price range */}
             <div>
-              <label
-                htmlFor="start-date"
-                className="block text-sm font-medium text-content-secondary mb-1"
-              >
-                Start Date
+              <label className="block text-sm font-medium text-content-secondary mb-1">
+                Amount Range
               </label>
-              <input
-                type="date"
-                id="start-date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="end-date"
-                className="block text-sm font-medium text-content-secondary mb-1"
-              >
-                End Date
-              </label>
-              <input
-                type="date"
-                id="end-date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={minAmount}
+                  onChange={(e) => setMinAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  className="flex-1 px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald tabular-nums"
+                />
+                <span className="text-content-tertiary text-sm">–</span>
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={maxAmount}
+                  onChange={(e) => setMaxAmount(e.target.value)}
+                  min="0"
+                  step="0.01"
+                  className="flex-1 px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald tabular-nums"
+                />
+              </div>
             </div>
           </div>
 

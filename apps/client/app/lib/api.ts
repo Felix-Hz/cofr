@@ -64,50 +64,30 @@ async function fetchWithAuth(
 
 // Expenses Endpoints
 export async function getExpenses(
-  limit = 50,
-  offset = 0,
+  options: {
+    limit?: number;
+    offset?: number;
+    startDate?: string;
+    endDate?: string;
+    category?: string;
+    minAmount?: number;
+    maxAmount?: number;
+  } = {},
 ): Promise<ExpensesResponse> {
   const params = new URLSearchParams({
-    limit: limit.toString(),
-    offset: offset.toString(),
+    limit: (options.limit ?? 50).toString(),
+    offset: (options.offset ?? 0).toString(),
   });
+
+  if (options.startDate) params.set("start_date", options.startDate);
+  if (options.endDate) params.set("end_date", options.endDate);
+  if (options.category) params.set("category", options.category);
+  if (options.minAmount !== undefined)
+    params.set("min_amount", options.minAmount.toString());
+  if (options.maxAmount !== undefined)
+    params.set("max_amount", options.maxAmount.toString());
 
   const response = await fetchWithAuth(`/expenses/?${params}`);
-  const json = await response.json();
-  return ExpensesResponseSchema.parse(json);
-}
-
-export async function getExpensesByCategory(
-  category: string,
-  limit = 50,
-  offset = 0,
-): Promise<ExpensesResponse> {
-  const params = new URLSearchParams({
-    limit: limit.toString(),
-    offset: offset.toString(),
-  });
-
-  const response = await fetchWithAuth(
-    `/expenses/category/${encodeURIComponent(category)}?${params}`,
-  );
-  const json = await response.json();
-  return ExpensesResponseSchema.parse(json);
-}
-
-export async function getExpensesByDateRange(
-  startDate: Date,
-  endDate: Date,
-  limit = 50,
-  offset = 0,
-): Promise<ExpensesResponse> {
-  const params = new URLSearchParams({
-    start_date: startDate.toISOString(),
-    end_date: endDate.toISOString(),
-    limit: limit.toString(),
-    offset: offset.toString(),
-  });
-
-  const response = await fetchWithAuth(`/expenses/date-range?${params}`);
   const json = await response.json();
   return ExpensesResponseSchema.parse(json);
 }
@@ -127,6 +107,25 @@ export async function getMonthlyStats(
   }
 
   const response = await fetchWithAuth(`/expenses/stats/monthly?${params}`);
+  const json = await response.json();
+  return MonthlyStatsSchema.parse(json);
+}
+
+export async function getRangeStats(
+  startDate: string,
+  endDate: string,
+  currency?: string,
+): Promise<MonthlyStats> {
+  const params = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+  });
+
+  if (currency) {
+    params.set("currency", currency);
+  }
+
+  const response = await fetchWithAuth(`/expenses/stats/range?${params}`);
   const json = await response.json();
   return MonthlyStatsSchema.parse(json);
 }

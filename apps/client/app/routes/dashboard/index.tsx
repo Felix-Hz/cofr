@@ -9,9 +9,7 @@ import {
 } from "recharts";
 import {
   getExpenses,
-  getExpensesByCategory,
-  getExpensesByDateRange,
-  getMonthlyStats,
+  getRangeStats,
   createExpense,
   updateExpense,
   deleteExpense,
@@ -27,62 +25,63 @@ import ExpenseFormModal from "~/components/ExpenseFormModal";
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
 import FilterModal from "~/components/FilterModal";
 import CategoryPieTooltip from "~/components/CategoryPieTooltip";
+import ControlsPanel, {
+  getPresetDates,
+  getPresetLabel,
+  shiftPreset,
+  type Preset,
+} from "~/components/ControlsPanel";
 import { useTheme } from "~/lib/theme";
 
 const CURRENCIES = ["NZD", "EUR", "USD", "GBP", "AUD"];
-
-const MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
-const MONTHS_FULL = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+const POSITIVE_CATEGORIES = ["Income", "Savings", "Investment"];
 
 export async function clientLoader({ request }: { request: Request }) {
   const url = new URL(request.url);
 
-  // Stats params
-  const month = Number(url.searchParams.get("month")) || new Date().getMonth() + 1;
-  const year = Number(url.searchParams.get("year")) || new Date().getFullYear();
+  // Date range params (default to current month)
+  const now = new Date();
+  const defaultStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const defaultEnd = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, "0")}-${String(lastDay.getDate()).padStart(2, "0")}`;
+
+  const startDate = url.searchParams.get("startDate") || defaultStart;
+  const endDate = url.searchParams.get("endDate") || defaultEnd;
+  const preset = (url.searchParams.get("preset") || "thisMonth") as Preset;
   const currency = url.searchParams.get("currency") || undefined;
 
   // Transaction params
   const limit = Number(url.searchParams.get("limit")) || 10;
   const offset = Number(url.searchParams.get("offset")) || 0;
   const category = url.searchParams.get("category") || "";
-  const startDate = url.searchParams.get("startDate") || "";
-  const endDate = url.searchParams.get("endDate") || "";
+  const minAmount = url.searchParams.get("minAmount");
+  const maxAmount = url.searchParams.get("maxAmount");
 
-  let expenseData;
-  if (category) {
-    expenseData = await getExpensesByCategory(category, limit, offset);
-  } else if (startDate && endDate) {
-    expenseData = await getExpensesByDateRange(
-      new Date(startDate),
-      new Date(endDate),
+  const [expenseData, rangeStats] = await Promise.all([
+    getExpenses({
       limit,
       offset,
-    );
-  } else {
-    expenseData = await getExpenses(limit, offset);
-  }
-
-  const monthlyStats = await getMonthlyStats(month, year, currency);
+      startDate: startDate + "T00:00:00",
+      endDate: endDate + "T23:59:59",
+      category: category || undefined,
+      minAmount: minAmount ? Number(minAmount) : undefined,
+      maxAmount: maxAmount ? Number(maxAmount) : undefined,
+    }),
+    getRangeStats(startDate + "T00:00:00", endDate + "T23:59:59", currency),
+  ]);
 
   return {
     ...expenseData,
-    monthlyStats,
-    month,
-    year,
+    monthlyStats: rangeStats,
+    startDate,
+    endDate,
+    preset,
     currentCurrency: currency || "",
     currentLimit: limit,
     currentOffset: offset,
     currentCategory: category,
-    currentStartDate: startDate,
-    currentEndDate: endDate,
+    currentMinAmount: minAmount || "",
+    currentMaxAmount: maxAmount || "",
   };
 }
 
@@ -93,14 +92,15 @@ export default function Dashboard() {
     expenses,
     total_count,
     monthlyStats,
-    month,
-    year,
+    startDate,
+    endDate,
+    preset,
     currentCurrency,
     currentLimit,
     currentOffset,
     currentCategory,
-    currentStartDate,
-    currentEndDate,
+    currentMinAmount,
+    currentMaxAmount,
   } = useLoaderData<typeof clientLoader>();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -108,13 +108,18 @@ export default function Dashboard() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isControlsOpen, setIsControlsOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Local filter state
   const [filterCategory, setFilterCategory] = useState(currentCategory);
-  const [startDate, setStartDate] = useState(currentStartDate);
-  const [endDate, setEndDate] = useState(currentEndDate);
+  const [filterMinAmount, setFilterMinAmount] = useState(currentMinAmount);
+  const [filterMaxAmount, setFilterMaxAmount] = useState(currentMaxAmount);
+
+  // Custom range local state (for ControlsPanel inputs)
+  const [customStart, setCustomStart] = useState(startDate);
+  const [customEnd, setCustomEnd] = useState(endDate);
 
   const totalPages = Math.ceil(total_count / currentLimit) || 1;
   const currentPage = Math.floor(currentOffset / currentLimit) + 1;
@@ -127,46 +132,71 @@ export default function Dashboard() {
   const investmentRate = monthlyStats.total_income > 0 ? (monthlyStats.total_investment / monthlyStats.total_income) * 100 : 0;
   const allocationRate = monthlyStats.total_income > 0 ? (totalAllocated / monthlyStats.total_income) * 100 : 0;
 
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - i);
-
   // --- URL helpers ---
   const buildUrl = (overrides: Record<string, string | number | undefined>) => {
     const params = new URLSearchParams();
-    const m = overrides.month ?? month;
-    const y = overrides.year ?? year;
+    const sd = overrides.startDate ?? startDate;
+    const ed = overrides.endDate ?? endDate;
+    const p = overrides.preset ?? preset;
     const c = overrides.currency ?? currentCurrency;
-    params.set("month", String(m));
-    params.set("year", String(y));
+    params.set("startDate", String(sd));
+    params.set("endDate", String(ed));
+    params.set("preset", String(p));
     if (c) params.set("currency", String(c));
     const lim = overrides.limit ?? currentLimit;
     const off = overrides.offset ?? currentOffset;
     const cat = overrides.category ?? currentCategory;
-    const sd = overrides.startDate ?? currentStartDate;
-    const ed = overrides.endDate ?? currentEndDate;
+    const minA = overrides.minAmount ?? currentMinAmount;
+    const maxA = overrides.maxAmount ?? currentMaxAmount;
     params.set("limit", String(lim));
     if (Number(off)) params.set("offset", String(off));
     if (cat) params.set("category", String(cat));
-    if (sd) params.set("startDate", String(sd));
-    if (ed) params.set("endDate", String(ed));
+    if (minA) params.set("minAmount", String(minA));
+    if (maxA) params.set("maxAmount", String(maxA));
     return `?${params.toString()}`;
   };
 
-  const handleMonthChange = (newMonth: number) => navigate(buildUrl({ month: newMonth }));
-  const handleYearChange = (newYear: number) => navigate(buildUrl({ year: newYear }));
+  const handlePresetChange = (newPreset: Preset) => {
+    if (newPreset === "custom") {
+      navigate(buildUrl({ preset: "custom", startDate: customStart, endDate: customEnd, offset: 0 }));
+    } else {
+      const { startDate: sd, endDate: ed } = getPresetDates(newPreset);
+      setCustomStart(sd);
+      setCustomEnd(ed);
+      navigate(buildUrl({ preset: newPreset, startDate: sd, endDate: ed, offset: 0 }));
+    }
+  };
+
+  const handleCustomStartChange = (value: string) => {
+    setCustomStart(value);
+    if (value && customEnd) {
+      navigate(buildUrl({ preset: "custom", startDate: value, endDate: customEnd, offset: 0 }));
+    }
+  };
+
+  const handleCustomEndChange = (value: string) => {
+    setCustomEnd(value);
+    if (customStart && value) {
+      navigate(buildUrl({ preset: "custom", startDate: customStart, endDate: value, offset: 0 }));
+    }
+  };
+
   const handleCurrencyChange = (c: string) => navigate(buildUrl({ currency: c || undefined }));
 
-  const goToPrevMonth = () => {
-    let m = month - 1;
-    let y = year;
-    if (m < 1) { m = 12; y -= 1; }
-    navigate(buildUrl({ month: m, year: y }));
+  const goToPrev = () => {
+    if (preset === "custom") return;
+    const { startDate: sd, endDate: ed } = shiftPreset(preset, startDate, -1);
+    setCustomStart(sd);
+    setCustomEnd(ed);
+    navigate(buildUrl({ startDate: sd, endDate: ed, offset: 0 }));
   };
-  const goToNextMonth = () => {
-    let m = month + 1;
-    let y = year;
-    if (m > 12) { m = 1; y += 1; }
-    navigate(buildUrl({ month: m, year: y }));
+
+  const goToNext = () => {
+    if (preset === "custom") return;
+    const { startDate: sd, endDate: ed } = shiftPreset(preset, startDate, 1);
+    setCustomStart(sd);
+    setCustomEnd(ed);
+    navigate(buildUrl({ startDate: sd, endDate: ed, offset: 0 }));
   };
 
   const goToPage = (page: number) => {
@@ -174,14 +204,14 @@ export default function Dashboard() {
   };
 
   const applyFilters = () => {
-    navigate(buildUrl({ offset: 0, category: filterCategory, startDate, endDate }));
+    navigate(buildUrl({ offset: 0, category: filterCategory, minAmount: filterMinAmount, maxAmount: filterMaxAmount }));
   };
 
   const clearFilters = () => {
     setFilterCategory("");
-    setStartDate("");
-    setEndDate("");
-    navigate(buildUrl({ offset: 0, category: "", startDate: "", endDate: "" }));
+    setFilterMinAmount("");
+    setFilterMaxAmount("");
+    navigate(buildUrl({ offset: 0, category: "", minAmount: "", maxAmount: "" }));
   };
 
   // Percentage helper
@@ -242,7 +272,9 @@ export default function Dashboard() {
     } finally { setIsLoading(false); }
   };
 
-  const hasActiveFilters = !!(currentCategory || currentStartDate || currentEndDate);
+  const hasActiveFilters = !!(currentCategory || currentMinAmount || currentMaxAmount);
+  const periodLabel = getPresetLabel(preset, startDate, endDate);
+  const showArrows = preset !== "custom";
 
   return (
     <div className="space-y-6">
@@ -250,66 +282,84 @@ export default function Dashboard() {
 
       {/* ─── Header ─── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-content-heading">
-            {MONTHS_FULL[month - 1]} {year}
-          </h2>
-          <p className="text-sm text-content-tertiary mt-0.5">Financial overview</p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Currency pill */}
-          <select
-            value={currentCurrency}
-            onChange={(e) => handleCurrencyChange(e.target.value)}
-            className="h-9 px-3 border border-edge-strong rounded-lg text-xs font-medium text-content-primary bg-surface-primary focus:outline-none focus:ring-2 focus:ring-emerald/40 transition-shadow"
-          >
-            <option value="">All Currencies</option>
-            {CURRENCIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-
-          {/* Month/year navigation */}
-          <div className="flex items-center bg-surface-primary border border-edge-strong rounded-lg overflow-hidden">
+        <div className="flex items-center gap-3">
+          {/* Prev arrow */}
+          {showArrows && (
             <button
-              onClick={goToPrevMonth}
-              className="h-9 w-9 flex items-center justify-center hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary"
-              aria-label="Previous month"
+              onClick={goToPrev}
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary"
+              aria-label="Previous period"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="h-9 w-px bg-edge-strong" />
-            <select
-              value={month}
-              onChange={(e) => handleMonthChange(Number(e.target.value))}
-              className="h-9 pl-3 pr-1 text-xs font-medium text-content-primary bg-transparent focus:outline-none cursor-pointer"
-            >
-              {MONTHS.map((m, i) => (
-                <option key={m} value={i + 1}>{m}</option>
-              ))}
-            </select>
-            <select
-              value={year}
-              onChange={(e) => handleYearChange(Number(e.target.value))}
-              className="h-9 pl-1 pr-3 text-xs font-medium text-content-primary bg-transparent focus:outline-none cursor-pointer"
-            >
-              {yearOptions.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-            <div className="h-9 w-px bg-edge-strong" />
+          )}
+
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-content-heading">
+              {periodLabel}
+            </h2>
+            <p className="text-sm text-content-tertiary mt-0.5">Financial overview</p>
+          </div>
+
+          {/* Next arrow */}
+          {showArrows && (
             <button
-              onClick={goToNextMonth}
-              className="h-9 w-9 flex items-center justify-center hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary"
-              aria-label="Next month"
+              onClick={goToNext}
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary"
+              aria-label="Next period"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Active filter chips */}
+          {currentCurrency && (
+            <span className="h-7 px-2.5 flex items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
+              {currentCurrency}
+            </span>
+          )}
+
+          {/* Controls toggle */}
+          <div className="relative">
+            <button
+              onClick={() => setIsControlsOpen(!isControlsOpen)}
+              className={`h-9 w-9 flex items-center justify-center rounded-lg transition-colors ${
+                isControlsOpen
+                  ? "bg-emerald text-white"
+                  : "border border-edge-strong hover:bg-surface-hover text-content-tertiary hover:text-content-primary"
+              }`}
+              aria-label="Controls"
+            >
+              {/* Sliders icon */}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="7" x2="20" y2="7" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="17" x2="20" y2="17" />
+                <circle cx="8" cy="7" r="2" fill="currentColor" />
+                <circle cx="16" cy="12" r="2" fill="currentColor" />
+                <circle cx="10" cy="17" r="2" fill="currentColor" />
+              </svg>
+            </button>
+
+            <ControlsPanel
+              isOpen={isControlsOpen}
+              onClose={() => setIsControlsOpen(false)}
+              preset={preset}
+              onPresetChange={handlePresetChange}
+              currency={currentCurrency}
+              onCurrencyChange={handleCurrencyChange}
+              customStart={customStart}
+              customEnd={customEnd}
+              onCustomStartChange={handleCustomStartChange}
+              onCustomEndChange={handleCustomEndChange}
+              currencies={CURRENCIES}
+            />
           </div>
         </div>
       </div>
@@ -521,32 +571,39 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ) : (
-                expenses.map((expense: Expense) => (
-                  <tr
-                    key={expense.id}
-                    onClick={() => handleRowClick(expense)}
-                    className="cursor-pointer hover:bg-surface-hover transition-colors"
-                  >
-                    <td className="px-4 sm:px-5 py-3 whitespace-nowrap text-xs text-content-tertiary tabular-nums">
-                      {formatDate(expense.created_at)}
-                    </td>
-                    <td className="px-4 sm:px-5 py-3 whitespace-nowrap text-sm text-content-primary">
-                      {expense.description ? truncateText(expense.description, 40) : <span className="text-content-muted">—</span>}
-                    </td>
-                    <td className="px-4 sm:px-5 py-3 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary">
-                        <span
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: getCategoryColor(expense.category, isDark) }}
-                        />
-                        {expense.category}
-                      </span>
-                    </td>
-                    <td className="px-4 sm:px-5 py-3 whitespace-nowrap text-sm font-medium text-content-primary text-right tabular-nums">
-                      {formatCurrency(expense.amount, expense.currency)}
-                    </td>
-                  </tr>
-                ))
+                expenses.map((expense: Expense) => {
+                  const isPositive = POSITIVE_CATEGORIES.includes(expense.category);
+                  return (
+                    <tr
+                      key={expense.id}
+                      onClick={() => handleRowClick(expense)}
+                      className={`cursor-pointer transition-colors ${
+                        isPositive
+                          ? "bg-positive-bg/50 hover:bg-positive-bg"
+                          : "hover:bg-surface-hover"
+                      }`}
+                    >
+                      <td className="px-4 sm:px-5 py-3 whitespace-nowrap text-xs text-content-tertiary tabular-nums">
+                        {formatDate(expense.created_at)}
+                      </td>
+                      <td className="px-4 sm:px-5 py-3 whitespace-nowrap text-sm text-content-primary">
+                        {expense.description ? truncateText(expense.description, 40) : <span className="text-content-muted">—</span>}
+                      </td>
+                      <td className="px-4 sm:px-5 py-3 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary">
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: getCategoryColor(expense.category, isDark) }}
+                          />
+                          {expense.category}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-5 py-3 whitespace-nowrap text-sm font-medium text-content-primary text-right tabular-nums">
+                        {formatCurrency(expense.amount, expense.currency)}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -609,10 +666,10 @@ export default function Dashboard() {
         onClear={clearFilters}
         category={filterCategory}
         setCategory={setFilterCategory}
-        startDate={startDate}
-        setStartDate={setStartDate}
-        endDate={endDate}
-        setEndDate={setEndDate}
+        minAmount={filterMinAmount}
+        setMinAmount={setFilterMinAmount}
+        maxAmount={filterMaxAmount}
+        setMaxAmount={setFilterMaxAmount}
         hasActiveFilters={hasActiveFilters}
       />
     </div>
