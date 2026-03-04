@@ -188,6 +188,22 @@ export async function initTelegramLink(): Promise<{ code: string; deep_link: str
   return response.json();
 }
 
+// Preferences
+export async function getPreferences(): Promise<{ preferred_currency: string }> {
+  const response = await fetchWithAuth("/account/preferences");
+  return response.json();
+}
+
+export async function updatePreferences(data: {
+  preferred_currency: string;
+}): Promise<{ preferred_currency: string }> {
+  const response = await fetchWithAuth("/account/preferences", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  return response.json();
+}
+
 // Health check (no auth required)
 export async function healthCheck(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);

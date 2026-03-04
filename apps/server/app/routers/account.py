@@ -26,6 +26,14 @@ class UnlinkResponse(BaseModel):
     message: str
 
 
+class PreferencesResponse(BaseModel):
+    preferred_currency: str
+
+
+class PreferencesUpdate(BaseModel):
+    preferred_currency: str
+
+
 class TelegramLinkInitResponse(BaseModel):
     code: str
     deep_link: str
@@ -105,3 +113,30 @@ async def init_telegram_link(
     deep_link = f"https://t.me/{settings.TELEGRAM_BOT_NAME}?start={code}"
 
     return TelegramLinkInitResponse(code=code, deep_link=deep_link)
+
+
+@router.get("/preferences", response_model=PreferencesResponse)
+async def get_preferences(
+    user_id: str = Depends(get_user_id),
+    db: Session = Depends(get_db),
+):
+    """Get user preferences"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return PreferencesResponse(preferred_currency=user.preferred_currency)
+
+
+@router.put("/preferences", response_model=PreferencesResponse)
+async def update_preferences(
+    data: PreferencesUpdate,
+    user_id: str = Depends(get_user_id),
+    db: Session = Depends(get_db),
+):
+    """Update user preferences"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.preferred_currency = data.preferred_currency
+    db.commit()
+    return PreferencesResponse(preferred_currency=user.preferred_currency)

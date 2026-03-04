@@ -11,7 +11,14 @@ import ControlsPanel, {
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
 import FilterModal from "~/components/FilterModal";
-import { createExpense, deleteExpense, getExpenses, getRangeStats, updateExpense } from "~/lib/api";
+import {
+  createExpense,
+  deleteExpense,
+  getExpenses,
+  getPreferences,
+  getRangeStats,
+  updateExpense,
+} from "~/lib/api";
 import type { Expense, ExpenseCreate } from "~/lib/schemas";
 import { useTheme } from "~/lib/theme";
 import { formatCurrency, formatDate, getCategoryColor, truncateText } from "~/lib/utils";
@@ -31,7 +38,7 @@ export async function clientLoader({ request }: { request: Request }) {
   const startDate = url.searchParams.get("startDate") || defaultStart;
   const endDate = url.searchParams.get("endDate") || defaultEnd;
   const preset = (url.searchParams.get("preset") || "thisMonth") as Preset;
-  const currency = url.searchParams.get("currency") || undefined;
+  const currencyParam = url.searchParams.get("currency");
 
   // Transaction params
   const limit = Number(url.searchParams.get("limit")) || 10;
@@ -39,6 +46,17 @@ export async function clientLoader({ request }: { request: Request }) {
   const category = url.searchParams.get("category") || "";
   const minAmount = url.searchParams.get("minAmount");
   const maxAmount = url.searchParams.get("maxAmount");
+
+  // Use preferred currency as default when no currency param is in the URL
+  let currency = currencyParam || undefined;
+  if (!currencyParam) {
+    try {
+      const prefs = await getPreferences();
+      currency = prefs.preferred_currency;
+    } catch {
+      // Fall back to no currency filter
+    }
+  }
 
   const [expenseData, rangeStats] = await Promise.all([
     getExpenses({

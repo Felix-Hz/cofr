@@ -1,9 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { redirect } from "react-router";
-import { getLinkedProviders, initTelegramLink, unlinkProvider } from "~/lib/api";
+import {
+  getLinkedProviders,
+  getPreferences,
+  initTelegramLink,
+  unlinkProvider,
+  updatePreferences,
+} from "~/lib/api";
 import { isAuthenticated } from "~/lib/auth";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
+
+const CURRENCIES = ["NZD", "EUR", "USD", "GBP", "AUD"];
 
 interface LinkedProvider {
   id: string;
@@ -33,6 +41,8 @@ export default function Settings() {
   const [error, setError] = useState<string | null>(null);
   const [linkData, setLinkData] = useState<{ code: string; deep_link: string } | null>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [preferredCurrency, setPreferredCurrency] = useState("NZD");
+  const [savingCurrency, setSavingCurrency] = useState(false);
 
   const fetchProviders = async () => {
     try {
@@ -45,8 +55,18 @@ export default function Settings() {
     }
   };
 
+  const fetchPreferences = async () => {
+    try {
+      const prefs = await getPreferences();
+      setPreferredCurrency(prefs.preferred_currency);
+    } catch {
+      // Silently fall back to default
+    }
+  };
+
   useEffect(() => {
     fetchProviders();
+    fetchPreferences();
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
@@ -54,6 +74,18 @@ export default function Settings() {
 
   const linkedProviderNames = providers.map((p) => p.provider);
   const unlinkedProviders = ALL_PROVIDERS.filter((p) => !linkedProviderNames.includes(p));
+
+  const handleCurrencyChange = async (currency: string) => {
+    setPreferredCurrency(currency);
+    setSavingCurrency(true);
+    try {
+      await updatePreferences({ preferred_currency: currency });
+    } catch {
+      setError("Failed to save currency preference");
+    } finally {
+      setSavingCurrency(false);
+    }
+  };
 
   const handleLinkTelegram = async () => {
     setError(null);
@@ -115,6 +147,43 @@ export default function Settings() {
         </div>
       )}
 
+      {/* Preferences */}
+      <div className="bg-surface-primary rounded-lg border border-edge-default mb-6">
+        <div className="px-6 py-4 border-b border-edge-default">
+          <h3 className="text-lg font-medium text-content-primary">Preferences</h3>
+          <p className="text-sm text-content-tertiary mt-1">Customize your experience</p>
+        </div>
+
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-content-primary">Default Currency</p>
+              <p className="text-sm text-content-tertiary">
+                Used as the default filter on the dashboard
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={preferredCurrency}
+                onChange={(e) => handleCurrencyChange(e.target.value)}
+                disabled={savingCurrency}
+                className="px-3 py-1.5 text-sm font-medium bg-surface-primary text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors disabled:opacity-50"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {savingCurrency && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-content-primary" />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Linked Accounts */}
       <div className="bg-surface-primary rounded-lg border border-edge-default">
         <div className="px-6 py-4 border-b border-edge-default">
           <h3 className="text-lg font-medium text-content-primary">Linked Accounts</h3>
