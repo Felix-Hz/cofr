@@ -35,6 +35,7 @@ export const MonthlyStatsSchema = z.object({
   expense_count: z.number(),
   category_breakdown: z.array(CategoryTotalSchema),
   currency: z.string().length(3),
+  is_converted: z.boolean().default(false),
 });
 
 export const ExpenseCreateSchema = z.object({

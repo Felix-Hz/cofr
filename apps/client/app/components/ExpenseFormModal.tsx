@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 import type { Expense, ExpenseCreate } from "~/lib/schemas";
 import { Category } from "~/lib/utils";
 
@@ -162,11 +163,11 @@ export default function ExpenseFormModal({
                 onChange={(e) => setCurrency(e.target.value)}
                 className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               >
-                <option value="NZD">NZD</option>
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
-                <option value="GBP">GBP</option>
-                <option value="AUD">AUD</option>
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
               </select>
             </div>
 

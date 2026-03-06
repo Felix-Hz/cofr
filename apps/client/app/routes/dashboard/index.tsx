@@ -11,14 +11,7 @@ import ControlsPanel, {
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
 import FilterModal from "~/components/FilterModal";
-import {
-  createExpense,
-  deleteExpense,
-  getExpenses,
-  getPreferences,
-  getRangeStats,
-  updateExpense,
-} from "~/lib/api";
+import { createExpense, deleteExpense, getExpenses, getRangeStats, updateExpense } from "~/lib/api";
 import type { Expense, ExpenseCreate } from "~/lib/schemas";
 import { useTheme } from "~/lib/theme";
 import { formatCurrency, formatDate, getCategoryColor, truncateText } from "~/lib/utils";
@@ -38,7 +31,7 @@ export async function clientLoader({ request }: { request: Request }) {
   const startDate = url.searchParams.get("startDate") || defaultStart;
   const endDate = url.searchParams.get("endDate") || defaultEnd;
   const preset = (url.searchParams.get("preset") || "thisMonth") as Preset;
-  const currencyParam = url.searchParams.get("currency");
+  const currency = url.searchParams.get("currency") || undefined;
 
   // Transaction params
   const limit = Number(url.searchParams.get("limit")) || 10;
@@ -46,17 +39,6 @@ export async function clientLoader({ request }: { request: Request }) {
   const category = url.searchParams.get("category") || "";
   const minAmount = url.searchParams.get("minAmount");
   const maxAmount = url.searchParams.get("maxAmount");
-
-  // Use preferred currency as default when no currency param is in the URL
-  let currency = currencyParam || undefined;
-  if (!currencyParam) {
-    try {
-      const prefs = await getPreferences();
-      currency = prefs.preferred_currency;
-    } catch {
-      // Fall back to no currency filter
-    }
-  }
 
   const [expenseData, rangeStats] = await Promise.all([
     getExpenses({
@@ -192,7 +174,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleCurrencyChange = (c: string) => navigate(buildUrl({ currency: c || undefined }));
+  const handleCurrencyChange = (c: string) => navigate(buildUrl({ currency: c }));
 
   const goToPrev = () => {
     if (preset === "custom") return;
@@ -430,18 +412,19 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ─── Currency warning ─── */}
-      {!currentCurrency && (
-        <div className="flex items-center gap-2.5 bg-warning-bg border border-warning-border text-warning-text px-4 py-2.5 rounded-lg text-xs">
+      {/* ─── Currency info ─── */}
+      {!currentCurrency && monthlyStats.is_converted && (
+        <div className="flex items-center gap-2.5 bg-accent-soft-bg border border-accent/20 text-accent-soft-text px-4 py-2.5 rounded-lg text-xs">
           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          Mixed currencies — select one for accurate totals.
+          Totals converted to {monthlyStats.currency} at approximate rates. Select a specific
+          currency to view only those transactions.
         </div>
       )}
 
