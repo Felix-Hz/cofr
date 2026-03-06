@@ -1,5 +1,9 @@
-import { redirect, useSearchParams } from "react-router";
-import { isAuthenticated } from "~/lib/auth";
+import { useState } from "react";
+import { redirect, useNavigate, useSearchParams } from "react-router";
+import { PasswordRequirements } from "~/components/PasswordRequirements";
+import { loginWithEmail, registerWithEmail } from "~/lib/api";
+import { isAuthenticated, saveToken } from "~/lib/auth";
+import { isPasswordValid } from "~/lib/password";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
 
@@ -12,17 +16,47 @@ export async function clientLoader() {
 
 export default function Login() {
   const [searchParams] = useSearchParams();
-  const error = searchParams.get("error");
+  const navigate = useNavigate();
+  const errorParam = searchParams.get("error");
+
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(errorParam);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const result =
+        mode === "signup"
+          ? await registerWithEmail(email, password, name || undefined)
+          : await loginWithEmail(email, password);
+
+      saveToken(result.token);
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gradient-page">
-      <title>Cofr | Login</title>
+      <title>Cofr | {mode === "signin" ? "Login" : "Sign Up"}</title>
       <div className="max-w-lg w-full space-y-8 p-8">
         <div className="text-center">
           <img src="/logo.png" alt="cofr" className="h-16 w-16 mx-auto mb-4 logo-auto" />
-          <h2 className="text-3xl font-bold tracking-tight">Welcome to cofr</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            {mode === "signin" ? "Welcome back" : "Create your account"}
+          </h2>
           <p className="mt-2 text-sm text-content-tertiary">
-            Sign in with your Google account to continue
+            {mode === "signin" ? "Sign in to continue to cofr" : "Get started with cofr"}
           </p>
         </div>
 
@@ -32,6 +66,7 @@ export default function Login() {
           </div>
         )}
 
+        {/* Google OAuth */}
         <div className="mt-8 space-y-4">
           <a
             href={`${API_BASE_URL}/auth/oauth/google/login`}
@@ -58,6 +93,125 @@ export default function Login() {
             <span className="font-medium">Continue with Google</span>
           </a>
         </div>
+
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-edge-default" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-3 bg-surface-primary text-content-tertiary rounded">or</span>
+          </div>
+        </div>
+
+        {/* Email/Password Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === "signup" && (
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-content-secondary mb-1"
+              >
+                Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name (optional)"
+                className="w-full px-4 py-2.5 border border-edge-strong rounded-lg bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+              />
+            </div>
+          )}
+
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-content-secondary mb-1"
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="w-full px-4 py-2.5 border border-edge-strong rounded-lg bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-content-secondary mb-1"
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
+              className="w-full px-4 py-2.5 border border-edge-strong rounded-lg bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+            />
+            {mode === "signup" && <PasswordRequirements password={password} />}
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading || (mode === "signup" && !isPasswordValid(password))}
+            className="w-full py-2.5 px-4 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                {mode === "signin" ? "Signing in..." : "Creating account..."}
+              </span>
+            ) : mode === "signin" ? (
+              "Sign in"
+            ) : (
+              "Create account"
+            )}
+          </button>
+        </form>
+
+        {/* Mode Toggle */}
+        <p className="text-center text-sm text-content-tertiary">
+          {mode === "signin" ? (
+            <>
+              Don&apos;t have an account?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signup");
+                  setError(null);
+                }}
+                className="font-medium text-emerald hover:text-emerald-hover transition-colors cursor-pointer"
+              >
+                Sign up
+              </button>
+            </>
+          ) : (
+            <>
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signin");
+                  setError(null);
+                }}
+                className="font-medium text-emerald hover:text-emerald-hover transition-colors cursor-pointer"
+              >
+                Sign in
+              </button>
+            </>
+          )}
+        </p>
       </div>
     </div>
   );

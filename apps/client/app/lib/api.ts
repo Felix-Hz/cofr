@@ -219,6 +219,52 @@ export async function getExchangeRates(): Promise<{
   return response.json();
 }
 
+// Local Auth (no auth required)
+export async function registerWithEmail(
+  email: string,
+  password: string,
+  name?: string,
+): Promise<{ token: string }> {
+  const response = await fetch(`${API_BASE_URL}/auth/local/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, name: name || undefined }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: "Registration failed" }));
+    throw new ApiError(response.status, error.detail || "Registration failed");
+  }
+  return response.json();
+}
+
+export async function loginWithEmail(email: string, password: string): Promise<{ token: string }> {
+  const response = await fetch(`${API_BASE_URL}/auth/local/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: "Login failed" }));
+    throw new ApiError(response.status, error.detail || "Login failed");
+  }
+  return response.json();
+}
+
+// Password Management
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetchWithAuth("/account/password", {
+    method: "PUT",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+  return response.json();
+}
+
 // Health check (no auth required)
 export async function healthCheck(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);

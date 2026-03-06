@@ -1,8 +1,9 @@
 import secrets
 from datetime import UTC, datetime, timedelta
 
+import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_user_id
@@ -45,6 +46,31 @@ class ProfileResponse(BaseModel):
 
 class CurrencyUpdateRequest(BaseModel):
     preferred_currency: str
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters")
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one number")
+        if not any(not c.isalnum() for c in v):
+            raise ValueError("Password must contain at least one special character")
+        return v
+
+
+class PasswordChangeResponse(BaseModel):
+    success: bool
+    message: str
 
 
 @router.get("/profile", response_model=ProfileResponse)
@@ -175,3 +201,28 @@ async def update_preferences(
     user.preferred_currency = data.preferred_currency
     db.commit()
     return PreferencesResponse(preferred_currency=user.preferred_currency)
+
+
+@router.put("/password", response_model=PasswordChangeResponse)
+async def change_password(
+    body: PasswordChangeRequest,
+    user_id: str = Depends(get_user_id),
+    db: Session = Depends(get_db),
+):
+    """Change password for local (email/password) auth."""
+    auth_provider = (
+        db.query(AuthProvider)
+        .filter(AuthProvider.user_id == user_id, AuthProvider.provider == "local")
+        .first()
+    )
+    if not auth_provider or not auth_provider.password_hash:
+        raise HTTPException(status_code=400, detail="No local auth provider linked to this account")
+
+    if not bcrypt.checkpw(body.current_password.encode(), auth_provider.password_hash.encode()):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    auth_provider.password_hash = bcrypt.hashpw(
+        body.new_password.encode(), bcrypt.gensalt()
+    ).decode()
+    db.commit()
+    return PasswordChangeResponse(success=True, message="Password changed successfully")

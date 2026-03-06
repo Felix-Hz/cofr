@@ -8,7 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings
 from app.database import engine
 from app.middleware import log_requests
-from app.routers import account, exchange_rates, expenses, oauth
+from app.routers import account, exchange_rates, expenses, local_auth, oauth
 
 
 @asynccontextmanager
@@ -66,3 +66,4 @@ app.include_router(expenses.router)
 app.include_router(oauth.router)
 app.include_router(account.router)
 app.include_router(exchange_rates.router)
+app.include_router(local_auth.router)
