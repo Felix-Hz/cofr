@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
-from app.db.models import Transaction
+from app.db.models import Transaction, User
 from app.db.schemas import (
     CategoryTotal,
     ExpenseCreateRequest,
@@ -12,6 +12,7 @@ from app.db.schemas import (
     ExpenseUpdateRequest,
     MonthlyStats,
 )
+from app.services.exchange_rates import convert, get_rates_from_db
 
 
 class ExpenseService:
@@ -120,72 +121,10 @@ class ExpenseService:
 
         if currency:
             base_filter.append(Transaction.currency == currency)
+            return self._aggregate_sql(base_filter, currency)
 
-        excluded_cats = ("Income", "Savings", "Investment")
-
-        summary = (
-            self.db.query(
-                func.coalesce(
-                    func.sum(
-                        case(
-                            (Transaction.category.not_in(excluded_cats), Transaction.amount),
-                            else_=0,
-                        )
-                    ),
-                    0,
-                ).label("total_spent"),
-                func.coalesce(
-                    func.sum(case((Transaction.category == "Income", Transaction.amount), else_=0)),
-                    0,
-                ).label("total_income"),
-                func.coalesce(
-                    func.sum(
-                        case((Transaction.category == "Savings", Transaction.amount), else_=0)
-                    ),
-                    0,
-                ).label("total_savings"),
-                func.coalesce(
-                    func.sum(
-                        case((Transaction.category == "Investment", Transaction.amount), else_=0)
-                    ),
-                    0,
-                ).label("total_investment"),
-                func.count(case((Transaction.category.not_in(excluded_cats), 1))).label(
-                    "expense_count"
-                ),
-                func.count(Transaction.id).label("transaction_count"),
-            )
-            .filter(*base_filter)
-            .first()
-        )
-
-        breakdown = (
-            self.db.query(
-                Transaction.category,
-                func.sum(Transaction.amount).label("total"),
-                func.count(Transaction.id).label("count"),
-            )
-            .filter(*base_filter)
-            .group_by(Transaction.category)
-            .order_by(func.sum(Transaction.amount).desc())
-            .all()
-        )
-
-        category_breakdown = [
-            CategoryTotal(category=row.category, total=row.total, count=row.count)
-            for row in breakdown
-        ]
-
-        return MonthlyStats(
-            total_spent=summary.total_spent if summary else 0,
-            total_income=summary.total_income if summary else 0,
-            total_savings=summary.total_savings if summary else 0,
-            total_investment=summary.total_investment if summary else 0,
-            transaction_count=summary.transaction_count if summary else 0,
-            expense_count=summary.expense_count if summary else 0,
-            category_breakdown=category_breakdown,
-            currency=currency or "NZD",
-        )
+        # All currencies — convert to user's preferred currency
+        return self._aggregate_with_conversion(base_filter, user_id)
 
     async def get_range_stats(
         self, user_id: str, start_date: datetime, end_date: datetime, currency: str | None = None
@@ -199,7 +138,13 @@ class ExpenseService:
 
         if currency:
             base_filter.append(Transaction.currency == currency)
+            return self._aggregate_sql(base_filter, currency)
 
+        # All currencies — convert to user's preferred currency
+        return self._aggregate_with_conversion(base_filter, user_id)
+
+    def _aggregate_sql(self, base_filter: list, currency: str) -> MonthlyStats:
+        """Aggregate stats using SQL (single-currency path)."""
         excluded_cats = ("Income", "Savings", "Investment")
 
         summary = (
@@ -263,7 +208,62 @@ class ExpenseService:
             transaction_count=summary.transaction_count if summary else 0,
             expense_count=summary.expense_count if summary else 0,
             category_breakdown=category_breakdown,
-            currency=currency or "NZD",
+            currency=currency,
+        )
+
+    def _aggregate_with_conversion(self, base_filter: list, user_id: str) -> MonthlyStats:
+        """Fetch all transactions, convert to user's preferred currency and aggregate."""
+        rates = get_rates_from_db(self.db)
+        user = self.db.query(User).filter(User.id == user_id).first()
+        preferred = user.preferred_currency if user else "NZD"
+
+        transactions = self.db.query(Transaction).filter(*base_filter).all()
+
+        total_spent = 0.0
+        total_income = 0.0
+        total_savings = 0.0
+        total_investment = 0.0
+        expense_count = 0
+        cat_totals: dict[str, list[float, int]] = {}
+
+        for tx in transactions:
+            amt = convert(tx.amount, tx.currency, preferred, rates)
+            cat = tx.category
+
+            if cat not in cat_totals:
+                cat_totals[cat] = [0.0, 0]
+            cat_totals[cat][0] += amt
+            cat_totals[cat][1] += 1
+
+            if cat == "Income":
+                total_income += amt
+            elif cat == "Savings":
+                total_savings += amt
+            elif cat == "Investment":
+                total_investment += amt
+            else:
+                total_spent += amt
+                expense_count += 1
+
+        category_breakdown = sorted(
+            [
+                CategoryTotal(category=cat, total=vals[0], count=vals[1])
+                for cat, vals in cat_totals.items()
+            ],
+            key=lambda c: c.total,
+            reverse=True,
+        )
+
+        return MonthlyStats(
+            total_spent=total_spent,
+            total_income=total_income,
+            total_savings=total_savings,
+            total_investment=total_investment,
+            transaction_count=len(transactions),
+            expense_count=expense_count,
+            category_breakdown=category_breakdown,
+            currency=preferred,
+            is_converted=True,
         )
 
     async def get_expense_by_id(self, user_id: str, expense_id: str) -> ExpenseSchema:

@@ -36,6 +36,7 @@ class MonthlyStats(BaseModel):
     expense_count: int
     category_breakdown: list[CategoryTotal]
     currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
+    is_converted: bool = False
 
 
 class ExpenseCreateRequest(BaseModel):

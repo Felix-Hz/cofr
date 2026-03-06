@@ -86,3 +86,11 @@ class AuthProvider(Base):
     display_name: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="auth_providers")
+
+
+class ExchangeRate(Base):
+    __tablename__ = "exchange_rates"
+
+    currency_code: Mapped[str] = mapped_column(String, primary_key=True)
+    rate_to_usd: Mapped[float] = mapped_column(Float, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

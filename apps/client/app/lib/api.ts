@@ -204,6 +204,21 @@ export async function updatePreferences(data: {
   return response.json();
 }
 
+// Account Profile
+export async function getUserProfile(): Promise<{ preferred_currency: string }> {
+  const response = await fetchWithAuth("/account/profile");
+  return response.json();
+}
+
+// Exchange Rates
+export async function getExchangeRates(): Promise<{
+  rates: Record<string, number>;
+  updated_at: string | null;
+}> {
+  const response = await fetchWithAuth("/exchange-rates/");
+  return response.json();
+}
+
 // Health check (no auth required)
 export async function healthCheck(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);
