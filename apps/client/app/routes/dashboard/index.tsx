@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLoaderData, useNavigate, useRevalidator } from "react-router";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import CategoryPieTooltip from "~/components/CategoryPieTooltip";
@@ -12,11 +12,12 @@ import DeleteConfirmModal from "~/components/DeleteConfirmModal";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
 import FilterModal from "~/components/FilterModal";
 import { createExpense, deleteExpense, getExpenses, getRangeStats, updateExpense } from "~/lib/api";
+import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 import type { Expense, ExpenseCreate } from "~/lib/schemas";
 import { useTheme } from "~/lib/theme";
 import { formatCurrency, formatDate, getCategoryColor, truncateText } from "~/lib/utils";
 
-const CURRENCIES = ["NZD", "EUR", "USD", "GBP", "AUD"];
+const CURRENCIES = [...SUPPORTED_CURRENCIES];
 const POSITIVE_CATEGORIES = ["Income", "Savings", "Investment"];
 
 export async function clientLoader({ request }: { request: Request }) {
@@ -92,6 +93,7 @@ export default function Dashboard() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
+  const controlsToggleRef = useRef<HTMLButtonElement>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -352,6 +354,7 @@ export default function Dashboard() {
           {/* Controls toggle */}
           <div className="relative">
             <button
+              ref={controlsToggleRef}
               onClick={() => setIsControlsOpen(!isControlsOpen)}
               className={`h-9 w-9 flex items-center justify-center rounded-lg transition-colors ${
                 isControlsOpen
@@ -382,6 +385,7 @@ export default function Dashboard() {
             <ControlsPanel
               isOpen={isControlsOpen}
               onClose={() => setIsControlsOpen(false)}
+              toggleRef={controlsToggleRef}
               preset={preset}
               onPresetChange={handlePresetChange}
               currency={currentCurrency}

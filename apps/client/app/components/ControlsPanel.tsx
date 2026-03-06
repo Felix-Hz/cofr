@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
-export type Preset = "thisMonth" | "lastMonth" | "thisWeek" | "last7Days" | "last30Days" | "custom";
+export type Preset = "thisMonth" | "last7Days" | "lastYear" | "custom";
 
 interface ControlsPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  toggleRef?: React.RefObject<HTMLElement | null>;
   preset: Preset;
   onPresetChange: (preset: Preset) => void;
   currency: string;
@@ -18,16 +19,15 @@ interface ControlsPanelProps {
 
 const PRESETS: { value: Preset; label: string }[] = [
   { value: "thisMonth", label: "This Month" },
-  { value: "lastMonth", label: "Last Month" },
-  { value: "thisWeek", label: "This Week" },
-  { value: "last7Days", label: "Last 7 Days" },
-  { value: "last30Days", label: "Last 30 Days" },
+  { value: "last7Days", label: "Last Week" },
+  { value: "lastYear", label: "Last Year" },
   { value: "custom", label: "Custom Range" },
 ];
 
 export default function ControlsPanel({
   isOpen,
   onClose,
+  toggleRef,
   preset,
   onPresetChange,
   currency,
@@ -39,12 +39,30 @@ export default function ControlsPanel({
   currencies,
 }: ControlsPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  // Swipe down to close on mobile
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (touchStartY.current === null) return;
+      const delta = e.changedTouches[0].clientY - touchStartY.current;
+      if (delta > 80) onClose();
+      touchStartY.current = null;
+    },
+    [onClose],
+  );
 
   // Close on click outside
   useEffect(() => {
     if (!isOpen) return;
     const handleClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (panelRef.current && !panelRef.current.contains(target)) {
+        if (toggleRef?.current?.contains(target)) return;
         onClose();
       }
     };
@@ -54,7 +72,7 @@ export default function ControlsPanel({
       clearTimeout(id);
       document.removeEventListener("mousedown", handleClick);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, toggleRef?.current?.contains]);
 
   // Close on Escape
   useEffect(() => {
@@ -78,6 +96,8 @@ export default function ControlsPanel({
         {/* Panel — bottom sheet on mobile, dropdown on desktop */}
         <div
           ref={panelRef}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           className="
             w-full max-h-[85dvh] overflow-y-auto
             sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:w-80 sm:max-h-none sm:overflow-visible
@@ -193,28 +213,15 @@ export function getPresetDates(
       const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
       return { startDate: toISODate(start), endDate: toISODate(end) };
     }
-    case "lastMonth": {
-      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const end = new Date(now.getFullYear(), now.getMonth(), 0);
-      return { startDate: toISODate(start), endDate: toISODate(end) };
-    }
-    case "thisWeek": {
-      const day = now.getDay();
-      const diff = day === 0 ? 6 : day - 1; // Monday start
-      const start = new Date(now);
-      start.setDate(now.getDate() - diff);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      return { startDate: toISODate(start), endDate: toISODate(end) };
-    }
     case "last7Days": {
       const start = new Date(now);
-      start.setDate(now.getDate() - 6);
+      start.setDate(now.getDate() - 7);
       return { startDate: toISODate(start), endDate: toISODate(now) };
     }
-    case "last30Days": {
+    case "lastYear": {
       const start = new Date(now);
-      start.setDate(now.getDate() - 29);
+      start.setFullYear(now.getFullYear() - 1);
+      start.setDate(start.getDate() - 1);
       return { startDate: toISODate(start), endDate: toISODate(now) };
     }
     case "custom":
@@ -254,13 +261,12 @@ export function getPresetLabel(preset: Preset, startDate: string, endDate: strin
     const s = new Date(startDate + "T00:00:00");
     switch (preset) {
       case "thisMonth":
-      case "lastMonth":
         return `${MONTHS_FULL[s.getMonth()]} ${s.getFullYear()}`;
-      case "thisWeek":
       case "last7Days":
-      case "last30Days": {
+      case "lastYear": {
         const e = new Date(endDate + "T00:00:00");
-        const fmt = (d: Date) => `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3)}`;
+        const fmt = (d: Date) =>
+          `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`;
         return `${fmt(s)} – ${fmt(e)}`;
       }
     }
@@ -278,28 +284,22 @@ export function shiftPreset(
   const s = new Date(startDate + "T00:00:00");
 
   switch (preset) {
-    case "thisMonth":
-    case "lastMonth": {
+    case "thisMonth": {
       s.setMonth(s.getMonth() + direction);
       const end = new Date(s.getFullYear(), s.getMonth() + 1, 0);
       return { startDate: toISODate(s), endDate: toISODate(end) };
     }
-    case "thisWeek": {
-      s.setDate(s.getDate() + 7 * direction);
-      const end = new Date(s);
-      end.setDate(s.getDate() + 6);
-      return { startDate: toISODate(s), endDate: toISODate(end) };
-    }
     case "last7Days": {
-      s.setDate(s.getDate() + 7 * direction);
+      s.setDate(s.getDate() + 8 * direction);
       const end = new Date(s);
-      end.setDate(s.getDate() + 6);
+      end.setDate(s.getDate() + 7);
       return { startDate: toISODate(s), endDate: toISODate(end) };
     }
-    case "last30Days": {
-      s.setDate(s.getDate() + 30 * direction);
+    case "lastYear": {
+      s.setFullYear(s.getFullYear() + direction);
       const end = new Date(s);
-      end.setDate(s.getDate() + 29);
+      end.setFullYear(s.getFullYear() + 1);
+      end.setDate(end.getDate() - 1);
       return { startDate: toISODate(s), endDate: toISODate(end) };
     }
     default:

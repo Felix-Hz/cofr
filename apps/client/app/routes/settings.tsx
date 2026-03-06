@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { redirect } from "react-router";
+import { PasswordRequirements } from "~/components/PasswordRequirements";
 import {
+  changePassword,
   getLinkedProviders,
   getPreferences,
   initTelegramLink,
@@ -8,6 +10,7 @@ import {
   updatePreferences,
 } from "~/lib/api";
 import { isAuthenticated } from "~/lib/auth";
+import { isPasswordValid } from "~/lib/password";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
 
@@ -24,6 +27,7 @@ interface LinkedProvider {
 const PROVIDER_LABELS: Record<string, string> = {
   telegram: "Telegram",
   google: "Google",
+  local: "Email",
 };
 
 const ALL_PROVIDERS = ["google", "telegram"];
@@ -43,6 +47,13 @@ export default function Settings() {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [preferredCurrency, setPreferredCurrency] = useState("NZD");
   const [savingCurrency, setSavingCurrency] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const fetchProviders = async () => {
     try {
@@ -125,6 +136,27 @@ export default function Settings() {
       setProviders((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to unlink provider");
+    }
+  };
+
+  const hasLocalAuth = providers.some((p) => p.provider === "local");
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMessage(null);
+    setPasswordLoading(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPasswordMessage({ type: "success", text: "Password changed successfully" });
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch (err) {
+      setPasswordMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Failed to change password",
+      });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -265,9 +297,69 @@ export default function Settings() {
         </div>
       </div>
 
-      <p className="text-sm text-content-tertiary mt-4">
-        The Telegram bot requires a linked Telegram account to track expenses via chat.
-      </p>
+      {/* Security — Password Change (only for local auth users) */}
+      {hasLocalAuth && (
+        <div className="bg-surface-primary rounded-lg border border-edge-default mt-6">
+          <div className="px-6 py-4 border-b border-edge-default">
+            <h3 className="text-lg font-medium text-content-primary">Security</h3>
+            <p className="text-sm text-content-tertiary mt-1">Change your password</p>
+          </div>
+          <form onSubmit={handlePasswordChange} className="px-6 py-4 space-y-4">
+            {passwordMessage && (
+              <div
+                className={`px-4 py-3 rounded-md text-sm ${
+                  passwordMessage.type === "success"
+                    ? "bg-positive-bg border border-positive-text text-positive-text"
+                    : "bg-negative-bg border border-negative-text text-negative-text"
+                }`}
+              >
+                {passwordMessage.text}
+              </div>
+            )}
+            <div>
+              <label
+                htmlFor="current-password"
+                className="block text-sm font-medium text-content-secondary mb-1"
+              >
+                Current password
+              </label>
+              <input
+                id="current-password"
+                type="password"
+                required
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="new-password"
+                className="block text-sm font-medium text-content-secondary mb-1"
+              >
+                New password
+              </label>
+              <input
+                id="new-password"
+                type="password"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="At least 8 characters"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+              />
+              <PasswordRequirements password={newPassword} />
+            </div>
+            <button
+              type="submit"
+              disabled={passwordLoading || !isPasswordValid(newPassword)}
+              className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50 transition-colors"
+            >
+              {passwordLoading ? "Saving..." : "Change password"}
+            </button>
+          </form>
+        </div>
+      )}
 
       {linkData && (
         <p className="text-sm text-content-tertiary mt-2">

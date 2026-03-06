@@ -84,6 +84,7 @@ class AuthProvider(Base):
     provider_user_id: Mapped[str] = mapped_column(String)
     email: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
     display_name: Mapped[str | None] = mapped_column(EncryptedString, nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="auth_providers")
 
