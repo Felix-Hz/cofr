@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { redirect } from "react-router";
+import DeleteAccountModal from "~/components/DeleteAccountModal";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
 import {
   changePassword,
@@ -54,6 +55,7 @@ export default function Settings() {
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const fetchProviders = async () => {
     try {
@@ -75,6 +77,7 @@ export default function Settings() {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
     fetchProviders();
     fetchPreferences();
@@ -379,6 +382,34 @@ export default function Settings() {
           . Code expires in 10 minutes.
         </p>
       )}
+
+      {/* Danger Zone */}
+      <div className="bg-surface-primary rounded-lg border border-negative-text/30 mt-6">
+        <div className="px-6 py-4 border-b border-negative-text/30 bg-negative-bg rounded-t-lg">
+          <h3 className="text-lg font-medium text-content-primary">Danger Zone</h3>
+        </div>
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div>
+            <p className="font-medium text-content-primary">Delete account</p>
+            <p className="text-sm text-content-tertiary">
+              Deactivate or permanently delete your account and data
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            className="px-4 py-2 text-sm font-medium text-negative-text border border-negative-text/30 rounded-md hover:bg-negative-bg transition-colors"
+          >
+            Delete Account
+          </button>
+        </div>
+      </div>
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        hasLocalAuth={hasLocalAuth}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import secrets
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_user_id
 from app.config import settings
 from app.database import get_db
-from app.db.models import AuthProvider, User
+from app.db.models import AuthProvider, Transaction, User
 
 router = APIRouter(prefix="/account", tags=["Account"])
 
@@ -69,6 +70,17 @@ class PasswordChangeRequest(BaseModel):
 
 
 class PasswordChangeResponse(BaseModel):
+    success: bool
+    message: str
+
+
+class DeleteAccountRequest(BaseModel):
+    mode: Literal["soft", "hard"]
+    confirmation_text: str
+    password: str | None = None
+
+
+class DeleteAccountResponse(BaseModel):
     success: bool
     message: str
 
@@ -226,3 +238,48 @@ async def change_password(
     ).decode()
     db.commit()
     return PasswordChangeResponse(success=True, message="Password changed successfully")
+
+
+@router.delete("", response_model=DeleteAccountResponse)
+async def delete_account(
+    body: DeleteAccountRequest,
+    user_id: str = Depends(get_user_id),
+    db: Session = Depends(get_db),
+):
+    """Delete the current user's account (soft or hard delete)."""
+    if body.confirmation_text != "DELETE":
+        raise HTTPException(status_code=400, detail="Confirmation text must be 'DELETE'")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # If user has local auth, require password verification
+    local_provider = (
+        db.query(AuthProvider)
+        .filter(AuthProvider.user_id == user_id, AuthProvider.provider == "local")
+        .first()
+    )
+    if local_provider and local_provider.password_hash:
+        if not body.password:
+            raise HTTPException(status_code=400, detail="Password required for account deletion")
+        if not bcrypt.checkpw(body.password.encode(), local_provider.password_hash.encode()):
+            raise HTTPException(status_code=400, detail="Password is incorrect")
+
+    if body.mode == "soft":
+        user.deleted_at = datetime.now(UTC)
+        db.commit()
+        return DeleteAccountResponse(
+            success=True,
+            message="Account deactivated. Log back in anytime to reactivate.",
+        )
+
+    # Hard delete: remove transactions, auth providers, then user
+    db.query(Transaction).filter(Transaction.user_id == user_id).delete()
+    db.query(AuthProvider).filter(AuthProvider.user_id == user_id).delete()
+    db.delete(user)
+    db.commit()
+    return DeleteAccountResponse(
+        success=True,
+        message="Account and all data permanently deleted.",
+    )
