@@ -117,6 +117,9 @@ async def login(body: LoginRequest, db: Session = Depends(get_db)):
         )
 
     user = db.query(User).filter(User.id == auth_provider.user_id).first()
+    if user.deleted_at is not None:
+        user.deleted_at = None
+        db.commit()
     token = create_access_token(
         user_id=str(user.id),
         username=auth_provider.display_name or email_normalized,

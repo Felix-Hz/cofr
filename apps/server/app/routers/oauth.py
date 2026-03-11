@@ -104,7 +104,11 @@ def _resolve_user(
         .first()
     )
     if auth_provider:
-        return db.query(User).filter(User.id == auth_provider.user_id).first()
+        user = db.query(User).filter(User.id == auth_provider.user_id).first()
+        if user and user.deleted_at is not None:
+            user.deleted_at = None
+            db.commit()
+        return user
 
     # 2. Create new user + auth_provider
     # Generate unique username from email or provider info

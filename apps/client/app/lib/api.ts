@@ -265,6 +265,23 @@ export async function changePassword(
   return response.json();
 }
 
+// Account Deletion
+export async function deleteAccount(
+  mode: "soft" | "hard",
+  confirmationText: string,
+  password?: string,
+): Promise<{ success: boolean; message: string }> {
+  const response = await fetchWithAuth("/account", {
+    method: "DELETE",
+    body: JSON.stringify({
+      mode,
+      confirmation_text: confirmationText,
+      ...(password ? { password } : {}),
+    }),
+  });
+  return response.json();
+}
+
 // Health check (no auth required)
 export async function healthCheck(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);

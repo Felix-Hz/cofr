@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 /*
@@ -13,13 +14,14 @@ import (
  *
  */
 type User struct {
-	ID                uuid.UUID     `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	FirstName         string        `gorm:"index"`         // Index first names
-	LastName          string        `gorm:"index"`         // Index last names
-	Username          string        `gorm:"uniqueIndex"`   // Index usernames
-	PreferredCurrency string        `gorm:"default:'NZD'"` // User's preferred currency
-	LinkCode          *string       `gorm:"column:link_code"`
-	LinkCodeExpires   *time.Time    `gorm:"column:link_code_expires"`
+	ID                uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	FirstName         string     `gorm:"index"`         // Index first names
+	LastName          string     `gorm:"index"`         // Index last names
+	Username          string     `gorm:"uniqueIndex"`   // Index usernames
+	PreferredCurrency string     `gorm:"default:'NZD'"` // User's preferred currency
+	LinkCode          *string    `gorm:"column:link_code"`
+	LinkCodeExpires   *time.Time `gorm:"column:link_code_expires"`
+	DeletedAt         gorm.DeletedAt
 	Expenses          []Transaction `gorm:"foreignKey:UserID"` // One-to-Many Relationship
 }
 

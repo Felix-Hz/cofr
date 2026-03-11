@@ -38,6 +38,7 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(EncryptedString, default="")
     username: Mapped[str] = mapped_column(EncryptedString, default="")
     preferred_currency: Mapped[str] = mapped_column(String, default="NZD")
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     link_code: Mapped[str | None] = mapped_column(String, nullable=True)
     link_code_expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
