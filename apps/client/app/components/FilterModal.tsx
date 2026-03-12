@@ -1,4 +1,4 @@
-import { Category } from "~/lib/utils";
+import { useCategories } from "~/lib/categories";
 
 interface FilterModalProps {
   isOpen: boolean;
@@ -27,6 +27,8 @@ export default function FilterModal({
   setMaxAmount,
   hasActiveFilters,
 }: FilterModalProps) {
+  const { activeCategories } = useCategories();
+
   if (!isOpen) return null;
 
   const handleApply = () => {
@@ -64,9 +66,9 @@ export default function FilterModal({
                 className="w-full px-3 py-2 border border-edge-strong rounded-md text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               >
                 <option value="">All Categories</option>
-                {Object.values(Category).map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                {activeCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
                   </option>
                 ))}
               </select>

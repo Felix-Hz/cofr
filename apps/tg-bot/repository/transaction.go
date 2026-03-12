@@ -21,7 +21,7 @@ type ITransactionRepository interface {
 	GetByHash(hash string, userId uuid.UUID) (*Transaction, error)
 
 	GetAll(userId uuid.UUID, timestamp time.Time, limit int) ([]*Transaction, error)
-	GetManyByCategory(userId uuid.UUID, category string, timestamp time.Time, limit int) ([]*Transaction, error)
+	GetManyByCategory(userId uuid.UUID, categoryID uuid.UUID, timestamp time.Time, limit int) ([]*Transaction, error)
 	GetManyByCurrency(userId uuid.UUID, currency string, fromTime time.Time, limit int) ([]*Transaction, error)
 }
 
@@ -35,6 +35,12 @@ func (r *transactionRepository) Create(txs []*Transaction) ([]*Transaction, erro
 	if result.Error != nil {
 		return nil, result.Error
 	}
+	// Preload category for display
+	ids := make([]uuid.UUID, len(txs))
+	for i, tx := range txs {
+		ids[i] = tx.ID
+	}
+	r.dbClient.Preload("CategoryRel").Where("id IN ?", ids).Find(&txs)
 	return txs, nil
 }
 
@@ -78,6 +84,7 @@ func (r *transactionRepository) GetAll(userId uuid.UUID, fromTime time.Time, lim
 	var transactions []*Transaction
 
 	result := r.dbClient.
+		Preload("CategoryRel").
 		Where("user_id = ? and timestamp >= ? and timestamp < ?", userId, fromTime, time.Now()).
 		Order("timestamp DESC, id DESC").
 		Limit(limit).
@@ -90,12 +97,13 @@ func (r *transactionRepository) GetAll(userId uuid.UUID, fromTime time.Time, lim
 	return transactions, nil
 }
 
-func (r *transactionRepository) GetManyByCategory(userId uuid.UUID, category string, fromTime time.Time, limit int) ([]*Transaction, error) {
+func (r *transactionRepository) GetManyByCategory(userId uuid.UUID, categoryID uuid.UUID, fromTime time.Time, limit int) ([]*Transaction, error) {
 
 	var transactions []*Transaction
 
 	result := r.dbClient.
-		Where("category = ? and user_id = ? and timestamp >= ? and timestamp < ?", category, userId, fromTime, time.Now()).
+		Preload("CategoryRel").
+		Where("category_id = ? and user_id = ? and timestamp >= ? and timestamp < ?", categoryID, userId, fromTime, time.Now()).
 		Order("timestamp DESC, id DESC").
 		Limit(limit).
 		Find(&transactions)
@@ -112,6 +120,7 @@ func (r *transactionRepository) GetManyByCurrency(userId uuid.UUID, currency str
 	var transactions []*Transaction
 
 	result := r.dbClient.
+		Preload("CategoryRel").
 		Where("currency = ? and user_id = ? and timestamp >= ? and timestamp < ?", currency, userId, fromTime, time.Now()).
 		Order("timestamp DESC, id DESC").
 		Limit(limit).

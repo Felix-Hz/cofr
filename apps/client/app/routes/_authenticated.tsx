@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, redirect, useLoaderData } from "react-router";
 import ThemeToggle from "~/components/ThemeToggle";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
+import { CategoriesProvider } from "~/lib/categories";
 import { getUserInitials } from "~/lib/utils";
 
 export async function clientLoader() {
@@ -86,9 +87,11 @@ export default function AuthenticatedLayout() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
-      </main>
+      <CategoriesProvider>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Outlet />
+        </main>
+      </CategoriesProvider>
     </div>
   );
 }

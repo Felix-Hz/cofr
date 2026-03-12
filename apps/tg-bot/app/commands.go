@@ -43,7 +43,7 @@ func dispatch(msg string, timestamp time.Time, userId uuid.UUID) CommandResult {
 	case "list", "ls", "l":
 		return list(content, timestamp, userId)
 	case "help", "h":
-		return help(content)
+		return help(content, userId)
 	case "config", "c", "cfg":
 		return config(content[1:], userId)
 	case "edit", "e", "update", "u":
@@ -66,7 +66,7 @@ func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 	/**
 	 * Process incoming add-request message.
 	 */
-	category, amounts, notes, currency, err := parseAddTx(body, user.PreferredCurrency)
+	category, amounts, notes, currency, err := parseAddTx(body, user.PreferredCurrency, userId)
 	if err != nil {
 		return CommandResult{Command: Add, Error: err, UserError: userErrors[Add]}
 	}
@@ -77,7 +77,7 @@ func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 	_txs := []*Transaction{}
 	for i, amount := range amounts {
 		// Hash message to prevent duplicates. Include batch index and currency to allow duplicate amounts.
-		hash := generateMessageHash(category, amount, notes, timestamp, userId, i, currency)
+		hash := generateMessageHash(category.ID, amount, notes, timestamp, userId, i, currency)
 
 		// Validate transaction uniqueness.
 		_tx, err := r.TxRepo().GetByHash(hash, userId)
@@ -86,13 +86,13 @@ func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 		}
 
 		_txs = append(_txs, &Transaction{
-			Hash:      hash,
-			Notes:     notes,
-			UserID:    userId,
-			Amount:    amount,
-			Currency:  currency,
-			Category:  category,
-			Timestamp: timestamp,
+			Hash:       hash,
+			Notes:      notes,
+			UserID:     userId,
+			Amount:     amount,
+			Currency:   currency,
+			CategoryID: category.ID,
+			Timestamp:  timestamp,
 		})
 	}
 
@@ -143,7 +143,7 @@ func remove(strIds []string, userId uuid.UUID) CommandResult {
 
 func list(body []string, timestamp time.Time, userId uuid.UUID) CommandResult {
 
-	opts, err := parseListOptions(body, timestamp)
+	opts, err := parseListOptions(body, timestamp, userId)
 	if err != nil {
 		return CommandResult{
 			Command:   List,
@@ -153,8 +153,8 @@ func list(body []string, timestamp time.Time, userId uuid.UUID) CommandResult {
 	}
 
 	// Handle category filtering
-	if opts.Category != "" {
-		txs, err := r.TxRepo().GetManyByCategory(userId, opts.Category, opts.FromTime, opts.Limit)
+	if opts.CategoryID != nil {
+		txs, err := r.TxRepo().GetManyByCategory(userId, *opts.CategoryID, opts.FromTime, opts.Limit)
 		if err != nil {
 			return CommandResult{
 				Command:   List,
@@ -199,7 +199,7 @@ func list(body []string, timestamp time.Time, userId uuid.UUID) CommandResult {
 	return CommandResult{Command: List, Transactions: txs}
 }
 
-func help(args []string) CommandResult {
+func help(args []string, userId uuid.UUID) CommandResult {
 	if len(args) == 1 {
 		return CommandResult{Command: Help, UserInfo: userHelp[HelpTopic{Command: Help}]}
 	}
@@ -214,7 +214,7 @@ func help(args []string) CommandResult {
 	case "help", "h":
 		return CommandResult{Command: Help, UserInfo: userHelp[HelpTopic{Command: Help}]}
 	case "categories", "cats":
-		return CommandResult{Command: Help, UserInfo: userHelp[HelpTopic{Command: Help, Subtopic: "Categories"}]}
+		return CommandResult{Command: Help, UserInfo: getCategoriesMessageForUser(userId)}
 	case "currencies", "curr":
 		return CommandResult{Command: Help, UserInfo: userHelp[HelpTopic{Command: Help, Subtopic: "Currencies"}]}
 	case "config", "cfg":

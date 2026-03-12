@@ -3,7 +3,10 @@ package app
 import (
 	"fmt"
 	. "remind0/db"
+	r "remind0/repository"
 	"sort"
+
+	"github.com/google/uuid"
 )
 
 const SEPARATOR = "════════════"
@@ -36,6 +39,10 @@ func txSuccessMessage(operation Command, txs []*Transaction) string {
 	msg := operationHeaders[operation] + "\n" + SEPARATOR + "\n"
 
 	for _, tx := range txs {
+		catName := tx.CategoryRel.Name
+		if catName == "" {
+			catName = "Unknown"
+		}
 		msg += fmt.Sprintf(
 			"🪪 ID: %s\n"+
 				"📥 Category: %s\n"+
@@ -43,7 +50,7 @@ func txSuccessMessage(operation Command, txs []*Transaction) string {
 				"📌 Notes: %s\n"+
 				"🕒 At: %s\n"+
 				SEPARATOR+"\n",
-			tx.ID, tx.Category, tx.Amount, tx.Currency, tx.Notes, tx.Timestamp.Format("02-Jan-2006 15:04"),
+			tx.ID, catName, tx.Amount, tx.Currency, tx.Notes, tx.Timestamp.Format("02-Jan-2006 15:04"),
 		)
 	}
 
@@ -75,11 +82,21 @@ func userHelpMessage(command Command, userInfo string) string {
 
 /**
  * Format a return message to inform the user of the available categories.
+ * Fetches categories dynamically from DB for the given user.
  */
-func getCategoriesMessage() string {
-	categoryList := "Currently supported categories:\n\n"
-	for _, cat := range validCategories {
-		categoryList += fmt.Sprintf("• %s (%s)\n", cat.Alias, cat.Name)
+func getCategoriesMessageForUser(userID uuid.UUID) string {
+	cats, err := r.CategoryRepo().GetForUser(userID)
+	if err != nil {
+		return "Failed to load categories. Please try again."
+	}
+
+	categoryList := "Your available categories:\n\n"
+	for _, cat := range cats {
+		alias := "-"
+		if cat.Alias != nil && *cat.Alias != "" {
+			alias = *cat.Alias
+		}
+		categoryList += fmt.Sprintf("• %s (%s)\n", alias, cat.Name)
 	}
 	return categoryList
 }
@@ -133,8 +150,6 @@ type HelpTopic struct {
 	Subtopic string
 }
 
-// Prevent from running on every map access.
-var categoriesHelpMessage = getCategoriesMessage()
 var currenciesHelpMessage = getCurrenciesListMessage()
 
 /**
@@ -233,6 +248,5 @@ Note:
 	This currency will be used for all transactions when you don't
 	specify a currency explicitly. Use !help currencies for supported codes.
 	`,
-	{Command: Help, Subtopic: "Categories"}: categoriesHelpMessage,
 	{Command: Help, Subtopic: "Currencies"}: currenciesHelpMessage,
 }

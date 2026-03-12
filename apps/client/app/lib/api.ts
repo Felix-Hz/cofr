@@ -1,5 +1,9 @@
 import { getToken, removeToken } from "./auth";
 import {
+  type Category,
+  type CategoryCreate,
+  CategorySchema,
+  type CategoryUpdate,
   type Expense,
   type ExpenseCreate,
   type ExpenseDeleteResponse,
@@ -56,7 +60,48 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promi
   return response;
 }
 
-// Expenses Endpoints
+// ── Categories ──
+
+export async function getCategories(): Promise<Category[]> {
+  const response = await fetchWithAuth("/categories/");
+  const json = await response.json();
+  return json.map((c: unknown) => CategorySchema.parse(c));
+}
+
+export async function createCategory(data: CategoryCreate): Promise<Category> {
+  const response = await fetchWithAuth("/categories/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  const json = await response.json();
+  return CategorySchema.parse(json);
+}
+
+export async function updateCategory(id: string, data: CategoryUpdate): Promise<Category> {
+  const response = await fetchWithAuth(`/categories/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  const json = await response.json();
+  return CategorySchema.parse(json);
+}
+
+export async function deleteCategory(id: string): Promise<{ success: boolean; message: string }> {
+  const response = await fetchWithAuth(`/categories/${id}`, {
+    method: "DELETE",
+  });
+  return response.json();
+}
+
+export async function toggleCategory(id: string): Promise<{ is_active: boolean }> {
+  const response = await fetchWithAuth(`/categories/${id}/toggle`, {
+    method: "PATCH",
+  });
+  return response.json();
+}
+
+// ── Expenses ──
+
 export async function getExpenses(
   options: {
     limit?: number;
@@ -160,7 +205,8 @@ export async function deleteExpense(id: string): Promise<ExpenseDeleteResponse> 
   return ExpenseDeleteResponseSchema.parse(json);
 }
 
-// Account / Provider Linking
+// ── Account / Provider Linking ──
+
 export async function getLinkedProviders(): Promise<
   {
     id: string;
@@ -188,7 +234,8 @@ export async function initTelegramLink(): Promise<{ code: string; deep_link: str
   return response.json();
 }
 
-// Preferences
+// ── Preferences ──
+
 export async function getPreferences(): Promise<{ preferred_currency: string }> {
   const response = await fetchWithAuth("/account/preferences");
   return response.json();
@@ -204,13 +251,15 @@ export async function updatePreferences(data: {
   return response.json();
 }
 
-// Account Profile
+// ── Account Profile ──
+
 export async function getUserProfile(): Promise<{ preferred_currency: string }> {
   const response = await fetchWithAuth("/account/profile");
   return response.json();
 }
 
-// Exchange Rates
+// ── Exchange Rates ──
+
 export async function getExchangeRates(): Promise<{
   rates: Record<string, number>;
   updated_at: string | null;
@@ -219,7 +268,8 @@ export async function getExchangeRates(): Promise<{
   return response.json();
 }
 
-// Local Auth (no auth required)
+// ── Local Auth (no auth required) ──
+
 export async function registerWithEmail(
   email: string,
   password: string,
@@ -250,7 +300,8 @@ export async function loginWithEmail(email: string, password: string): Promise<{
   return response.json();
 }
 
-// Password Management
+// ── Password Management ──
+
 export async function changePassword(
   currentPassword: string,
   newPassword: string,
@@ -265,7 +316,8 @@ export async function changePassword(
   return response.json();
 }
 
-// Account Deletion
+// ── Account Deletion ──
+
 export async function deleteAccount(
   mode: "soft" | "hard",
   confirmationText: string,
@@ -282,7 +334,8 @@ export async function deleteAccount(
   return response.json();
 }
 
-// Health check (no auth required)
+// ── Health check (no auth required) ──
+
 export async function healthCheck(): Promise<{ status: string }> {
   const response = await fetch(`${API_BASE_URL}/health`);
   return response.json();

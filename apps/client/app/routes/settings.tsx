@@ -1,17 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { redirect } from "react-router";
+import CategoryFormModal from "~/components/CategoryFormModal";
 import DeleteAccountModal from "~/components/DeleteAccountModal";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
 import {
   changePassword,
+  createCategory,
+  deleteCategory,
   getLinkedProviders,
   getPreferences,
   initTelegramLink,
+  toggleCategory,
   unlinkProvider,
+  updateCategory,
   updatePreferences,
 } from "~/lib/api";
 import { isAuthenticated } from "~/lib/auth";
+import { useCategories } from "~/lib/categories";
 import { isPasswordValid } from "~/lib/password";
+import type { Category, CategoryCreate, CategoryUpdate } from "~/lib/schemas";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
 
@@ -56,6 +63,57 @@ export default function Settings() {
     text: string;
   } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Categories
+  const { categories, refresh: refreshCategories } = useCategories();
+  const [catModalOpen, setCatModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [catLoading, setCatLoading] = useState(false);
+  const [deletingCatId, setDeletingCatId] = useState<string | null>(null);
+
+  const systemCategories = categories.filter((c) => c.is_system);
+  const customCategories = categories.filter((c) => !c.is_system);
+  // Income, Savings, Investment are always active — not toggleable
+  const POSITIVE_TYPES = ["income", "savings", "investment"];
+
+  const handleToggleCategory = async (id: string) => {
+    try {
+      await toggleCategory(id);
+      await refreshCategories();
+    } catch {
+      setError("Failed to toggle category");
+    }
+  };
+
+  const handleCategorySubmit = async (data: CategoryCreate | CategoryUpdate) => {
+    setCatLoading(true);
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, data as CategoryUpdate);
+      } else {
+        await createCategory(data as CategoryCreate);
+      }
+      await refreshCategories();
+      setCatModalOpen(false);
+      setEditingCategory(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save category");
+    } finally {
+      setCatLoading(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    setDeletingCatId(id);
+    try {
+      await deleteCategory(id);
+      await refreshCategories();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete category");
+    } finally {
+      setDeletingCatId(null);
+    }
+  };
 
   const fetchProviders = async () => {
     try {
@@ -215,6 +273,139 @@ export default function Settings() {
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Categories */}
+      <div className="bg-surface-primary rounded-lg border border-edge-default mb-6">
+        <div className="px-6 py-4 border-b border-edge-default">
+          <h3 className="text-lg font-medium text-content-primary">Categories</h3>
+          <p className="text-sm text-content-tertiary mt-1">
+            Manage system and custom categories for your transactions
+          </p>
+        </div>
+
+        {/* System Categories */}
+        <div className="px-6 py-3">
+          <p className="text-xs font-medium text-content-tertiary uppercase tracking-wide mb-2">
+            System Categories
+          </p>
+        </div>
+        <div className="divide-y divide-edge-default border-t border-edge-default">
+          {systemCategories.map((cat) => {
+            const isPositive = POSITIVE_TYPES.includes(cat.type);
+            return (
+              <div key={cat.id} className="px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="inline-block w-3 h-3 rounded-full shrink-0"
+                    style={{ backgroundColor: cat.color_light }}
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-content-primary">{cat.name}</span>
+                    {cat.alias && (
+                      <span className="ml-2 text-xs text-content-tertiary">{cat.alias}</span>
+                    )}
+                  </div>
+                </div>
+                {isPositive ? (
+                  <span className="text-xs text-content-muted">Always active</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleCategory(cat.id)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                      cat.is_active ? "bg-emerald" : "bg-edge-strong"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
+                        cat.is_active ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Custom Categories */}
+        <div className="px-6 py-3 border-t border-edge-default">
+          <p className="text-xs font-medium text-content-tertiary uppercase tracking-wide mb-2">
+            Custom Categories
+          </p>
+        </div>
+        {customCategories.length > 0 ? (
+          <div className="divide-y divide-edge-default border-t border-edge-default">
+            {customCategories.map((cat) => (
+              <div key={cat.id} className="px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="inline-block w-3 h-3 rounded-full shrink-0"
+                    style={{ backgroundColor: cat.color_light }}
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-content-primary">{cat.name}</span>
+                    {cat.alias && (
+                      <span className="ml-2 text-xs text-content-tertiary">{cat.alias}</span>
+                    )}
+                    <span className="ml-2 text-xs text-content-muted capitalize">{cat.type}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleCategory(cat.id)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                      cat.is_active ? "bg-emerald" : "bg-edge-strong"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
+                        cat.is_active ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingCategory(cat);
+                      setCatModalOpen(true);
+                    }}
+                    className="px-2 py-1 text-xs font-medium text-content-secondary hover:bg-surface-hover rounded"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCategory(cat.id)}
+                    disabled={deletingCatId === cat.id}
+                    className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded disabled:opacity-50"
+                  >
+                    {deletingCatId === cat.id ? "..." : "Delete"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="px-6 pb-2">
+            <p className="text-sm text-content-muted">No custom categories yet</p>
+          </div>
+        )}
+
+        <div className="px-6 py-4 border-t border-edge-default">
+          <button
+            type="button"
+            onClick={() => {
+              setEditingCategory(null);
+              setCatModalOpen(true);
+            }}
+            className="px-4 py-2 text-sm font-medium text-emerald border border-emerald/30 rounded-md hover:bg-emerald/10 transition-colors"
+          >
+            + Add Custom Category
+          </button>
         </div>
       </div>
 
@@ -409,6 +600,17 @@ export default function Settings() {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         hasLocalAuth={hasLocalAuth}
+      />
+
+      <CategoryFormModal
+        isOpen={catModalOpen}
+        onClose={() => {
+          setCatModalOpen(false);
+          setEditingCategory(null);
+        }}
+        onSubmit={handleCategorySubmit}
+        category={editingCategory}
+        isLoading={catLoading}
       />
     </div>
   );

@@ -12,13 +12,13 @@ import DeleteConfirmModal from "~/components/DeleteConfirmModal";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
 import FilterModal from "~/components/FilterModal";
 import { createExpense, deleteExpense, getExpenses, getRangeStats, updateExpense } from "~/lib/api";
+import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 import type { Expense, ExpenseCreate } from "~/lib/schemas";
 import { useTheme } from "~/lib/theme";
-import { formatCurrency, formatDate, getCategoryColor, truncateText } from "~/lib/utils";
+import { formatCurrency, formatDate, isPositiveType, truncateText } from "~/lib/utils";
 
 const CURRENCIES = [...SUPPORTED_CURRENCIES];
-const POSITIVE_CATEGORIES = ["Income", "Savings", "Investment"];
 
 export async function clientLoader({ request }: { request: Request }) {
   const url = new URL(request.url);
@@ -88,6 +88,7 @@ export default function Dashboard() {
   } = useLoaderData<typeof clientLoader>();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const { categories } = useCategories();
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -217,8 +218,8 @@ export default function Dashboard() {
   };
 
   // Percentage helper
-  const getPercentageDisplay = (cat: string, total: number): string => {
-    if (cat === "Savings" || cat === "Investment") {
+  const getPercentageDisplay = (catType: string, total: number): string => {
+    if (catType === "savings" || catType === "investment") {
       return monthlyStats.total_income > 0
         ? `${((total / monthlyStats.total_income) * 100).toFixed(1)}% of income`
         : "—";
@@ -228,15 +229,15 @@ export default function Dashboard() {
       : "0.0%";
   };
 
-  // Pie data — exclude Income
+  // Pie data — exclude income type
   const pieData = monthlyStats.category_breakdown
-    .filter((cat: any) => cat.category !== "Income")
-    .map((cat: any) => ({
+    .filter((cat) => cat.category_type !== "income")
+    .map((cat) => ({
       category: cat.category,
       total: cat.total,
       count: cat.count,
-      percentage: getPercentageDisplay(cat.category, cat.total),
-      fill: getCategoryColor(cat.category, isDark),
+      percentage: getPercentageDisplay(cat.category_type, cat.total),
+      fill: isDark ? cat.category_color_dark : cat.category_color_light,
       formatted: formatCurrency(cat.total, monthlyStats.currency),
     }));
 
@@ -289,6 +290,11 @@ export default function Dashboard() {
   const hasActiveFilters = !!(currentCategory || currentMinAmount || currentMaxAmount);
   const periodLabel = getPresetLabel(preset, startDate, endDate);
   const showArrows = preset !== "custom";
+
+  // Find category name for active filter display
+  const activeCategoryName = currentCategory
+    ? categories.find((c) => c.id === currentCategory)?.name
+    : null;
 
   return (
     <div className="space-y-6 pb-16">
@@ -600,7 +606,7 @@ export default function Dashboard() {
                         paddingAngle={2}
                         strokeWidth={0}
                       >
-                        {pieData.map((entry: any) => (
+                        {pieData.map((entry) => (
                           <Cell key={entry.category} fill={entry.fill} />
                         ))}
                       </Pie>
@@ -611,7 +617,7 @@ export default function Dashboard() {
 
                 {/* Legend */}
                 <div className="flex flex-col justify-center gap-2 sm:w-[200px] shrink-0">
-                  {pieData.map((entry: any) => (
+                  {pieData.map((entry) => (
                     <div key={entry.category} className="flex items-center gap-2.5 min-w-0">
                       <span
                         className="w-2 h-2 rounded-full shrink-0"
@@ -643,7 +649,10 @@ export default function Dashboard() {
           <div>
             <h3 className="text-sm font-semibold text-content-heading">Transactions</h3>
             <p className="text-xs text-content-tertiary mt-0.5">
-              {total_count} total{hasActiveFilters ? " (filtered)" : ""}
+              {total_count} total
+              {hasActiveFilters
+                ? ` (filtered${activeCategoryName ? `: ${activeCategoryName}` : ""})`
+                : ""}
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -718,7 +727,10 @@ export default function Dashboard() {
                 </tr>
               ) : (
                 expenses.map((expense: Expense) => {
-                  const isPositive = POSITIVE_CATEGORIES.includes(expense.category);
+                  const isPositive = isPositiveType(expense.category_type);
+                  const catColor = isDark
+                    ? expense.category_color_dark
+                    : expense.category_color_light;
                   return (
                     <tr
                       key={expense.id}
@@ -746,9 +758,9 @@ export default function Dashboard() {
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary">
                           <span
                             className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: getCategoryColor(expense.category, isDark) }}
+                            style={{ backgroundColor: catColor }}
                           />
-                          {expense.category}
+                          {expense.category_name}
                         </span>
                       </td>
                       <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-content-primary text-right tabular-nums">

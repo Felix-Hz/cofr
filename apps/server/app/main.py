@@ -8,7 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import settings
 from app.database import engine
 from app.middleware import log_requests
-from app.routers import account, exchange_rates, expenses, local_auth, oauth
+from app.routers import account, categories, exchange_rates, expenses, local_auth, oauth
 
 
 @asynccontextmanager
@@ -63,6 +63,7 @@ async def health_check():
 
 
 app.include_router(expenses.router)
+app.include_router(categories.router)
 app.include_router(oauth.router)
 app.include_router(account.router)
 app.include_router(exchange_rates.router)
