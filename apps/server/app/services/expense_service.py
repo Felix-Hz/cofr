@@ -2,9 +2,9 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlalchemy import case, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from app.db.models import Transaction, User
+from app.db.models import Category, Transaction, User
 from app.db.schemas import (
     CategoryTotal,
     ExpenseCreateRequest,
@@ -38,7 +38,7 @@ class ExpenseService:
         if end_date:
             filters.append(Transaction.timestamp <= end_date)
         if category:
-            filters.append(Transaction.category == category)
+            filters.append(Transaction.category_id == category)
         if min_amount is not None:
             filters.append(Transaction.amount >= min_amount)
         if max_amount is not None:
@@ -48,6 +48,7 @@ class ExpenseService:
 
         transactions = (
             self.db.query(Transaction)
+            .options(joinedload(Transaction.category_rel))
             .filter(*filters)
             .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
@@ -59,18 +60,19 @@ class ExpenseService:
         return expenses, total
 
     async def get_expenses_by_category(
-        self, user_id: str, category: str, limit: int = 50, offset: int = 0
+        self, user_id: str, category_id: str, limit: int = 50, offset: int = 0
     ) -> tuple[list[ExpenseSchema], int]:
         """Get paginated expenses filtered by category"""
         total = (
             self.db.query(func.count(Transaction.id))
-            .filter(Transaction.user_id == user_id, Transaction.category == category)
+            .filter(Transaction.user_id == user_id, Transaction.category_id == category_id)
             .scalar()
         )
 
         transactions = (
             self.db.query(Transaction)
-            .filter(Transaction.user_id == user_id, Transaction.category == category)
+            .options(joinedload(Transaction.category_rel))
+            .filter(Transaction.user_id == user_id, Transaction.category_id == category_id)
             .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
             .offset(offset)
@@ -99,6 +101,7 @@ class ExpenseService:
 
         transactions = (
             self.db.query(Transaction)
+            .options(joinedload(Transaction.category_rel))
             .filter(*base_filter)
             .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
@@ -145,58 +148,70 @@ class ExpenseService:
 
     def _aggregate_sql(self, base_filter: list, currency: str) -> MonthlyStats:
         """Aggregate stats using SQL (single-currency path)."""
-        excluded_cats = ("Income", "Savings", "Investment")
-
         summary = (
             self.db.query(
                 func.coalesce(
                     func.sum(
                         case(
-                            (Transaction.category.not_in(excluded_cats), Transaction.amount),
+                            (Category.type == "expense", Transaction.amount),
                             else_=0,
                         )
                     ),
                     0,
                 ).label("total_spent"),
                 func.coalesce(
-                    func.sum(case((Transaction.category == "Income", Transaction.amount), else_=0)),
+                    func.sum(case((Category.type == "income", Transaction.amount), else_=0)),
                     0,
                 ).label("total_income"),
                 func.coalesce(
-                    func.sum(
-                        case((Transaction.category == "Savings", Transaction.amount), else_=0)
-                    ),
+                    func.sum(case((Category.type == "savings", Transaction.amount), else_=0)),
                     0,
                 ).label("total_savings"),
                 func.coalesce(
-                    func.sum(
-                        case((Transaction.category == "Investment", Transaction.amount), else_=0)
-                    ),
+                    func.sum(case((Category.type == "investment", Transaction.amount), else_=0)),
                     0,
                 ).label("total_investment"),
-                func.count(case((Transaction.category.not_in(excluded_cats), 1))).label(
-                    "expense_count"
-                ),
+                func.count(case((Category.type == "expense", 1))).label("expense_count"),
                 func.count(Transaction.id).label("transaction_count"),
             )
+            .join(Category, Transaction.category_id == Category.id)
             .filter(*base_filter)
             .first()
         )
 
         breakdown = (
             self.db.query(
-                Transaction.category,
+                Transaction.category_id,
+                Category.name.label("category_name"),
+                Category.type.label("category_type"),
+                Category.color_light,
+                Category.color_dark,
                 func.sum(Transaction.amount).label("total"),
                 func.count(Transaction.id).label("count"),
             )
+            .join(Category, Transaction.category_id == Category.id)
             .filter(*base_filter)
-            .group_by(Transaction.category)
+            .group_by(
+                Transaction.category_id,
+                Category.name,
+                Category.type,
+                Category.color_light,
+                Category.color_dark,
+            )
             .order_by(func.sum(Transaction.amount).desc())
             .all()
         )
 
         category_breakdown = [
-            CategoryTotal(category=row.category, total=row.total, count=row.count)
+            CategoryTotal(
+                category_id=str(row.category_id),
+                category=row.category_name,
+                category_type=row.category_type,
+                category_color_light=row.color_light,
+                category_color_dark=row.color_dark,
+                total=row.total,
+                count=row.count,
+            )
             for row in breakdown
         ]
 
@@ -217,29 +232,42 @@ class ExpenseService:
         user = self.db.query(User).filter(User.id == user_id).first()
         preferred = user.preferred_currency if user else "NZD"
 
-        transactions = self.db.query(Transaction).filter(*base_filter).all()
+        transactions = (
+            self.db.query(Transaction)
+            .options(joinedload(Transaction.category_rel))
+            .filter(*base_filter)
+            .all()
+        )
 
         total_spent = 0.0
         total_income = 0.0
         total_savings = 0.0
         total_investment = 0.0
         expense_count = 0
-        cat_totals: dict[str, list[float, int]] = {}
+        cat_totals: dict[str, dict] = {}
 
         for tx in transactions:
             amt = convert(tx.amount, tx.currency, preferred, rates)
-            cat = tx.category
+            cat = tx.category_rel
+            cat_key = str(tx.category_id)
 
-            if cat not in cat_totals:
-                cat_totals[cat] = [0.0, 0]
-            cat_totals[cat][0] += amt
-            cat_totals[cat][1] += 1
+            if cat_key not in cat_totals:
+                cat_totals[cat_key] = {
+                    "name": cat.name,
+                    "type": cat.type,
+                    "color_light": cat.color_light,
+                    "color_dark": cat.color_dark,
+                    "total": 0.0,
+                    "count": 0,
+                }
+            cat_totals[cat_key]["total"] += amt
+            cat_totals[cat_key]["count"] += 1
 
-            if cat == "Income":
+            if cat.type == "income":
                 total_income += amt
-            elif cat == "Savings":
+            elif cat.type == "savings":
                 total_savings += amt
-            elif cat == "Investment":
+            elif cat.type == "investment":
                 total_investment += amt
             else:
                 total_spent += amt
@@ -247,8 +275,16 @@ class ExpenseService:
 
         category_breakdown = sorted(
             [
-                CategoryTotal(category=cat, total=vals[0], count=vals[1])
-                for cat, vals in cat_totals.items()
+                CategoryTotal(
+                    category_id=cat_id,
+                    category=vals["name"],
+                    category_type=vals["type"],
+                    category_color_light=vals["color_light"],
+                    category_color_dark=vals["color_dark"],
+                    total=vals["total"],
+                    count=vals["count"],
+                )
+                for cat_id, vals in cat_totals.items()
             ],
             key=lambda c: c.total,
             reverse=True,
@@ -270,6 +306,7 @@ class ExpenseService:
         """Get single expense with ownership check"""
         transaction = (
             self.db.query(Transaction)
+            .options(joinedload(Transaction.category_rel))
             .filter(Transaction.id == expense_id, Transaction.user_id == user_id)
             .first()
         )
@@ -285,7 +322,7 @@ class ExpenseService:
         transaction = Transaction(
             user_id=user_id,
             amount=data.amount,
-            category=data.category,
+            category_id=data.category_id,
             notes=data.description,
             timestamp=created_at,
             currency=data.currency,
@@ -310,8 +347,8 @@ class ExpenseService:
 
         if data.amount is not None:
             transaction.amount = data.amount
-        if data.category is not None:
-            transaction.category = data.category
+        if data.category_id is not None:
+            transaction.category_id = data.category_id
         if data.description is not None:
             transaction.notes = data.description
         if data.currency is not None:
@@ -341,10 +378,15 @@ class ExpenseService:
     @staticmethod
     def _to_schema(transaction: Transaction) -> ExpenseSchema:
         """Convert a Transaction ORM object to ExpenseSchema"""
+        cat = transaction.category_rel
         return ExpenseSchema(
             id=str(transaction.id),
             amount=transaction.amount,
-            category=transaction.category,
+            category_id=str(transaction.category_id),
+            category_name=cat.name,
+            category_color_light=cat.color_light,
+            category_color_dark=cat.color_dark,
+            category_type=cat.type,
             description=transaction.notes or "",
             created_at=transaction.timestamp,
             currency=transaction.currency,

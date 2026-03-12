@@ -45,9 +45,9 @@ async def get_expenses(
     return ExpensesResponse(expenses=expenses, total_count=total, limit=limit, offset=offset)
 
 
-@router.get("/category/{category}", response_model=ExpensesResponse)
+@router.get("/category/{category_id}", response_model=ExpensesResponse)
 async def get_expenses_by_category(
-    category: str,
+    category_id: str,
     user_id: str = Depends(get_user_id),
     db: Session = Depends(get_db),
     limit: int = Query(50, ge=1, le=1000),
@@ -55,7 +55,7 @@ async def get_expenses_by_category(
 ):
     """Get paginated expenses filtered by category"""
     service = ExpenseService(db)
-    expenses, total = await service.get_expenses_by_category(user_id, category, limit, offset)
+    expenses, total = await service.get_expenses_by_category(user_id, category_id, limit, offset)
     return ExpensesResponse(expenses=expenses, total_count=total, limit=limit, offset=offset)
 
 
