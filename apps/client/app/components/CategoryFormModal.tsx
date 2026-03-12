@@ -25,6 +25,7 @@ export default function CategoryFormModal({
 
   const isEditMode = !!category;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isOpen resets form when modal reopens
   useEffect(() => {
     if (category) {
       setName(category.name);

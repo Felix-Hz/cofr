@@ -34,6 +34,7 @@ export default function ExpenseFormModal({
   const defaultCategoryId =
     activeCategories.find((c) => c.slug === "miscellaneous")?.id || activeCategories[0]?.id || "";
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isOpen resets form when modal reopens
   useEffect(() => {
     if (expense) {
       setAmount(expense.amount.toString());
