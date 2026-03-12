@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"remind0/db"
+	r "remind0/repository"
 
 	"crypto/sha256"
 	"encoding/hex"
@@ -23,36 +24,12 @@ import (
 /* ooooooooooooooooooooooooooooooo~~~~.88~ooooooooooooooooooooooooooooooooooo */
 /*                                d8888P                                      */
 
-type Category struct {
-	Alias string
-	Name  string
-}
-
-// TODO: Aliases should likely be a string[] to allow for multiple aliases per category.
-var validCategories = []Category{
-	{"$", "Income"},
-	{"S", "Savings"},
-	{"U", "Utilities"},
-	{"SUB", "Subscriptions"},
-	{"R", "Rent"},
-	{"H", "Health & Fitness"},
-	{"T", "Transport"},
-	{"G", "Groceries"},
-	{"GO", "Going Out"},
-	{"INV", "Investment"},
-	{"SH", "Shopping"},
-	{"EDU", "Education"},
-	{"TR", "Travel"},
-	{"MISC", "Miscellaneous"},
-}
-
-func findCategory(code string) (string, bool) {
-	for _, cat := range validCategories {
-		if cat.Alias == strings.ToUpper(code) {
-			return cat.Name, true
-		}
+func findCategory(code string, userID uuid.UUID) (*db.Category, bool) {
+	cat, err := r.CategoryRepo().FindByAlias(userID, strings.ToUpper(code))
+	if err != nil {
+		return nil, false
 	}
-	return "", false
+	return cat, true
 }
 
 type AggregatedTransactions struct {
@@ -65,13 +42,14 @@ func aggregateCategories(txs []*db.Transaction) []AggregatedTransactions {
 	aggMap := make(map[string]AggregatedTransactions)
 
 	for _, tx := range txs {
-		if agg, exists := aggMap[tx.Category]; exists {
+		catName := tx.CategoryRel.Name
+		if agg, exists := aggMap[catName]; exists {
 			agg.Total += tx.Amount
 			agg.Count++
-			aggMap[tx.Category] = agg
+			aggMap[catName] = agg
 		} else {
-			aggMap[tx.Category] = AggregatedTransactions{
-				Category: tx.Category,
+			aggMap[catName] = AggregatedTransactions{
+				Category: catName,
 				Total:    tx.Amount,
 				Count:    1,
 			}
@@ -109,10 +87,10 @@ func validateMessage(message string) bool {
  * The batchIndex parameter ensures that duplicate amounts in batch adds generate unique hashes.
  * The currency parameter ensures same amount in different currencies are treated as different transactions.
  */
-func generateMessageHash(category string, amount float64, notes string, timestamp time.Time, userId uuid.UUID, batchIndex int, currency string) string {
+func generateMessageHash(categoryID uuid.UUID, amount float64, notes string, timestamp time.Time, userId uuid.UUID, batchIndex int, currency string) string {
 	hash := sha256.New()
 
-	hash.Write([]byte(category))
+	hash.Write([]byte(categoryID.String()))
 	hash.Write([]byte(fmt.Sprintf("%f", amount)))
 	hash.Write([]byte(notes))
 	hash.Write([]byte(fmt.Sprintf("%d", timestamp.Unix())))
@@ -171,7 +149,7 @@ func parseAmounts(amountStr string) ([]float64, error) {
 /**
  * Validate and process an add transaction message.
  */
-func parseAddTx(msg string, preferredCurrency string) (string, []float64, string, string, error) {
+func parseAddTx(msg string, preferredCurrency string, userID uuid.UUID) (*db.Category, []float64, string, string, error) {
 
 	/**
 	 * Split the message into parts divided by spaces,
@@ -179,18 +157,15 @@ func parseAddTx(msg string, preferredCurrency string) (string, []float64, string
 	 */
 	parts := strings.Fields(msg)
 	if len(parts) < 2 {
-		return "", nil, "", "", fmt.Errorf("invalid message format")
+		return nil, nil, "", "", fmt.Errorf("invalid message format")
 	}
 
-	category := parts[0]
-
 	/**
-	 * Check if the category is a valid alias and convert it to the full category name.
+	 * Check if the category is a valid alias and resolve to DB category.
 	 */
-	if categoryName, exists := findCategory(category); exists {
-		category = categoryName
-	} else {
-		return "", nil, "", "", fmt.Errorf("invalid category alias")
+	cat, exists := findCategory(parts[0], userID)
+	if !exists {
+		return nil, nil, "", "", fmt.Errorf("invalid category alias")
 	}
 
 	/**
@@ -198,12 +173,12 @@ func parseAddTx(msg string, preferredCurrency string) (string, []float64, string
 	 */
 	amounts, err := parseAmounts(parts[1])
 	if err != nil {
-		return "", nil, "", "", fmt.Errorf("failed to parse amount %q: %w", parts[1], err)
+		return nil, nil, "", "", fmt.Errorf("failed to parse amount %q: %w", parts[1], err)
 	}
 
 	// At least one valid amount is required
 	if len(amounts) == 0 {
-		return "", nil, "", "", fmt.Errorf("no valid amounts found")
+		return nil, nil, "", "", fmt.Errorf("no valid amounts found")
 	}
 
 	/**
@@ -228,7 +203,7 @@ func parseAddTx(msg string, preferredCurrency string) (string, []float64, string
 		notes = strings.Join(notesParts, " ")
 	}
 
-	return category, amounts, notes, currency, nil
+	return cat, amounts, notes, currency, nil
 }
 
 /**
@@ -243,15 +218,15 @@ func parseAddTx(msg string, preferredCurrency string) (string, []float64, string
  */
 
 type ListOptions struct {
-	FromTime  time.Time
-	ToTime    time.Time
-	Category  string
-	Currency  string // Filter by currency
-	Aggregate bool
-	Limit     int
+	FromTime   time.Time
+	ToTime     time.Time
+	CategoryID *uuid.UUID
+	Currency   string // Filter by currency
+	Aggregate  bool
+	Limit      int
 }
 
-func parseListOptions(args []string, timestamp time.Time) (ListOptions, error) {
+func parseListOptions(args []string, timestamp time.Time, userID uuid.UUID) (ListOptions, error) {
 
 	// Special arguments
 	const eternity = "*"   // All-time
@@ -310,8 +285,8 @@ func parseListOptions(args []string, timestamp time.Time) (ListOptions, error) {
 		}
 
 		// Try category
-		if category, found := findCategory(arg); found {
-			opts.Category = category
+		if cat, found := findCategory(arg, userID); found {
+			opts.CategoryID = &cat.ID
 			continue
 		}
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 import type { Expense, ExpenseCreate } from "~/lib/schemas";
-import { Category } from "~/lib/utils";
 
 interface ExpenseFormModalProps {
   isOpen: boolean;
@@ -20,8 +20,9 @@ export default function ExpenseFormModal({
   expense,
   isLoading = false,
 }: ExpenseFormModalProps) {
+  const { activeCategories } = useCategories();
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<string>(Category.MISCELLANEOUS);
+  const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("NZD");
   const [date, setDate] = useState("");
@@ -29,22 +30,25 @@ export default function ExpenseFormModal({
 
   const isEditMode = !!expense;
 
+  // Default to first active category or Miscellaneous
+  const defaultCategoryId =
+    activeCategories.find((c) => c.slug === "miscellaneous")?.id || activeCategories[0]?.id || "";
+
   useEffect(() => {
     if (expense) {
       setAmount(expense.amount.toString());
-      setCategory(expense.category);
+      setCategoryId(expense.category_id);
       setDescription(expense.description);
       setCurrency(expense.currency);
       setShowDeleteConfirm(false);
       const d = new Date(expense.created_at);
-      // Format as local datetime-local value (YYYY-MM-DDTHH:MM)
       const pad = (n: number) => n.toString().padStart(2, "0");
       setDate(
         `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`,
       );
     } else {
       setAmount("");
-      setCategory(Category.MISCELLANEOUS);
+      setCategoryId(defaultCategoryId);
       setDescription("");
       setCurrency("NZD");
       setShowDeleteConfirm(false);
@@ -54,14 +58,14 @@ export default function ExpenseFormModal({
         `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
       );
     }
-  }, [expense, isOpen]);
+  }, [expense, isOpen, defaultCategoryId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const data: ExpenseCreate = {
       amount: parseFloat(amount),
-      category,
+      category_id: categoryId,
       description,
       currency,
       created_at: date ? new Date(date) : undefined,
@@ -115,13 +119,13 @@ export default function ExpenseFormModal({
               </label>
               <select
                 id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                value={categoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
                 className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               >
-                {Object.values(Category).map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                {activeCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
                   </option>
                 ))}
               </select>

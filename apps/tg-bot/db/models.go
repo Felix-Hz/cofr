@@ -45,21 +45,61 @@ func (AuthProvider) TableName() string {
 }
 
 /*
+ * 							Category Model
+ *
+ * Categories for transactions. System categories (user_id = NULL) are shared across all users.
+ * Custom categories are per-user.
+ *
+ */
+type Category struct {
+	ID           uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID       *uuid.UUID `gorm:"type:uuid;index"`
+	Name         string     `gorm:"size:60"`
+	Slug         string     `gorm:"size:60"`
+	ColorLight   string     `gorm:"column:color_light;size:7"`
+	ColorDark    string     `gorm:"column:color_dark;size:7"`
+	Icon         *string    `gorm:"size:30"`
+	IsActive     bool       `gorm:"default:true"`
+	IsSystem     bool       `gorm:"default:true"`
+	DisplayOrder int        `gorm:"default:0"`
+	Type         string     `gorm:"size:10;default:'expense'"`
+	Alias        *string    `gorm:"size:10"`
+	CreatedAt    time.Time
+}
+
+/*
+ * 							UserCategoryPreference Model
+ *
+ * Stores per-user toggles for system categories.
+ *
+ */
+type UserCategoryPreference struct {
+	UserID     uuid.UUID `gorm:"type:uuid;primaryKey"`
+	CategoryID uuid.UUID `gorm:"type:uuid;primaryKey"`
+	IsActive   bool      `gorm:"default:true"`
+}
+
+func (UserCategoryPreference) TableName() string {
+	return "user_category_preferences"
+}
+
+/*
  * 							Transaction Model
  *
  * This model is used to store the transactions recorded by the bot.
  *
  */
 type Transaction struct {
-	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	UserID    uuid.UUID `gorm:"type:uuid;index"`
-	User      User      `gorm:"constraint:OnDelete:CASCADE"`
-	Category  string    `gorm:"index"`
-	Amount    float64
-	Currency  string `gorm:"default:'NZD';index"` // ISO 4217 currency code
-	Notes     string
-	Timestamp time.Time `gorm:"autoCreateTime"`
-	Hash      string    `gorm:"uniqueIndex"`
+	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID      uuid.UUID `gorm:"type:uuid;index"`
+	User        User      `gorm:"constraint:OnDelete:CASCADE"`
+	CategoryID  uuid.UUID `gorm:"type:uuid;index;column:category_id"`
+	CategoryRel Category  `gorm:"foreignKey:CategoryID"`
+	Amount      float64
+	Currency    string `gorm:"default:'NZD';index"` // ISO 4217 currency code
+	Notes       string
+	Timestamp   time.Time `gorm:"autoCreateTime"`
+	Hash        string    `gorm:"uniqueIndex"`
 }
 
 /*
