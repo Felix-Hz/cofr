@@ -608,8 +608,10 @@ export default function Dashboard() {
                         cy="50%"
                         innerRadius="45%"
                         outerRadius="100%"
-                        paddingAngle={2}
-                        strokeWidth={0}
+                        paddingAngle={0}
+                        strokeWidth={0.5}
+                        strokeOpacity={0.65}
+                        focusable={false}
                       />
                       <Tooltip content={<CategoryPieTooltip />} />
                     </PieChart>
