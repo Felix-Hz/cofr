@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { redirect, useNavigate, useSearchParams } from "react-router";
+import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
 import { loginWithEmail, registerWithEmail } from "~/lib/api";
 import { isAuthenticated, saveToken } from "~/lib/auth";
@@ -150,9 +151,8 @@ export default function Login() {
             >
               Password
             </label>
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
