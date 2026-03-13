@@ -599,7 +599,7 @@ export default function Dashboard() {
                 {/* Donut */}
                 <div className="flex items-center justify-center flex-1 min-h-0">
                   <ResponsiveContainer width="100%" height={275}>
-                    <PieChart>
+                    <PieChart tabIndex={-1} style={{ outline: "none" }}>
                       <Pie
                         data={pieData}
                         dataKey="total"
