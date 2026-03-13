@@ -181,3 +181,14 @@ h6 {
 .animate-slide-down {
   animation: slideDown 0.2s ease-out;
 }
+
+/* Remove Chromium/Brave focus ring on Recharts chart taps */
+.recharts-wrapper,
+.recharts-wrapper *,
+.recharts-wrapper *:focus,
+.recharts-wrapper *:focus-visible,
+.recharts-wrapper *:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}

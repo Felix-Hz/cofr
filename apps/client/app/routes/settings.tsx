@@ -431,9 +431,9 @@ export default function Settings() {
 
       {/* Tab bar — appears on scroll */}
       <div
-        className={`flex justify-center gap-1 overflow-x-auto scrollbar-hide sticky top-4 z-10 bg-surface-page/80 backdrop-blur-md border border-edge-default rounded-full shadow-sm mx-auto w-fit transition-all duration-200 ${
+        className={`flex justify-center gap-1 overflow-x-auto scrollbar-hide sticky top-4 z-10 bg-surface-page/80 backdrop-blur-md border border-edge-default rounded-full shadow-sm mx-auto max-w-[calc(100vw-2rem)] w-fit transition-all duration-200 ${
           showTabs
-            ? "opacity-100 px-1.5 py-1.5 mb-6"
+            ? "opacity-100 px-2 py-1.5 mb-6"
             : "opacity-0 h-0 overflow-hidden pointer-events-none"
         }`}
       >
@@ -442,7 +442,7 @@ export default function Settings() {
             key={section.id}
             type="button"
             onClick={() => scrollToSection(section.id)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
+            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
               activeTab === section.id
                 ? "bg-emerald text-white"
                 : "text-content-tertiary hover:text-content-secondary hover:bg-surface-hover"
@@ -869,7 +869,7 @@ export default function Settings() {
           sectionRefs.current["danger-zone"] = el;
         }}
         style={{ scrollMarginTop: "4rem" }}
-        className="bg-surface-primary rounded-xl border border-negative-text/30 border-l-4 mb-6 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+        className="bg-surface-primary rounded-xl border border-negative-text/30 mb-6 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
       >
         <div className="px-6 py-4 border-b border-negative-text/30 bg-negative-bg rounded-t-xl flex items-center gap-3">
           <span className="text-negative-text/70">

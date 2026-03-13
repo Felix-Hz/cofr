@@ -351,14 +351,14 @@ export default function Dashboard() {
 
         <div className="flex items-center gap-2 shrink-0">
           {/* Always-visible badges */}
-          <span className="h-7 px-2.5 flex items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
+          <span className="hidden sm:flex h-7 px-2.5 items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
             {
               { thisMonth: "Monthly", last7Days: "Weekly", lastYear: "Yearly", custom: "Custom" }[
                 preset
               ]
             }
           </span>
-          <span className="h-7 px-2.5 flex items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
+          <span className="hidden sm:flex h-7 px-2.5 items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
             {currentCurrency || "All"}
           </span>
 
@@ -429,7 +429,7 @@ export default function Dashboard() {
 
       {/* ─── Currency info ─── */}
       {!currentCurrency && monthlyStats.is_converted && (
-        <div className="flex items-center gap-2.5 bg-accent-soft-bg border border-accent/20 text-accent-soft-text px-4 py-2.5 rounded-lg text-xs">
+        <div className="hidden sm:flex items-center gap-2.5 bg-accent-soft-bg border border-accent/20 text-accent-soft-text px-4 py-2.5 rounded-lg text-xs">
           <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -599,7 +599,7 @@ export default function Dashboard() {
                 {/* Donut */}
                 <div className="flex items-center justify-center flex-1 min-h-0">
                   <ResponsiveContainer width="100%" height={275}>
-                    <PieChart>
+                    <PieChart tabIndex={-1} style={{ outline: "none" }}>
                       <Pie
                         data={pieData}
                         dataKey="total"
@@ -608,8 +608,10 @@ export default function Dashboard() {
                         cy="50%"
                         innerRadius="45%"
                         outerRadius="100%"
-                        paddingAngle={2}
-                        strokeWidth={0}
+                        paddingAngle={0}
+                        strokeWidth={0.5}
+                        strokeOpacity={0.65}
+                        focusable={false}
                       />
                       <Tooltip content={<CategoryPieTooltip />} />
                     </PieChart>
