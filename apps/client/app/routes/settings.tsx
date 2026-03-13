@@ -433,7 +433,7 @@ export default function Settings() {
       <div
         className={`flex justify-center gap-1 overflow-x-auto scrollbar-hide sticky top-4 z-10 bg-surface-page/80 backdrop-blur-md border border-edge-default rounded-full shadow-sm mx-auto max-w-[calc(100vw-2rem)] w-fit transition-all duration-200 ${
           showTabs
-            ? "opacity-100 px-1.5 py-1.5 mb-6"
+            ? "opacity-100 px-2 py-1.5 mb-6"
             : "opacity-0 h-0 overflow-hidden pointer-events-none"
         }`}
       >
@@ -442,7 +442,7 @@ export default function Settings() {
             key={section.id}
             type="button"
             onClick={() => scrollToSection(section.id)}
-            className={`px-3 py-1.5 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
+            className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
               activeTab === section.id
                 ? "bg-emerald text-white"
                 : "text-content-tertiary hover:text-content-secondary hover:bg-surface-hover"
