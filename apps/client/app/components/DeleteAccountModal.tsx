@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import PasswordInput from "~/components/PasswordInput";
 import { deleteAccount } from "~/lib/api";
 import { removeToken } from "~/lib/auth";
 
@@ -177,9 +178,8 @@ export default function DeleteAccountModal({
                     >
                       Enter your password
                     </label>
-                    <input
+                    <PasswordInput
                       id="delete-password"
-                      type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-negative-text/50 focus:border-transparent transition-colors"

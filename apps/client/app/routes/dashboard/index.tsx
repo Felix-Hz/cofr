@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useLoaderData, useNavigate, useRevalidator } from "react-router";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import CategoryPieTooltip from "~/components/CategoryPieTooltip";
 import ControlsPanel, {
   getPresetDates,
@@ -350,12 +350,17 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Active filter chips */}
-          {currentCurrency && (
-            <span className="h-7 px-2.5 flex items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
-              {currentCurrency}
-            </span>
-          )}
+          {/* Always-visible badges */}
+          <span className="h-7 px-2.5 flex items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
+            {
+              { thisMonth: "Monthly", last7Days: "Weekly", lastYear: "Yearly", custom: "Custom" }[
+                preset
+              ]
+            }
+          </span>
+          <span className="h-7 px-2.5 flex items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
+            {currentCurrency || "All"}
+          </span>
 
           {/* Controls toggle */}
           <div className="relative">
@@ -605,11 +610,7 @@ export default function Dashboard() {
                         outerRadius="100%"
                         paddingAngle={2}
                         strokeWidth={0}
-                      >
-                        {pieData.map((entry) => (
-                          <Cell key={entry.category} fill={entry.fill} />
-                        ))}
-                      </Pie>
+                      />
                       <Tooltip content={<CategoryPieTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
