@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types:
+      - labeled
   workflow_dispatch:
     inputs:
       deploy_only:
@@ -26,12 +29,23 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'pull_request' &&
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'deploy' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     environment: production
     env:
-      APP_IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}
+      APP_IMAGE_TAG: ${{ github.event.inputs.image_tag || github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Derive registry namespace
         id: registry
@@ -120,10 +134,31 @@ jobs:
 
       - name: Add deploy key
         run: |
+          if [ -z "${{ secrets.DEPLOY_HOST }}" ]; then
+            echo "DEPLOY_HOST is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DEPLOY_USER }}" ]; then
+            echo "DEPLOY_USER is not set"
+            exit 1
+          fi
+          if [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
+            echo "DEPLOY_SSH_KEY is not set"
+            exit 1
+          fi
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          if ! ssh-keyscan -T 10 -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/tmp/ssh-keyscan.err; then
+            echo "Failed to reach DEPLOY_HOST='${{ secrets.DEPLOY_HOST }}' on port 22"
+            cat /tmp/ssh-keyscan.err
+            exit 1
+          fi
+          if ! ssh -o BatchMode=yes -o ConnectTimeout=10 "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" true; then
+            echo "SSH connection test failed for ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+            echo "Check Reserved IP attachment, firewall CIDRs, DEPLOY_USER, and DEPLOY_SSH_KEY"
+            exit 1
+          fi
 
       - name: Sync deployment files
         run: |
