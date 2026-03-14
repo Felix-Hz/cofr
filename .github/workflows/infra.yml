@@ -16,7 +16,6 @@ on:
 jobs:
   terraform:
     runs-on: ubuntu-latest
-    environment: production
     outputs:
       has_changes: ${{ steps.plan.outputs.has_changes }}
     defaults:
