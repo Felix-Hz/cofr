@@ -11,11 +11,9 @@ import (
 
 const SEPARATOR = "════════════"
 
-/**
- * Handle the formatting of success messages for various commands.
- */
+// generateSuccessMessage routes to the appropriate formatter (plain text, for legacy bot.Send calls).
 func generateSuccessMessage(r CommandResult) string {
-	msg := "✅ Command executed successfully."
+	msg := "Command executed successfully."
 
 	if txs := r.Transactions; txs != nil {
 		msg = txSuccessMessage(r.Command, txs)
@@ -32,44 +30,74 @@ func generateSuccessMessage(r CommandResult) string {
 	return msg
 }
 
-/**
- * Format a return message to inform the user of a successful expense-related operation.
- */
+// formatHTMLReceipt formats a single transaction as an HTML receipt.
+func formatHTMLReceipt(operation Command, tx *Transaction) string {
+	catName := tx.CategoryRel.Name
+	if catName == "" {
+		catName = "Unknown"
+	}
+	icon := ""
+	if tx.CategoryRel.Icon != nil && *tx.CategoryRel.Icon != "" {
+		icon = *tx.CategoryRel.Icon + " "
+	}
+
+	header := operationHeaders[operation]
+	notes := ""
+	if tx.Notes != "" {
+		notes = fmt.Sprintf("\n📌 %s", escapeHTML(tx.Notes))
+	}
+
+	receipt := ""
+	if tx.ReceiptFileID != nil {
+		receipt = "\n📷 Receipt attached"
+	}
+
+	return fmt.Sprintf(
+		"<b>%s</b>\n\n"+
+			"%s<b>%s</b>\n"+
+			"<code>$%.2f %s</code>%s\n"+
+			"🕒 %s%s",
+		header,
+		icon, escapeHTML(catName),
+		tx.Amount, tx.Currency, notes,
+		tx.Timestamp.Format("02 Jan 2006 15:04"), receipt,
+	)
+}
+
+// txSuccessMessage formats transaction results with HTML.
 func txSuccessMessage(operation Command, txs []*Transaction) string {
-	msg := operationHeaders[operation] + "\n" + SEPARATOR + "\n"
+	if len(txs) == 1 {
+		return formatHTMLReceipt(operation, txs[0])
+	}
+
+	msg := fmt.Sprintf("<b>%s</b>\n%s\n", operationHeaders[operation], SEPARATOR)
 
 	for _, tx := range txs {
 		catName := tx.CategoryRel.Name
 		if catName == "" {
 			catName = "Unknown"
 		}
+		notes := ""
+		if tx.Notes != "" {
+			notes = fmt.Sprintf("  %s", escapeHTML(tx.Notes))
+		}
 		msg += fmt.Sprintf(
-			"🪪 ID: %s\n"+
-				"📥 Category: %s\n"+
-				"💰 Amount: %.2f %s\n"+
-				"📌 Notes: %s\n"+
-				"🕒 At: %s\n"+
-				SEPARATOR+"\n",
-			tx.ID, catName, tx.Amount, tx.Currency, tx.Notes, tx.Timestamp.Format("02-Jan-2006 15:04"),
+			"<code>%s</code>  %s  <code>$%.2f %s</code>%s\n",
+			tx.ID.String()[:8], escapeHTML(catName), tx.Amount, tx.Currency, notes,
 		)
 	}
 
 	return msg
 }
 
-/**
- * Format a return message to inform the user of a successful aggregation-related operation.
- */
+// aggSuccessMessage formats aggregated transaction results with HTML.
 func aggSuccessMessage(operation Command, aggs []AggregatedTransactions) string {
-	msg := operationHeaders[operation] + "\n" + SEPARATOR + "\n"
+	msg := fmt.Sprintf("<b>%s</b>\n%s\n", operationHeaders[operation], SEPARATOR)
 
 	for _, agg := range aggs {
 		msg += fmt.Sprintf(
-			"📥 Category: %s\n"+
-				"💰 Total: %.2f\n"+
-				"📊 Count: %d\n"+
-				SEPARATOR+"\n",
-			agg.Category, agg.Total, agg.Count,
+			"<b>%s</b>  <code>$%.2f</code>  (%d)\n",
+			escapeHTML(agg.Category), agg.Total, agg.Count,
 		)
 	}
 
@@ -77,13 +105,10 @@ func aggSuccessMessage(operation Command, aggs []AggregatedTransactions) string 
 }
 
 func userHelpMessage(command Command, userInfo string) string {
-	return operationHeaders[command] + "\n" + SEPARATOR + "\n" + userInfo + "\n"
+	return fmt.Sprintf("<b>%s</b>\n%s\n%s\n", operationHeaders[command], SEPARATOR, userInfo)
 }
 
-/**
- * Format a return message to inform the user of the available categories.
- * Fetches categories dynamically from DB for the given user.
- */
+// getCategoriesMessageForUser fetches categories dynamically from DB for the given user.
 func getCategoriesMessageForUser(userID uuid.UUID) string {
 	cats, err := r.CategoryRepo().GetForUser(userID)
 	if err != nil {
@@ -96,14 +121,16 @@ func getCategoriesMessageForUser(userID uuid.UUID) string {
 		if cat.Alias != nil && *cat.Alias != "" {
 			alias = *cat.Alias
 		}
-		categoryList += fmt.Sprintf("• %s (%s)\n", alias, cat.Name)
+		icon := ""
+		if cat.Icon != nil && *cat.Icon != "" {
+			icon = *cat.Icon + " "
+		}
+		categoryList += fmt.Sprintf("• %s%s (%s)\n", icon, alias, cat.Name)
 	}
 	return categoryList
 }
 
-/**
- * Format a return message to inform the user of the available currencies.
- */
+// getCurrenciesListMessage returns a sorted list of supported currencies.
 func getCurrenciesListMessage() string {
 	currencyList := "Currencies supported:\n"
 
@@ -120,29 +147,27 @@ func getCurrenciesListMessage() string {
 	return currencyList
 }
 
-/**
- * Map command types to user-friendly headers.
- */
+// operationHeaders maps command types to user-friendly headers.
 var operationHeaders = map[Command]string{
-	Add:           "✅ Expense Recorded",
-	Remove:        "✂️ Expense Deleted",
-	List:          "📋 Transactions",
-	Help:          "💡 Help",
-	Edit:          "📝 Expense Updated",
-	Configuration: "⚙️ Configuration",
+	Add:           "Expense Recorded",
+	Remove:        "Expense Deleted",
+	List:          "Transactions",
+	Help:          "Help",
+	Edit:          "Expense Updated",
+	Configuration: "Configuration",
+	Summary:       "Summary",
 }
 
-/**
- * User-friendly error messages.
- */
+// userErrors maps command types to user-friendly error messages.
 var userErrors = map[Command]string{
-	Add:           "Please ensure your transaction's category is valid. Use !help add for guidance.",
-	Remove:        "Please ensure you provide valid transaction IDs. Use !help remove for guidance.",
-	List:          "Please check your options and try again. Use !help list for guidance.",
+	Add:           "Please ensure your transaction's category is valid. Use /help add for guidance.",
+	Remove:        "Please ensure you provide valid transaction IDs. Use /help remove for guidance.",
+	List:          "Please check your options and try again. Use /help list for guidance.",
 	Help:          "Please try again later or contact support.",
-	Edit:          "Editing transactions is not implemented yet.",
-	Configuration: "Please use format: !c set-default-currency <CODE>. Use !help config for guidance.",
+	Edit:          "Use /edit to edit a recent transaction.",
+	Configuration: "Please use format: /config set-default-currency <CODE>",
 	Unknown:       "Something went wrong, please try again later.",
+	Summary:       "Failed to generate summary. Please try again.",
 }
 
 type HelpTopic struct {
@@ -152,101 +177,112 @@ type HelpTopic struct {
 
 var currenciesHelpMessage = getCurrenciesListMessage()
 
-/**
- * Detailed help messages for each command.
- */
+// Help text for new commands
+const helpSummaryText = `
+Command: /summary
+
+Shows spending summary for the current calendar month.
+
+Usage:
+  /summary — Current month overview
+
+Tap "Full Breakdown" to see all categories.
+Tap "Last Month" for previous month.
+`
+
+const helpEditText = `
+Command: /edit
+
+Edit a recent transaction.
+
+Usage:
+  /edit — Pick from last 5 transactions
+
+After selecting, tap a field to change it,
+then tap "Save" to commit changes.
+`
+
+// userHelp contains detailed help messages for each command.
 var userHelp = map[HelpTopic]string{
 	{Command: Add}: `
-Command Name: add (aliases: a)
+Command: /add (or just type)
 
 Usage:
-	!add <category> <amount or (n-n)> <notes?> $<currency?>
+  /add <category> <amount or (n-n)> <notes?> $<currency?>
+  Or just type: G 45 Woolworths
 
 Examples:
-	!add G 45 Woolworths (45 in your default currency)
-	!add G 45 Woolworths $USD (45 USD)
-	!add G (2.5-8) Farmers market $EUR (2.5 and 8 EUR)
+  G 45 Woolworths (45 in your default currency)
+  /add G 45 Woolworths $USD (45 USD)
+  /add G (2.5-8) Farmers market $EUR (2.5 and 8 EUR)
+  /add (no args — guided flow with buttons)
 
 Note:
-	• Categories: Use !help categories for list
-	• Currencies: Use !help currencies for list
-	• Set your default: !c set-default-currency USD
-	`,
+  • Use /help categories for category list
+  • Use /help currencies for currency list
+  • Set your default: /config set-default-currency USD
+`,
 	{Command: Remove}: `
-Command Name: remove (aliases: rm, r, delete, del, d)
+Command: /remove
 
 Usage:
-	!rm <ID1> <ID2> ...: Remove one or more transactions by ID
+  /remove <ID1> <ID2> ...: Remove one or more transactions by ID
 
 Examples:
-	!rm 42 (Remove transaction #42)
-	!rm 42 43 44 (Remove multiple transactions)
+  /remove abc123... (Remove transaction by UUID)
 
-Note: IDs can be found using the !ls command
-	`,
+Note: IDs can be found using the /list command
+`,
 	{Command: List}: `
-Command Name: list (aliases: ls, l)
+Command: /list
 
 Usage:
-	!ls [options]
+  /list [options]
 
 Options (any order):
-	<category>: Filter by category alias
-	<DD/MM/YYYY>: From specific date
-	<1-100>: Limit number of results (Defaults to 10)
-	+: Aggregate by category
-	*: Show all-time transactions
-	$<CODE>: Filter by currency (e.g., $USD)
+  <category>: Filter by category alias
+  <DD/MM/YYYY>: From specific date
+  <1-100>: Limit number of results (Defaults to 10)
+  +: Aggregate by category
+  *: Show all-time transactions
+  $<CODE>: Filter by currency (e.g., $USD)
 
 Examples:
-	!ls (Last 10 transactions this cycle)
-	!ls G (All Groceries transactions)
-	!ls + 20 (Last 20 transactions grouped by category)
-	!ls $USD (All USD transactions)
-	!ls G $EUR 20 (Last 20 EUR grocery transactions)
-	`,
+  /list (Last 10 transactions this cycle)
+  /list G (All Groceries transactions)
+  /list + 20 (Last 20 grouped by category)
+  /list $USD (All USD transactions)
+`,
 	{Command: Help}: `
-Command Name: help (aliases: h)
+<b>Cofr Bot — Commands</b>
 
-Usage:
-	!help: Show this help menu
-	!help <command>: Show detailed help for a specific command
-	!help categories: List all supported categories
-	!help currencies: List all supported currencies
+<b>Quick Add</b> — just type: G 45 Lunch
+<b>/add</b> — Record an expense or income
+<b>/list</b> — View recent transactions
+<b>/summary</b> — Spending summary
+<b>/edit</b> — Edit a recent transaction
+<b>/remove</b> — Delete a transaction
+<b>/config</b> — Set default currency
+<b>/help</b> — This help menu
 
-Input Commands:
-	• !add <category> <amount> <notes?> $<currency?> - Record an expense/income
-	• !ls [options] - View your transactions
-	• !rm <ID1> <ID2> ... - Remove transactions
-	• !c set-default-currency <CODE> - Set your preferred currency
-	• !help - Show this help menu
-
-Quick Examples:
-	• !add G 45 Lunch $USD
-	• !ls $USD 20
-	• !c set-default-currency NZD
-
-Additional Help:
-	• Type !help <command> for detailed usage
-	• Type !help categories for category list
-	• Type !help currencies for currency list
-	`,
+Tap a topic below for details:
+`,
 	{Command: Configuration}: `
-Command Name: config (aliases: c, cfg)
+Command: /config (or !c, !cfg)
 
 Usage:
-	!c set-default-currency <CODE>: Set your preferred currency
+  /config set-default-currency <CODE>
 
 Aliases:
-	• set-default-currency, sdc
+  set-default-currency, sdc
 
 Examples:
-	!c set-default-currency USD
-	!c sdc NZD
+  /config set-default-currency USD
+  /config sdc NZD
 
 Note:
-	This currency will be used for all transactions when you don't
-	specify a currency explicitly. Use !help currencies for supported codes.
-	`,
+  This currency will be used for all transactions when you don't
+  specify a currency explicitly. Use /help currencies for codes.
+`,
 	{Command: Help, Subtopic: "Currencies"}: currenciesHelpMessage,
 }

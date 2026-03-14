@@ -12,11 +12,7 @@ import (
 	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-/**
- * Get updates using long-polling.
- * This will return a channel for updates.
- * Updates will be polled every 60 seconds.
- */
+// ConnectBot gets updates using long-polling. Returns a channel for updates.
 func ConnectBot(bot *telegramClient.BotAPI, offset *Offset) telegramClient.UpdatesChannel {
 	u := telegramClient.NewUpdate(offset.Offset)
 	u.Timeout = 60
@@ -24,11 +20,35 @@ func ConnectBot(bot *telegramClient.BotAPI, offset *Offset) telegramClient.Updat
 	return bot.GetUpdatesChan(u)
 }
 
-func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Update) {
+// RegisterCommands registers the bot's command menu via setMyCommands.
+func RegisterCommands(bot *telegramClient.BotAPI) {
+	commands := []telegramClient.BotCommand{
+		{Command: "add", Description: "Record an expense or income"},
+		{Command: "list", Description: "View recent transactions"},
+		{Command: "summary", Description: "Spending summary for current cycle"},
+		{Command: "edit", Description: "Edit a recent transaction"},
+		{Command: "remove", Description: "Delete a transaction"},
+		{Command: "config", Description: "Set default currency"},
+		{Command: "help", Description: "Commands and usage guide"},
+	}
+	cfg := telegramClient.NewSetMyCommands(commands...)
+	if _, err := bot.Request(cfg); err != nil {
+		log.Printf("⚠️ Failed to set bot commands: %v", err)
+	} else {
+		log.Println("✅ Bot commands registered")
+	}
+}
 
-	tgUserID := update.Message.Chat.ID                    // Get Telegram user ID
-	body := update.Message.Text                           // Extract message text
-	timestamp := time.Unix(int64(update.Message.Date), 0) // Extract timestamp
+// HandleTelegramMessage handles incoming messages with session-aware routing.
+func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Update) {
+	msg := update.Message
+	if msg == nil {
+		return
+	}
+
+	tgUserID := msg.Chat.ID
+	body := msg.Text
+	timestamp := time.Unix(int64(msg.Date), 0)
 
 	log.Printf("✅ Received message: %+v", struct {
 		User      string
@@ -37,63 +57,277 @@ func HandleTelegramMessage(bot *telegramClient.BotAPI, update telegramClient.Upd
 	}{
 		Body:      body,
 		Timestamp: timestamp,
-		User:      update.Message.From.FirstName + " " + update.Message.From.LastName,
+		User:      msg.From.FirstName + " " + msg.From.LastName,
 	})
 
-	/**
-	 * Handle /start command (deep-link Telegram linking).
-	 */
+	// 1. Handle /start command (deep-link Telegram linking)
 	if strings.HasPrefix(body, "/start") {
 		handleStartCommand(bot, tgUserID, body)
 		return
 	}
 
-	/**
-	 * Validate the message: non-empty and within length limits (160 chars).
-	 */
-	if !validateMessage(body) {
-		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Message cannot be empty or exceed 160 characters."))
+	// 2. Handle photo messages (receipt attachment)
+	if msg.Photo != nil && len(msg.Photo) > 0 {
+		handlePhotoMessage(bot, msg)
 		return
 	}
 
-	/**
-	 * Verify user is registered through the platform.
-	 */
+	// 3. Check for active session — route text input to session handler
+	if session := Sessions.Get(tgUserID); session != nil {
+		handleSessionInput(bot, tgUserID, body, session)
+		return
+	}
+
+	// 4. Handle /slash commands
+	if strings.HasPrefix(body, "/") {
+		handleSlashCommand(bot, tgUserID, body, timestamp)
+		return
+	}
+
+	// 5. Validate the message: non-empty and within length limits
+	if !validateMessage(body) {
+		sendHTML(bot, tgUserID, "Message cannot be empty or exceed 500 characters.")
+		return
+	}
+
+	// 6. Verify user is registered
 	user, err := r.UserRepo().GetByTelegramID(tgUserID)
 	if err != nil {
 		log.Printf("⚠️ Unregistered user attempted access: %d", tgUserID)
-		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ You need to link your Telegram account through the platform before using this bot."))
+		sendHTML(bot, tgUserID, "You need to link your Telegram account through cofr.cash Settings first.")
 		return
 	}
 
-	/**
-	 * If it has a command, dispatch it accordingly.
-	 */
-	if cmd, ok := strings.CutPrefix(body, "!"); ok {
-		result := dispatch(cmd, timestamp, user.ID)
-		if result.Error != nil {
-			log.Printf("⚠️ Error processing command: %s", result.Error)
-			bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: %s", result.UserError)))
-			return
-		}
-		log.Printf("✅ Processed command: %+v", result)
-		bot.Send(telegramClient.NewMessage(tgUserID, generateSuccessMessage(result)))
-		return
-	}
-
-	/**
-	 * If it doesn't have a command but it's valid, treat the message as an add transaction request.
-	 * This is because I like the simplicity of being able to do: $ 45
-	 * Design-wise, is it crap or is it not? I don't care. Might make it a command-only later.
-	 */
+	// 7. Bare text → implicit add
 	result := add(body, timestamp, user.ID)
 	if result.Error != nil {
 		log.Printf("⚠️ Error processing add command: %s", result.Error)
-		bot.Send(telegramClient.NewMessage(tgUserID, fmt.Sprintf("⚠️ Failed to process command: \n%s", result.UserError)))
+		sendHTML(bot, tgUserID, fmt.Sprintf("⚠️ %s", result.UserError))
 		return
 	}
 	log.Printf("✅ Processed command: %+v", result)
-	bot.Send(telegramClient.NewMessage(tgUserID, generateSuccessMessage(result)))
+	sendSuccessWithUndo(bot, tgUserID, result)
+}
+
+// handleSlashCommand strips the / prefix and routes to the appropriate handler.
+func handleSlashCommand(bot *telegramClient.BotAPI, chatID int64, body string, timestamp time.Time) {
+	// Strip the slash and any @botname suffix
+	cmd := strings.TrimPrefix(body, "/")
+	if atIdx := strings.Index(cmd, "@"); atIdx != -1 {
+		cmd = cmd[:atIdx]
+	}
+
+	// Validate message length
+	if !validateMessage(body) {
+		sendHTML(bot, chatID, "Message cannot be empty or exceed 500 characters.")
+		return
+	}
+
+	// Verify user is registered
+	user, err := r.UserRepo().GetByTelegramID(chatID)
+	if err != nil {
+		log.Printf("⚠️ Unregistered user attempted access: %d", chatID)
+		sendHTML(bot, chatID, "You need to link your Telegram account through cofr.cash Settings first.")
+		return
+	}
+
+	fields := strings.Fields(cmd)
+	if len(fields) == 0 {
+		return
+	}
+
+	command := fields[0]
+
+	switch command {
+	case "add", "a":
+		// If no args, start guided flow
+		if len(fields) == 1 {
+			startGuidedAdd(bot, chatID, user.ID)
+			return
+		}
+		result := add(strings.Join(fields[1:], " "), timestamp, user.ID)
+		if result.Error != nil {
+			sendHTML(bot, chatID, fmt.Sprintf("⚠️ %s", result.UserError))
+			return
+		}
+		sendSuccessWithUndo(bot, chatID, result)
+
+	case "remove", "rm", "r", "delete", "del", "d":
+		if len(fields) == 1 {
+			startRemoveFlow(bot, chatID, user.ID)
+			return
+		}
+		result := remove(fields[1:], user.ID)
+		if result.Error != nil {
+			sendHTML(bot, chatID, fmt.Sprintf("⚠️ %s", result.UserError))
+			return
+		}
+		sendSuccessMessage(bot, chatID, result)
+
+	case "list", "ls", "l":
+		result := list(fields, timestamp, user.ID)
+		if result.Error != nil {
+			sendHTML(bot, chatID, fmt.Sprintf("⚠️ %s", result.UserError))
+			return
+		}
+		sendSuccessMessage(bot, chatID, result)
+
+	case "summary", "s":
+		from, to := currentMonthRange(timestamp)
+		text, _, err := summaryForMonth(user.ID, from, to)
+		if err != nil {
+			sendHTML(bot, chatID, "Failed to generate summary.")
+			return
+		}
+		kb := buildSummaryKeyboard()
+		sendHTMLWithKeyboard(bot, chatID, text, kb)
+
+	case "edit", "e", "update", "u":
+		startEditFlow(bot, chatID, user.ID)
+
+	case "help", "h":
+		if len(fields) == 1 {
+			text := userHelp[HelpTopic{Command: Help}]
+			kb := buildHelpTopicsKeyboard()
+			sendHTMLWithKeyboard(bot, chatID, text, kb)
+			return
+		}
+		result := help(fields, user.ID)
+		if result.Error != nil {
+			sendHTML(bot, chatID, fmt.Sprintf("⚠️ %s", result.UserError))
+			return
+		}
+		sendSuccessMessage(bot, chatID, result)
+
+	case "config", "c", "cfg":
+		if len(fields) < 2 {
+			sendHTML(bot, chatID, userErrors[Configuration])
+			return
+		}
+		result := config(fields[1:], user.ID)
+		if result.Error != nil {
+			sendHTML(bot, chatID, fmt.Sprintf("⚠️ %s", result.UserError))
+			return
+		}
+		sendSuccessMessage(bot, chatID, result)
+
+	default:
+		sendHTML(bot, chatID, "Unknown command. Use /help for available commands.")
+	}
+}
+
+// handleSessionInput routes text input to the appropriate session step handler.
+func handleSessionInput(bot *telegramClient.BotAPI, chatID int64, text string, session *FlowSession) {
+	switch session.Step {
+	case StepEnterAmount:
+		amount, err := stringToFloat(strings.TrimSpace(text))
+		if err != nil || amount <= 0 {
+			sendHTML(bot, chatID, "Please enter a valid amount (e.g. 45 or 12.50):")
+			return
+		}
+		session.Amount = amount
+		session.Step = StepConfirm
+		Sessions.Set(chatID, session)
+		showAddConfirmation(bot, chatID, session.MessageID, session)
+
+	case StepEnterNotes:
+		session.Notes = text
+		session.Step = StepConfirm
+		Sessions.Set(chatID, session)
+		showAddConfirmation(bot, chatID, session.MessageID, session)
+
+	case StepEditAmount:
+		amount, err := stringToFloat(strings.TrimSpace(text))
+		if err != nil || amount <= 0 {
+			sendHTML(bot, chatID, "Please enter a valid amount:")
+			return
+		}
+		session.Amount = amount
+		session.Step = StepEditField
+		Sessions.Set(chatID, session)
+		showEditDetails(bot, chatID, session.MessageID, session)
+
+	case StepEditNotes:
+		if text == "-" {
+			session.Notes = ""
+		} else {
+			session.Notes = text
+		}
+		session.Step = StepEditField
+		Sessions.Set(chatID, session)
+		showEditDetails(bot, chatID, session.MessageID, session)
+
+	case StepEditCategory:
+		sendHTML(bot, chatID, "Please tap a category from the buttons above.")
+
+	default:
+		Sessions.Delete(chatID)
+		sendHTML(bot, chatID, "Session expired. Please try again.")
+	}
+}
+
+// handlePhotoMessage handles incoming photo messages for receipt attachment.
+func handlePhotoMessage(bot *telegramClient.BotAPI, msg *telegramClient.Message) {
+	chatID := msg.Chat.ID
+	timestamp := time.Unix(int64(msg.Date), 0)
+
+	user, err := r.UserRepo().GetByTelegramID(chatID)
+	if err != nil {
+		sendHTML(bot, chatID, "You need to link your Telegram account first.")
+		return
+	}
+
+	// Get the highest resolution photo
+	photos := msg.Photo
+	fileID := photos[len(photos)-1].FileID
+
+	// If sent with a caption matching add syntax, create transaction with receipt
+	if caption := msg.Caption; caption != "" {
+		result := add(caption, timestamp, user.ID)
+		if result.Error != nil {
+			sendHTML(bot, chatID, fmt.Sprintf("⚠️ %s", result.UserError))
+			return
+		}
+		// Attach receipt to the created transaction(s)
+		for _, tx := range result.Transactions {
+			tx.ReceiptFileID = &fileID
+			r.TxRepo().Update(tx)
+		}
+		sendSuccessWithUndo(bot, chatID, result)
+		return
+	}
+
+	// If there's an active guided add session, attach the photo
+	if session := Sessions.Get(chatID); session != nil && session.Flow == FlowAdd {
+		session.ReceiptFileID = fileID
+		Sessions.Set(chatID, session)
+		sendHTML(bot, chatID, "📷 Receipt attached! Continue with your transaction.")
+		return
+	}
+
+	// Standalone photo — start guided add with photo pre-attached
+	u, err := r.UserRepo().GetByID(user.ID)
+	if err != nil {
+		sendHTML(bot, chatID, "Failed to load user data.")
+		return
+	}
+
+	kb, idMap, err := buildCategoryKeyboard(user.ID)
+	if err != nil {
+		sendHTML(bot, chatID, "Failed to load categories.")
+		return
+	}
+
+	Sessions.Set(chatID, &FlowSession{
+		Flow:          FlowAdd,
+		Step:          StepSelectCategory,
+		UserID:        user.ID,
+		Currency:      u.PreferredCurrency,
+		ReceiptFileID: fileID,
+		IDMap:         idMap,
+	})
+
+	sendHTMLWithKeyboard(bot, chatID, "📷 Receipt received! Select a category:", kb)
 }
 
 func handleStartCommand(bot *telegramClient.BotAPI, tgUserID int64, body string) {
@@ -101,8 +335,11 @@ func handleStartCommand(bot *telegramClient.BotAPI, tgUserID int64, body string)
 
 	// Plain /start with no code
 	if len(parts) < 2 || strings.TrimSpace(parts[1]) == "" {
-		bot.Send(telegramClient.NewMessage(tgUserID,
-			"Welcome to Cofr! To link your account, use the 'Link Telegram' button in Settings on the web app."))
+		text := "<b>Welcome to Cofr!</b>\n\n" +
+			"Link your account:\n" +
+			"1. Open cofr.cash → Settings\n" +
+			"2. Click \"Link Telegram\""
+		sendHTML(bot, tgUserID, text)
 		return
 	}
 
@@ -111,7 +348,7 @@ func handleStartCommand(bot *telegramClient.BotAPI, tgUserID int64, body string)
 	// Check if this Telegram ID is already linked
 	existingUser, err := r.UserRepo().GetByTelegramID(tgUserID)
 	if err == nil && existingUser != nil {
-		bot.Send(telegramClient.NewMessage(tgUserID, "Your Telegram account is already linked."))
+		sendHTML(bot, tgUserID, "Your Telegram account is already linked.")
 		return
 	}
 
@@ -119,17 +356,51 @@ func handleStartCommand(bot *telegramClient.BotAPI, tgUserID int64, body string)
 	user, err := r.UserRepo().GetByLinkCode(code)
 	if err != nil {
 		log.Printf("⚠️ Invalid or expired link code: %s", code)
-		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Invalid or expired link code. Please generate a new one from Settings."))
+		sendHTML(bot, tgUserID, "Invalid or expired link code. Please generate a new one from Settings.")
 		return
 	}
 
 	// Link Telegram to user
 	if err := r.UserRepo().LinkTelegram(user.ID, tgUserID); err != nil {
 		log.Printf("⚠️ Failed to link Telegram for user %s: %v", user.ID, err)
-		bot.Send(telegramClient.NewMessage(tgUserID, "⚠️ Failed to link your account. Please try again."))
+		sendHTML(bot, tgUserID, "Failed to link your account. Please try again.")
 		return
 	}
 
 	log.Printf("✅ Linked Telegram user %d to account %s", tgUserID, user.ID)
-	bot.Send(telegramClient.NewMessage(tgUserID, "✅ Your Telegram account has been linked! You can now track expenses here."))
+
+	// Onboarding message
+	text := "<b>Account linked!</b>\n\n" +
+		"Just type an expense to get started:\n" +
+		"<code>G 45 lunch</code>\n\n" +
+		"G = Groceries, 45 = amount in your default currency."
+
+	kb := telegramClient.NewInlineKeyboardMarkup(
+		telegramClient.NewInlineKeyboardRow(
+			telegramClient.NewInlineKeyboardButtonData("My Categories", "hlp:categories"),
+			telegramClient.NewInlineKeyboardButtonData("Set Currency", "hlp:config"),
+			telegramClient.NewInlineKeyboardButtonData("Full Guide", "hlp:add"),
+		),
+	)
+
+	sendHTMLWithKeyboard(bot, tgUserID, text, kb)
+}
+
+// sendSuccessMessage sends a formatted HTML success message.
+func sendSuccessMessage(bot *telegramClient.BotAPI, chatID int64, result CommandResult) {
+	text := generateSuccessMessage(result)
+	sendHTML(bot, chatID, text)
+}
+
+// sendSuccessWithUndo sends a success message with an Undo button for add commands.
+func sendSuccessWithUndo(bot *telegramClient.BotAPI, chatID int64, result CommandResult) {
+	if result.Command == Add && len(result.Transactions) == 1 {
+		tx := result.Transactions[0]
+		text := formatHTMLReceipt(Add, tx)
+		kb := buildUndoKeyboard(tx.ID)
+		sendHTMLWithKeyboard(bot, chatID, text, kb)
+		return
+	}
+	text := generateSuccessMessage(result)
+	sendHTML(bot, chatID, text)
 }
