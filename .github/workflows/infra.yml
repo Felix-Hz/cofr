@@ -34,10 +34,10 @@ jobs:
       TF_VAR_image: ${{ vars.TF_IMAGE || 'ubuntu-24-04-x64' }}
       TF_VAR_droplet_name: ${{ vars.TF_DROPLET_NAME || 'cofr-prod' }}
       TF_VAR_ssh_key_fingerprints: ${{ vars.TF_SSH_KEY_FINGERPRINTS || '[]' }}
-      TF_VAR_bootstrap_ssh_public_key: ${{ vars.TF_BOOTSTRAP_SSH_PUBLIC_KEY || '' }}
+      TF_VAR_ssh_public_keys: ${{ vars.TF_SSH_PUBLIC_KEYS || '{}' }}
       TF_VAR_admin_user: ${{ vars.TF_ADMIN_USER || 'cofr' }}
-      TF_VAR_admin_ssh_public_keys: ${{ vars.TF_ADMIN_SSH_PUBLIC_KEYS || '[]' }}
       TF_VAR_admin_cidrs: ${{ vars.TF_ADMIN_CIDRS || '[]' }}
+      TF_VAR_reserved_ip: ${{ vars.TF_RESERVED_IP || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
@@ -87,10 +87,10 @@ jobs:
       TF_VAR_image: ${{ vars.TF_IMAGE || 'ubuntu-24-04-x64' }}
       TF_VAR_droplet_name: ${{ vars.TF_DROPLET_NAME || 'cofr-prod' }}
       TF_VAR_ssh_key_fingerprints: ${{ vars.TF_SSH_KEY_FINGERPRINTS || '[]' }}
-      TF_VAR_bootstrap_ssh_public_key: ${{ vars.TF_BOOTSTRAP_SSH_PUBLIC_KEY || '' }}
+      TF_VAR_ssh_public_keys: ${{ vars.TF_SSH_PUBLIC_KEYS || '{}' }}
       TF_VAR_admin_user: ${{ vars.TF_ADMIN_USER || 'cofr' }}
-      TF_VAR_admin_ssh_public_keys: ${{ vars.TF_ADMIN_SSH_PUBLIC_KEYS || '[]' }}
       TF_VAR_admin_cidrs: ${{ vars.TF_ADMIN_CIDRS || '[]' }}
+      TF_VAR_reserved_ip: ${{ vars.TF_RESERVED_IP || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3

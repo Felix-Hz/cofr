@@ -22,3 +22,8 @@ output "vpc_id" {
   description = "DigitalOcean VPC ID."
   value       = digitalocean_vpc.cofr.id
 }
+
+output "reserved_ip" {
+  description = "Reserved IP assigned to the droplet."
+  value       = var.reserved_ip != "" ? var.reserved_ip : null
+}
