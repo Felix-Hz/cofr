@@ -39,7 +39,6 @@ jobs:
           owner_lc=$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
           echo "owner=${owner_lc}" >> "$GITHUB_OUTPUT"
           echo "namespace=ghcr.io/${owner_lc}" >> "$GITHUB_OUTPUT"
-
       - name: Validate manual deploy inputs
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true' }}
         run: |
