@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError
 
 from app.config import settings
 
@@ -16,5 +17,5 @@ def verify_token(token: str) -> dict | None:
     """Verify JWT token and return payload"""
     try:
         return jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-    except JWTError:
+    except InvalidTokenError:
         return None
