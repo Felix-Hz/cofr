@@ -2,12 +2,14 @@ FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 COPY package.json bun.lock ./
 
 RUN bun install --frozen-lockfile
 
 COPY . .
-COPY .env .env
 
 RUN bun run build
 

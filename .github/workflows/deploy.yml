@@ -1,0 +1,134 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      deploy_only:
+        description: "Skip image builds and deploy an existing GHCR image tag"
+        type: boolean
+        required: false
+        default: false
+      image_tag:
+        description: "Image tag to deploy when deploy_only is true. Defaults to the selected ref SHA."
+        type: string
+        required: false
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      APP_IMAGE_TAG: ${{ github.event.inputs.image_tag || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate manual deploy inputs
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true' }}
+        run: |
+          if [ -z "${APP_IMAGE_TAG}" ]; then
+            echo "image_tag is required when deploy_only is true"
+            exit 1
+          fi
+
+      - uses: astral-sh/setup-uv@v6
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+      - uses: oven-sh/setup-bun@v2
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+      - uses: actions/setup-go@v5
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+        with:
+          go-version-file: apps/tg-bot/go.mod
+
+      - name: Verify server
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+        working-directory: apps/server
+        run: |
+          uv sync --frozen --group dev
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run pytest
+
+      - name: Verify client
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+        working-directory: apps/client
+        run: |
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun run build
+
+      - name: Verify tg-bot
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+        working-directory: apps/tg-bot
+        run: go build ./...
+
+      - uses: docker/setup-buildx-action@v3
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+
+      - uses: docker/login-action@v3
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push server
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/server
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/cofr-server:${{ env.APP_IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/cofr-server:main
+
+      - name: Build and push client
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/client
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/cofr-client:${{ env.APP_IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/cofr-client:main
+
+      - name: Build and push tg-bot
+        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/tg-bot
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/cofr-tg-bot:${{ env.APP_IMAGE_TAG }}
+            ghcr.io/${{ github.repository_owner }}/cofr-tg-bot:main
+
+      - name: Add deploy key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync deployment files
+        run: |
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'mkdir -p /opt/cofr'
+          scp -r infra scripts "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/cofr/"
+
+      - name: Deploy on VPS
+        run: |
+          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "cd /opt/cofr && \
+             export GHCR_USERNAME='${{ github.repository_owner }}' && \
+             export GHCR_TOKEN='${{ secrets.GITHUB_TOKEN }}' && \
+             export DEPLOY_IMAGE_TAG='${{ env.APP_IMAGE_TAG }}' && \
+             ./scripts/setup_prod.sh"

@@ -4,6 +4,7 @@ apps/*/.dev.env
 apps/*/.prod.env
 !apps/*/.env.example
 infra/.env
+infra/.prod.env
 
 # Cloudflare credentials (sensitive)
 infra/cloudflared/*.json
@@ -28,6 +29,16 @@ caddy_config/
 
 # Logs
 scripts/logs/
+.backups/
+
+# Terraform
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/terraform.tfvars
+infra/terraform/tfplan
+infra/terraform/tfplan.txt
 
 # LLM
 CLAUDE.md
