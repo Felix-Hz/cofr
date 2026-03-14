@@ -19,7 +19,7 @@ func LoadConfig() (*Config, error) {
 	if os.Getenv("ENV") != "production" {
 		err := dotEnv.Load()
 		if err != nil {
-			log.Fatal("⚠️ Failed to load environment variables")
+			log.Println("⚠️ .env file not found, using environment variables")
 		}
 	}
 
