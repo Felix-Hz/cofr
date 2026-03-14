@@ -236,14 +236,18 @@ export async function initTelegramLink(): Promise<{ code: string; deep_link: str
 
 // ── Preferences ──
 
-export async function getPreferences(): Promise<{ preferred_currency: string }> {
+export async function getPreferences(): Promise<{
+  preferred_currency: string;
+  session_timeout_minutes: number | null;
+}> {
   const response = await fetchWithAuth("/account/preferences");
   return response.json();
 }
 
 export async function updatePreferences(data: {
-  preferred_currency: string;
-}): Promise<{ preferred_currency: string }> {
+  preferred_currency?: string;
+  session_timeout_minutes?: number | null;
+}): Promise<{ preferred_currency: string; session_timeout_minutes: number | null }> {
   const response = await fetchWithAuth("/account/preferences", {
     method: "PUT",
     body: JSON.stringify(data),
@@ -253,7 +257,10 @@ export async function updatePreferences(data: {
 
 // ── Account Profile ──
 
-export async function getUserProfile(): Promise<{ preferred_currency: string }> {
+export async function getUserProfile(): Promise<{
+  preferred_currency: string;
+  session_timeout_minutes: number | null;
+}> {
   const response = await fetchWithAuth("/account/profile");
   return response.json();
 }

@@ -220,6 +220,8 @@ export default function Settings() {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [preferredCurrency, setPreferredCurrency] = useState("NZD");
   const [savingCurrency, setSavingCurrency] = useState(false);
+  const [sessionTimeout, setSessionTimeout] = useState<number | null>(null);
+  const [savingTimeout, setSavingTimeout] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -252,6 +254,7 @@ export default function Settings() {
   const visibleSections = SECTIONS.filter((s) => s.id !== "security" || hasLocalAuth);
 
   // Show tab bar once the title scrolls out of view
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-run when loading finishes so titleRef.current is available
   useEffect(() => {
     const el = titleRef.current;
     if (!el) return;
@@ -291,7 +294,7 @@ export default function Settings() {
       setCatModalOpen(false);
       setEditingCategory(null);
     } catch (err) {
-      // Re-throw so the modal can display the error inline
+      // biome-ignore lint/complexity/noUselessCatch: rethrow needed so finally runs while propagating error to modal
       throw err;
     } finally {
       setCatLoading(false);
@@ -325,6 +328,7 @@ export default function Settings() {
     try {
       const prefs = await getPreferences();
       setPreferredCurrency(prefs.preferred_currency);
+      setSessionTimeout(prefs.session_timeout_minutes);
     } catch {
       // Silently fall back to default
     }
@@ -351,6 +355,25 @@ export default function Settings() {
       setError("Failed to save currency preference");
     } finally {
       setSavingCurrency(false);
+    }
+  };
+
+  const handleTimeoutChange = async (value: string) => {
+    const minutes = value === "" ? null : Number(value);
+    setSessionTimeout(minutes);
+    setSavingTimeout(true);
+    try {
+      await updatePreferences({ session_timeout_minutes: minutes });
+      if (minutes !== null) {
+        localStorage.setItem("cofr_session_timeout", String(minutes));
+      } else {
+        localStorage.removeItem("cofr_session_timeout");
+      }
+      window.dispatchEvent(new CustomEvent("cofr:session-timeout", { detail: minutes }));
+    } catch {
+      setError("Failed to save session timeout");
+    } finally {
+      setSavingTimeout(false);
     }
   };
 
@@ -517,6 +540,39 @@ export default function Settings() {
                 ))}
               </select>
               {savingCurrency && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-content-primary" />
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-edge-default mt-4 pt-4" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-content-primary">Session Timeout</p>
+              <p className="text-sm text-content-tertiary">
+                Automatically log out after inactivity
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={
+                  sessionTimeout === null || sessionTimeout === 15 ? "" : String(sessionTimeout)
+                }
+                onChange={(e) => handleTimeoutChange(e.target.value)}
+                disabled={savingTimeout}
+                className="px-3 py-1.5 text-sm font-medium bg-surface-primary text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors disabled:opacity-50"
+              >
+                <option value="1">1 min</option>
+                <option value="5">5 min</option>
+                <option value="">15 min (default)</option>
+                <option value="30">30 min</option>
+                <option value="60">1 hour</option>
+                <option value="120">2 hours</option>
+                <option value="240">4 hours</option>
+                <option value="0">Never</option>
+              </select>
+              {savingTimeout && (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-content-primary" />
               )}
             </div>

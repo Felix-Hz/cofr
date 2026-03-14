@@ -28,12 +28,26 @@ class UnlinkResponse(BaseModel):
     message: str
 
 
+VALID_TIMEOUT_VALUES = {0, 1, 5, 15, 30, 60, 120, 240}
+
+
 class PreferencesResponse(BaseModel):
     preferred_currency: str
+    session_timeout_minutes: int | None
 
 
 class PreferencesUpdate(BaseModel):
-    preferred_currency: str
+    preferred_currency: str | None = None
+    session_timeout_minutes: int | None = None
+
+    @field_validator("session_timeout_minutes")
+    @classmethod
+    def validate_timeout(cls, v: int | None) -> int | None:
+        if v is not None and v not in VALID_TIMEOUT_VALUES:
+            raise ValueError(
+                f"session_timeout_minutes must be one of {sorted(VALID_TIMEOUT_VALUES)}"
+            )
+        return v
 
 
 class TelegramLinkInitResponse(BaseModel):
@@ -43,6 +57,7 @@ class TelegramLinkInitResponse(BaseModel):
 
 class ProfileResponse(BaseModel):
     preferred_currency: str
+    session_timeout_minutes: int | None
 
 
 class CurrencyUpdateRequest(BaseModel):
@@ -94,7 +109,10 @@ async def get_profile(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return ProfileResponse(preferred_currency=user.preferred_currency)
+    return ProfileResponse(
+        preferred_currency=user.preferred_currency,
+        session_timeout_minutes=user.session_timeout_minutes,
+    )
 
 
 @router.put("/profile/currency", response_model=ProfileResponse)
@@ -109,7 +127,10 @@ async def update_preferred_currency(
         raise HTTPException(status_code=404, detail="User not found")
     user.preferred_currency = body.preferred_currency
     db.commit()
-    return ProfileResponse(preferred_currency=user.preferred_currency)
+    return ProfileResponse(
+        preferred_currency=user.preferred_currency,
+        session_timeout_minutes=user.session_timeout_minutes,
+    )
 
 
 @router.get("/providers", response_model=list[ProviderResponse])
@@ -197,7 +218,10 @@ async def get_preferences(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return PreferencesResponse(preferred_currency=user.preferred_currency)
+    return PreferencesResponse(
+        preferred_currency=user.preferred_currency,
+        session_timeout_minutes=user.session_timeout_minutes,
+    )
 
 
 @router.put("/preferences", response_model=PreferencesResponse)
@@ -210,9 +234,15 @@ async def update_preferences(
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    user.preferred_currency = data.preferred_currency
+    if data.preferred_currency is not None:
+        user.preferred_currency = data.preferred_currency
+    if "session_timeout_minutes" in data.model_fields_set:
+        user.session_timeout_minutes = data.session_timeout_minutes
     db.commit()
-    return PreferencesResponse(preferred_currency=user.preferred_currency)
+    return PreferencesResponse(
+        preferred_currency=user.preferred_currency,
+        session_timeout_minutes=user.session_timeout_minutes,
+    )
 
 
 @router.put("/password", response_model=PasswordChangeResponse)

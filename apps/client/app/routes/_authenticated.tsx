@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, redirect, useLoaderData } from "react-router";
 import ThemeToggle from "~/components/ThemeToggle";
+import { useSessionTimeout } from "~/hooks/useSessionTimeout";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
 import { CategoriesProvider } from "~/lib/categories";
 import { getUserInitials } from "~/lib/utils";
@@ -19,6 +20,35 @@ export default function AuthenticatedLayout() {
   const { user } = loaderData;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Session timeout
+  const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number | null>(() => {
+    const stored = localStorage.getItem("cofr_session_timeout");
+    if (stored !== null && stored !== "") return Number(stored);
+    return null;
+  });
+  useSessionTimeout(sessionTimeoutMinutes);
+
+  // Listen for timeout changes from Settings (same tab) and other tabs
+  useEffect(() => {
+    function handleTimeoutChange(e: Event) {
+      const value = (e as CustomEvent<number | null>).detail;
+      setSessionTimeoutMinutes(value);
+    }
+    function handleStorage(e: StorageEvent) {
+      if (e.key === "cofr_session_timeout") {
+        setSessionTimeoutMinutes(
+          e.newValue !== null && e.newValue !== "" ? Number(e.newValue) : null,
+        );
+      }
+    }
+    window.addEventListener("cofr:session-timeout", handleTimeoutChange);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("cofr:session-timeout", handleTimeoutChange);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
