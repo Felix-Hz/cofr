@@ -67,6 +67,8 @@ jobs:
         if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
       - uses: oven-sh/setup-bun@v2
         if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+        with:
+          bun-version: "1.3.10"
       - uses: actions/setup-go@v5
         if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
         with:
