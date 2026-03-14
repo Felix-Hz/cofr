@@ -15,6 +15,7 @@ on:
 
 jobs:
   terraform:
+    name: infra-validate
     runs-on: ubuntu-latest
     outputs:
       has_changes: ${{ steps.plan.outputs.has_changes || 'false' }}
@@ -66,6 +67,7 @@ jobs:
           path: infra/terraform/tfplan.txt
 
   apply:
+    name: infra-apply
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true' && needs.terraform.outputs.has_changes == 'true' }}
     needs: terraform
     runs-on: ubuntu-latest
