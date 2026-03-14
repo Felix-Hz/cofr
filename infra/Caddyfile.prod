@@ -11,7 +11,9 @@
     # API routes - strip /api prefix before forwarding
     handle /api/* {
         uri strip_prefix /api
-        reverse_proxy server:5784
+        reverse_proxy server:5784 {
+            header_up X-Forwarded-Proto https
+        }
     }
 
     # Health check endpoint (direct to API)
@@ -21,7 +23,9 @@
 
     # Frontend - everything else (React Router SSR)
     handle {
-        reverse_proxy client:3000
+        reverse_proxy client:3000 {
+            header_up X-Forwarded-Proto https
+        }
     }
 
     # Logging

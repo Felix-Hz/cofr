@@ -8,11 +8,11 @@
 ```
 cofr/
 ├── apps/
-│   ├── server/      # FastAPI backend (Python, port 5784)
+│   ├── server/      # FastAPI backend (Python, internal port 5784)
 │   ├── tg-bot/      # Telegram bot (Go)
-│   └── client/      # Web dashboard (React Router 7 / Bun, port 3000)
-├── infra/           # Docker Compose, Caddyfile, Cloudflare Tunnel config
-└── scripts/         # Dev, local run, and Pi setup scripts
+│   └── client/      # Web dashboard (React Router 7 / Bun, internal port 3000)
+├── infra/           # Docker Compose, Caddyfiles, Cloudflare Tunnel config
+└── scripts/         # Dev/prod setup helpers
 ```
 
 ## Quick Start
@@ -30,7 +30,24 @@ cofr/
 ### Local development (Docker)
 
 ```bash
-./scripts/run.sh
+./scripts/setup_dev.sh
+```
+
+Dev entrypoints:
+
+- App: `http://localhost:8080`
+- API: `http://localhost:8080/api`
+- API health: `http://localhost:8080/health`
+
+OAuth in Docker dev uses the public dev API URL from `apps/server/.dev.env`:
+
+- `API_URL=http://localhost:8080/api`
+- Google redirect URI: `http://localhost:8080/api/auth/oauth/google/callback`
+
+### Production (Docker)
+
+```bash
+./scripts/setup_prod.sh
 ```
 
 ## Services
@@ -40,7 +57,7 @@ cofr/
 | server      | Python / FastAPI                  | 5784 | REST API for expenses, auth, accounts            |
 | tg-bot      | Go                                | —    | Telegram bot for expense tracking                |
 | client      | TypeScript / React Router 7 / Bun | 3000 | Web dashboard with SSR                           |
-| caddy       | Caddy 2                           | 80   | Reverse proxy (`/api/*` → server, `/*` → client) |
+| caddy       | Caddy 2                           | 8080 in dev, 80/443 in prod | Reverse proxy (`/api/*` → server, `/*` → client) |
 | cloudflared | Cloudflare Tunnel                 | —    | Exposes services at `cofr.cash`                  |
 
 ## Database

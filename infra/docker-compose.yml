@@ -2,14 +2,11 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: cofr-postgres
     restart: unless-stopped
     env_file:
       - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     networks:
       - cofr-network
     healthcheck:
@@ -22,7 +19,6 @@ services:
   # Golang Telegram Bot
   tg-bot:
     build: ../apps/tg-bot
-    container_name: cofr-tg-bot
     restart: unless-stopped
     env_file:
       - ../apps/tg-bot/.env
@@ -41,14 +37,9 @@ services:
   # FastAPI Backend
   server:
     build: ../apps/server
-    container_name: cofr-server
     restart: unless-stopped
     env_file:
       - ../apps/server/.env
-    ports:
-      - "5784:5784"
-    # Volume mounts removed for production - uses built image
-    # For local development with hot-reload, use: docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up
     networks:
       - cofr-network
     depends_on:
@@ -64,14 +55,9 @@ services:
   # React Router Frontend (SSR)
   client:
     build: ../apps/client
-    container_name: cofr-client
     restart: unless-stopped
     env_file:
       - ../apps/client/.env
-    ports:
-      - "3000:3000"
-    # Volume mounts removed for production - uses built image
-    # For local development with hot-reload, use: docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up
     networks:
       - cofr-network
     depends_on:
@@ -81,35 +67,15 @@ services:
   # Caddy Reverse Proxy
   caddy:
     image: caddy:2-alpine
-    container_name: caddy-proxy
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     restart: unless-stopped
-    ports:
-      - "8080:80"
-      - "8443:443"
     networks:
       - cofr-network
     depends_on:
       - server
       - client
-
-  # Cloudflare Tunnel
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: cloudflare-tunnel
-    command: tunnel run
-    restart: unless-stopped
-    volumes:
-      - ./cloudflared:/etc/cloudflared:ro
-    environment:
-      - TUNNEL_METRICS=0.0.0.0:9126
-    networks:
-      - cofr-network
-    depends_on:
-      - caddy
 
 networks:
   cofr-network:
