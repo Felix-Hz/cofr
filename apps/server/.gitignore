@@ -42,8 +42,6 @@ htmlcov/
 *.swo
 *~
 
-uv.lock
-
 .serena
 .ruff_cache
 .zed

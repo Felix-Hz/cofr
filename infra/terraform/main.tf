@@ -1,0 +1,83 @@
+locals {
+  base_tags = [
+    "cofr",
+    var.environment,
+  ]
+
+  droplet_ssh_keys = compact(concat(
+    var.ssh_key_fingerprints,
+    var.bootstrap_ssh_public_key != "" ? [digitalocean_ssh_key.bootstrap[0].id] : []
+  ))
+
+  cloud_init = templatefile("${path.module}/cloud-init.yaml.tftpl", {
+    admin_user            = var.admin_user
+    admin_ssh_public_keys = var.admin_ssh_public_keys
+  })
+}
+
+resource "digitalocean_ssh_key" "bootstrap" {
+  count = var.bootstrap_ssh_public_key != "" ? 1 : 0
+
+  name       = "${var.droplet_name}-bootstrap"
+  public_key = var.bootstrap_ssh_public_key
+}
+
+resource "digitalocean_project" "cofr" {
+  name        = var.project_name
+  description = var.project_description
+  purpose     = "Web Application"
+  environment = title(var.environment)
+}
+
+resource "digitalocean_vpc" "cofr" {
+  name     = var.vpc_name
+  region   = var.region
+  ip_range = "10.60.0.0/24"
+}
+
+resource "digitalocean_droplet" "cofr" {
+  name       = var.droplet_name
+  region     = var.region
+  size       = var.droplet_size
+  image      = var.image
+  ssh_keys   = local.droplet_ssh_keys
+  backups    = var.enable_backups
+  monitoring = var.enable_monitoring
+  tags       = distinct(concat(local.base_tags, var.tags))
+  user_data  = local.cloud_init
+  vpc_uuid   = digitalocean_vpc.cofr.id
+}
+
+resource "digitalocean_project_resources" "cofr" {
+  project   = digitalocean_project.cofr.id
+  resources = [digitalocean_droplet.cofr.urn]
+}
+
+resource "digitalocean_firewall" "cofr" {
+  name = "${var.droplet_name}-firewall"
+
+  droplet_ids = [digitalocean_droplet.cofr.id]
+
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "22"
+    source_addresses = var.admin_cidrs
+  }
+
+  outbound_rule {
+    protocol              = "tcp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "udp"
+    port_range            = "1-65535"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  outbound_rule {
+    protocol              = "icmp"
+    destination_addresses = ["0.0.0.0/0", "::/0"]
+  }
+}

@@ -1,0 +1,96 @@
+name: Infrastructure
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/infra.yml"
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply Terraform after planning"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      has_changes: ${{ steps.plan.outputs.has_changes }}
+    defaults:
+      run:
+        working-directory: infra/terraform
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_do_token: ${{ secrets.TF_DO_TOKEN }}
+      TF_VAR_project_name: ${{ vars.TF_PROJECT_NAME || 'cofr' }}
+      TF_VAR_project_description: ${{ vars.TF_PROJECT_DESCRIPTION || 'Infrastructure for the Cofr application' }}
+      TF_VAR_environment: ${{ vars.TF_ENVIRONMENT || 'production' }}
+      TF_VAR_region: ${{ vars.TF_REGION || 'syd1' }}
+      TF_VAR_vpc_name: ${{ vars.TF_VPC_NAME || 'cofr-prod-vpc' }}
+      TF_VAR_droplet_size: ${{ vars.TF_DROPLET_SIZE || 's-1vcpu-2gb' }}
+      TF_VAR_image: ${{ vars.TF_IMAGE || 'ubuntu-24-04-x64' }}
+      TF_VAR_droplet_name: ${{ vars.TF_DROPLET_NAME || 'cofr-prod' }}
+      TF_VAR_ssh_key_fingerprints: ${{ vars.TF_SSH_KEY_FINGERPRINTS || '[]' }}
+      TF_VAR_bootstrap_ssh_public_key: ${{ vars.TF_BOOTSTRAP_SSH_PUBLIC_KEY || '' }}
+      TF_VAR_admin_user: ${{ vars.TF_ADMIN_USER || 'cofr' }}
+      TF_VAR_admin_ssh_public_keys: ${{ vars.TF_ADMIN_SSH_PUBLIC_KEYS || '[]' }}
+      TF_VAR_admin_cidrs: ${{ vars.TF_ADMIN_CIDRS || '[]' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive
+      - run: terraform init
+      - run: terraform validate
+      - id: plan
+        run: |
+          set +e
+          terraform plan -input=false -no-color -detailed-exitcode -out=tfplan
+          status=$?
+          set -e
+          if [ "$status" -eq 1 ]; then
+            exit 1
+          fi
+          if [ "$status" -eq 2 ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+          terraform show -no-color tfplan > tfplan.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: infra/terraform/tfplan.txt
+
+  apply:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true' && needs.terraform.outputs.has_changes == 'true' }}
+    needs: terraform
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: infra/terraform
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_do_token: ${{ secrets.TF_DO_TOKEN }}
+      TF_VAR_project_name: ${{ vars.TF_PROJECT_NAME || 'cofr' }}
+      TF_VAR_project_description: ${{ vars.TF_PROJECT_DESCRIPTION || 'Infrastructure for the Cofr application' }}
+      TF_VAR_environment: ${{ vars.TF_ENVIRONMENT || 'production' }}
+      TF_VAR_region: ${{ vars.TF_REGION || 'syd1' }}
+      TF_VAR_vpc_name: ${{ vars.TF_VPC_NAME || 'cofr-prod-vpc' }}
+      TF_VAR_droplet_size: ${{ vars.TF_DROPLET_SIZE || 's-1vcpu-2gb' }}
+      TF_VAR_image: ${{ vars.TF_IMAGE || 'ubuntu-24-04-x64' }}
+      TF_VAR_droplet_name: ${{ vars.TF_DROPLET_NAME || 'cofr-prod' }}
+      TF_VAR_ssh_key_fingerprints: ${{ vars.TF_SSH_KEY_FINGERPRINTS || '[]' }}
+      TF_VAR_bootstrap_ssh_public_key: ${{ vars.TF_BOOTSTRAP_SSH_PUBLIC_KEY || '' }}
+      TF_VAR_admin_user: ${{ vars.TF_ADMIN_USER || 'cofr' }}
+      TF_VAR_admin_ssh_public_keys: ${{ vars.TF_ADMIN_SSH_PUBLIC_KEYS || '[]' }}
+      TF_VAR_admin_cidrs: ${{ vars.TF_ADMIN_CIDRS || '[]' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      - run: terraform plan -input=false -out=tfplan
+      - run: terraform apply -input=false -auto-approve tfplan

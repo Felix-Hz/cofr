@@ -1,0 +1,26 @@
+do_token = "dop_v1_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+project_name = "cofr"
+project_description = "Infrastructure for the Cofr application"
+environment  = "production"
+region       = "syd1"
+vpc_name     = "cofr-prod-vpc"
+droplet_size = "s-1vcpu-2gb"
+image        = "ubuntu-24-04-x64"
+droplet_name = "cofr-prod"
+
+# Use fingerprints of SSH keys already added to DigitalOcean.
+ssh_key_fingerprints = []
+
+# Or let Terraform register a bootstrap public key for you.
+bootstrap_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... you@example.com"
+
+admin_user = "cofr"
+admin_ssh_public_keys = [
+  "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... you@example.com",
+]
+
+# Restrict SSH to your own IP or office CIDR.
+admin_cidrs = [
+  "203.0.113.10/32",
+]

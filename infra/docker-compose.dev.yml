@@ -7,6 +7,7 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
 
   server:
+    build: ../apps/server
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 5784 --reload"
     env_file:
       - ../apps/server/.env
@@ -18,6 +19,7 @@ services:
       - /app/.venv  # Exclude container's .venv from being overridden
 
   client:
+    build: ../apps/client
     command: sh -c "bun install && bun run dev --host 0.0.0.0 --port 3000"
     ports:
       - "3000:3000"
@@ -28,6 +30,7 @@ services:
       - VITE_API_BASE_URL=/api
 
   tg-bot:
+    build: ../apps/tg-bot
     env_file:
       - ../apps/tg-bot/.env
       - ../apps/tg-bot/.dev.env
