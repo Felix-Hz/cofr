@@ -4,22 +4,21 @@ locals {
     var.environment,
   ]
 
-  droplet_ssh_keys = compact(concat(
+  droplet_ssh_keys = concat(
     var.ssh_key_fingerprints,
-    var.bootstrap_ssh_public_key != "" ? [digitalocean_ssh_key.bootstrap[0].id] : []
-  ))
+    [for k in digitalocean_ssh_key.managed : k.id]
+  )
 
   cloud_init = templatefile("${path.module}/cloud-init.yaml.tftpl", {
-    admin_user            = var.admin_user
-    admin_ssh_public_keys = var.admin_ssh_public_keys
+    admin_user = var.admin_user
   })
 }
 
-resource "digitalocean_ssh_key" "bootstrap" {
-  count = var.bootstrap_ssh_public_key != "" ? 1 : 0
+resource "digitalocean_ssh_key" "managed" {
+  for_each = var.ssh_public_keys
 
-  name       = "${var.droplet_name}-bootstrap"
-  public_key = var.bootstrap_ssh_public_key
+  name       = "${var.droplet_name}-${each.key}"
+  public_key = each.value
 }
 
 resource "digitalocean_project" "cofr" {
@@ -46,6 +45,13 @@ resource "digitalocean_droplet" "cofr" {
   tags       = distinct(concat(local.base_tags, var.tags))
   user_data  = local.cloud_init
   vpc_uuid   = digitalocean_vpc.cofr.id
+}
+
+resource "digitalocean_reserved_ip_assignment" "cofr" {
+  count = var.reserved_ip != "" ? 1 : 0
+
+  ip_address = var.reserved_ip
+  droplet_id = digitalocean_droplet.cofr.id
 }
 
 resource "digitalocean_project_resources" "cofr" {

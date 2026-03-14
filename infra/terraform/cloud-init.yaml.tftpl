@@ -3,7 +3,6 @@ package_update: true
 package_upgrade: true
 package_reboot_if_required: true
 ssh_pwauth: false
-disable_root: true
 
 packages:
   - unattended-upgrades
@@ -57,10 +56,11 @@ write_files:
           chmod a+r /etc/apt/keyrings/docker.asc
       fi
 
-      ARCH="$$(dpkg --print-architecture)"
-      CODENAME="$$(. /etc/os-release && echo "$${VERSION_CODENAME}")"
+      ARCH="$(dpkg --print-architecture)"
+      # shellcheck source=/dev/null
+      . /etc/os-release
       cat >/etc/apt/sources.list.d/docker.list <<EOF
-      deb [arch=$${ARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $${CODENAME} stable
+      deb [arch=$${ARCH} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $${VERSION_CODENAME} stable
       EOF
 
       apt-get update
@@ -77,14 +77,12 @@ write_files:
       fi
       passwd -l ${admin_user} || true
       mkdir -p /home/${admin_user}/.ssh
-      cat >/home/${admin_user}/.ssh/authorized_keys <<'EOF'
-%{ for key in admin_ssh_public_keys ~}
-      ${key}
-%{ endfor ~}
-      EOF
+      cp /root/.ssh/authorized_keys /home/${admin_user}/.ssh/authorized_keys
       chown -R ${admin_user}:${admin_user} /home/${admin_user}/.ssh
       chmod 700 /home/${admin_user}/.ssh
       chmod 600 /home/${admin_user}/.ssh/authorized_keys
+      sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+      systemctl reload ssh
       install -m 0440 /dev/null /etc/sudoers.d/90-${admin_user}
       printf '%s ALL=(ALL) NOPASSWD:ALL\n' '${admin_user}' >/etc/sudoers.d/90-${admin_user}
 

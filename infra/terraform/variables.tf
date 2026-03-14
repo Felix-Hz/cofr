@@ -53,27 +53,21 @@ variable "droplet_name" {
 }
 
 variable "ssh_key_fingerprints" {
-  description = "Optional SSH key fingerprints already uploaded to DigitalOcean."
+  description = "Fingerprints of SSH keys already uploaded to DigitalOcean."
   type        = list(string)
   default     = []
 }
 
-variable "bootstrap_ssh_public_key" {
-  description = "Optional SSH public key that Terraform should register with DigitalOcean for initial droplet access."
-  type        = string
-  default     = ""
+variable "ssh_public_keys" {
+  description = "SSH public keys for Terraform to register with DigitalOcean and authorize on the droplet."
+  type        = map(string)
+  default     = {}
 }
 
 variable "admin_user" {
   description = "Primary non-root deploy user created by cloud-init."
   type        = string
   default     = "cofr"
-}
-
-variable "admin_ssh_public_keys" {
-  description = "SSH public keys authorized for the deploy user."
-  type        = list(string)
-  default     = []
 }
 
 variable "admin_cidrs" {
@@ -102,4 +96,10 @@ variable "tags" {
   description = "Extra DigitalOcean tags."
   type        = list(string)
   default     = []
+}
+
+variable "reserved_ip" {
+  description = "Existing DigitalOcean Reserved IP to assign to the droplet."
+  type        = string
+  default     = ""
 }
