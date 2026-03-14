@@ -33,6 +33,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Derive registry namespace
+        id: registry
+        run: |
+          owner_lc=$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=${owner_lc}" >> "$GITHUB_OUTPUT"
+          echo "namespace=ghcr.io/${owner_lc}" >> "$GITHUB_OUTPUT"
       - name: Validate manual deploy inputs
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true' }}
         run: |
@@ -89,8 +95,8 @@ jobs:
           context: ./apps/server
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/cofr-server:${{ env.APP_IMAGE_TAG }}
-            ghcr.io/${{ github.repository_owner }}/cofr-server:main
+            ${{ steps.registry.outputs.namespace }}/cofr-server:${{ env.APP_IMAGE_TAG }}
+            ${{ steps.registry.outputs.namespace }}/cofr-server:main
 
       - name: Build and push client
         if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
@@ -99,8 +105,8 @@ jobs:
           context: ./apps/client
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/cofr-client:${{ env.APP_IMAGE_TAG }}
-            ghcr.io/${{ github.repository_owner }}/cofr-client:main
+            ${{ steps.registry.outputs.namespace }}/cofr-client:${{ env.APP_IMAGE_TAG }}
+            ${{ steps.registry.outputs.namespace }}/cofr-client:main
 
       - name: Build and push tg-bot
         if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
@@ -109,8 +115,8 @@ jobs:
           context: ./apps/tg-bot
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/cofr-tg-bot:${{ env.APP_IMAGE_TAG }}
-            ghcr.io/${{ github.repository_owner }}/cofr-tg-bot:main
+            ${{ steps.registry.outputs.namespace }}/cofr-tg-bot:${{ env.APP_IMAGE_TAG }}
+            ${{ steps.registry.outputs.namespace }}/cofr-tg-bot:main
 
       - name: Add deploy key
         run: |
@@ -130,5 +136,6 @@ jobs:
             "cd /opt/cofr && \
              export GHCR_USERNAME='${{ github.repository_owner }}' && \
              export GHCR_TOKEN='${{ secrets.GITHUB_TOKEN }}' && \
+             export GHCR_NAMESPACE='${{ steps.registry.outputs.namespace }}' && \
              export DEPLOY_IMAGE_TAG='${{ env.APP_IMAGE_TAG }}' && \
              ./scripts/setup_prod.sh"
