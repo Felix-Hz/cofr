@@ -1,3 +1,5 @@
+import logging
+
 from authlib.integrations.starlette_client import OAuth
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
@@ -7,6 +9,8 @@ from app.auth.jwt import create_access_token
 from app.config import settings
 from app.database import get_db
 from app.db.models import AuthProvider, User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth/oauth", tags=["OAuth"])
 
@@ -42,7 +46,9 @@ async def oauth_login(provider: str, request: Request):
 
     client = oauth.create_client(provider)
     redirect_uri = f"{settings.API_URL}/auth/oauth/{provider}/callback"
-    return await client.authorize_redirect(request, redirect_uri)
+    response = await client.authorize_redirect(request, redirect_uri)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @router.get("/{provider}/callback")
@@ -57,7 +63,8 @@ async def oauth_callback(provider: str, request: Request, db: Session = Depends(
 
     try:
         token = await client.authorize_access_token(request)
-    except Exception:
+    except Exception as e:
+        logger.error(f"OAuth token exchange failed: {type(e).__name__}: {e}")
         return RedirectResponse(f"{settings.FRONTEND_URL}/login?error=OAuth+authorization+failed")
 
     # Extract user info based on provider

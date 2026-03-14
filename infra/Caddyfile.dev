@@ -1,0 +1,28 @@
+{
+    auto_https off
+    admin off
+}
+
+:80 {
+    # API routes - strip /api prefix before forwarding
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy server:5784
+    }
+
+    # Health check endpoint (direct to API)
+    handle /health {
+        reverse_proxy server:5784
+    }
+
+    # Frontend - everything else (React Router SSR)
+    handle {
+        reverse_proxy client:3000
+    }
+
+    # Logging
+    log {
+        output stdout
+        format json
+    }
+}

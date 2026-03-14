@@ -1,0 +1,44 @@
+# Docker Compose override for production
+# Usage: docker compose -p cofr-prod -f infra/docker-compose.yml -f infra/docker-compose.prod.yml up -d --build
+
+services:
+  postgres:
+    ports:
+      - "5433:5432"
+
+  server:
+    env_file:
+      - ../apps/server/.env
+      - ../apps/server/.prod.env
+    ports:
+      - "5785:5784"
+
+  tg-bot:
+    env_file:
+      - ../apps/tg-bot/.env
+      - ../apps/tg-bot/.prod.env
+
+  client:
+    ports:
+      - "3001:3000"
+
+  caddy:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+
+  # Cloudflare Tunnel
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel run
+    restart: unless-stopped
+    volumes:
+      - ./cloudflared:/etc/cloudflared:ro
+    environment:
+      - TUNNEL_METRICS=0.0.0.0:9126
+    networks:
+      - cofr-network
+    depends_on:
+      - caddy

@@ -1,5 +1,7 @@
 # Environment
 apps/*/.env
+apps/*/.dev.env
+apps/*/.prod.env
 !apps/*/.env.example
 infra/.env
 

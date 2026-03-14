@@ -43,7 +43,7 @@ cp .env.example .env
 Edit `.env` and add your configuration:
 
 ```env
-VITE_API_BASE_URL=http://localhost:5784
+VITE_API_BASE_URL=/api
 ```
 
 ### Development
@@ -55,6 +55,8 @@ bun run dev
 ```
 
 The app will be available at `http://localhost:5173`
+
+If you run the full Docker dev stack, use `http://localhost:8080` instead. In that setup the client talks to the backend through Caddy at `/api`.
 
 ### Production
 
