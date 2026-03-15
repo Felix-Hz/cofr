@@ -9,6 +9,7 @@ from app.auth.jwt import create_access_token
 from app.config import settings
 from app.database import get_db
 from app.db.models import AuthProvider, User
+from app.services.account_service import ensure_system_accounts
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,7 @@ def _resolve_user(
         display_name=display_name,
     )
     db.add(new_provider)
+    ensure_system_accounts(db, user)
     db.commit()
 
     return user

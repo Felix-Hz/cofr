@@ -4,13 +4,14 @@ from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_user_id
 from app.database import get_db
-from app.db.models import Account, Transaction
+from app.db.models import Account, Transaction, User
 from app.db.schemas import (
     AccountBalance,
     AccountCreateRequest,
     AccountSchema,
     AccountUpdateRequest,
 )
+from app.services.account_service import ensure_system_accounts
 from app.services.expense_service import ExpenseService
 
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
@@ -32,9 +33,11 @@ async def get_accounts(
     db: Session = Depends(get_db),
 ):
     """List user's accounts (system + custom)"""
-    accounts = (
-        db.query(Account).filter(Account.user_id == user_id).order_by(Account.display_order).all()
-    )
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    accounts = ensure_system_accounts(db, user)
+    db.commit()
     return [_to_schema(a) for a in accounts]
 
 
