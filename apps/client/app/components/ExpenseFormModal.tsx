@@ -26,6 +26,7 @@ export default function ExpenseFormModal({
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("NZD");
   const [date, setDate] = useState("");
+  const [isOpeningBalance, setIsOpeningBalance] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isEditMode = !!expense;
@@ -41,6 +42,7 @@ export default function ExpenseFormModal({
       setCategoryId(expense.category_id);
       setDescription(expense.description);
       setCurrency(expense.currency);
+      setIsOpeningBalance(expense.is_opening_balance);
       setShowDeleteConfirm(false);
       const d = new Date(expense.created_at);
       const pad = (n: number) => n.toString().padStart(2, "0");
@@ -52,6 +54,7 @@ export default function ExpenseFormModal({
       setCategoryId(defaultCategoryId);
       setDescription("");
       setCurrency("NZD");
+      setIsOpeningBalance(false);
       setShowDeleteConfirm(false);
       const now = new Date();
       const pad = (n: number) => n.toString().padStart(2, "0");
@@ -70,6 +73,7 @@ export default function ExpenseFormModal({
       description,
       currency,
       created_at: date ? new Date(date) : undefined,
+      is_opening_balance: isOpeningBalance,
     };
 
     await onSubmit(data);
@@ -192,6 +196,20 @@ export default function ExpenseFormModal({
                 className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               />
             </div>
+
+            {/* Opening Balance */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isOpeningBalance}
+                onChange={(e) => setIsOpeningBalance(e.target.checked)}
+                className="w-4 h-4 rounded border-edge-strong text-emerald focus:ring-emerald accent-emerald"
+              />
+              <span className="text-sm text-content-secondary">
+                Opening balance
+                <span className="text-content-tertiary"> — excluded from stats</span>
+              </span>
+            </label>
 
             {/* Actions */}
             <div className="flex justify-between pt-4">

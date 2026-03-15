@@ -767,7 +767,17 @@ export default function Dashboard() {
                         </span>
                       </td>
                       <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-content-primary text-right tabular-nums">
-                        {formatCurrency(expense.amount, expense.currency)}
+                        <span className="inline-flex items-center gap-1.5 justify-end">
+                          {expense.is_opening_balance && (
+                            <span
+                              className="text-[9px] font-semibold leading-none px-1 py-0.5 rounded bg-accent-soft-bg text-accent-soft-text"
+                              title="Opening balance — excluded from stats"
+                            >
+                              OB
+                            </span>
+                          )}
+                          {formatCurrency(expense.amount, expense.currency)}
+                        </span>
                       </td>
                     </tr>
                   );

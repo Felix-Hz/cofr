@@ -53,6 +53,7 @@ class ExpenseSchema(BaseModel):
     description: str
     created_at: datetime
     currency: str = Field(pattern="^[A-Z]{3}$")
+    is_opening_balance: bool = False
 
 
 class ExpensesResponse(BaseModel):
@@ -90,6 +91,7 @@ class ExpenseCreateRequest(BaseModel):
     description: str = Field(default="", max_length=360)
     currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
     created_at: datetime | None = None
+    is_opening_balance: bool = False
 
 
 class ExpenseUpdateRequest(BaseModel):
@@ -98,6 +100,7 @@ class ExpenseUpdateRequest(BaseModel):
     description: str | None = Field(default=None, max_length=360)
     currency: str | None = Field(default=None, pattern="^[A-Z]{3}$")
     created_at: datetime | None = None
+    is_opening_balance: bool | None = None
 
 
 class ExpenseDeleteResponse(BaseModel):
