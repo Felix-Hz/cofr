@@ -17,16 +17,23 @@ func summaryForMonth(userID uuid.UUID, from time.Time, to time.Time) (string, *S
 		return "", nil, err
 	}
 
-	return formatSummary(result, from, to), result, nil
+	// Get account balances
+	balances, _ := r.AccountRepo().GetBalances(userID)
+
+	return formatSummary(result, balances, from, to), result, nil
 }
 
 // formatSummary builds the HTML-formatted summary message.
-func formatSummary(result *SummaryResult, from time.Time, to time.Time) string {
+func formatSummary(result *SummaryResult, balances []AccountBalance, from time.Time, to time.Time) string {
 	msg := fmt.Sprintf("<b>%s — %s</b>\n\n",
 		from.Format("2 Jan"), to.Format("2 Jan 2006"))
 
 	if result.TxCount == 0 {
 		msg += "No transactions in this period."
+		if len(balances) > 0 {
+			msg += "\n\n"
+			msg += formatAccountBalances(balances)
+		}
 		return msg
 	}
 
@@ -34,20 +41,14 @@ func formatSummary(result *SummaryResult, from time.Time, to time.Time) string {
 		msg += fmt.Sprintf("<b>Income</b>      $%.2f\n", result.TotalIncome)
 	}
 	msg += fmt.Sprintf("<b>Spent</b>       $%.2f  (%d txns)\n", result.TotalExpense, result.TxCount)
-	if result.TotalSavings > 0 {
-		msg += fmt.Sprintf("<b>Saved</b>       $%.2f\n", result.TotalSavings)
-	}
-	if result.TotalInvestment > 0 {
-		msg += fmt.Sprintf("<b>Invested</b>    $%.2f\n", result.TotalInvestment)
-	}
 
-	remaining := result.TotalIncome - result.TotalExpense - result.TotalSavings - result.TotalInvestment
+	net := result.TotalIncome - result.TotalExpense
 	if result.TotalIncome > 0 {
 		sign := "+"
-		if remaining < 0 {
+		if net < 0 {
 			sign = ""
 		}
-		msg += fmt.Sprintf("<b>Remaining</b>   <b>%s$%.2f</b>\n", sign, remaining)
+		msg += fmt.Sprintf("<b>Net</b>         <b>%s$%.2f</b>\n", sign, net)
 	}
 
 	// Top spending by category (expense type only)
@@ -73,6 +74,25 @@ func formatSummary(result *SummaryResult, from time.Time, to time.Time) string {
 		}
 	}
 
+	// Account balances
+	if len(balances) > 0 {
+		msg += "\n"
+		msg += formatAccountBalances(balances)
+	}
+
+	return msg
+}
+
+// formatAccountBalances formats account balances for display.
+func formatAccountBalances(balances []AccountBalance) string {
+	msg := "<b>Account Balances</b>\n"
+	for _, b := range balances {
+		sign := ""
+		if b.Balance > 0 {
+			sign = "+"
+		}
+		msg += fmt.Sprintf(" %s    %s$%.2f\n", escapeHTML(b.AccountName), sign, b.Balance)
+	}
 	return msg
 }
 
@@ -86,12 +106,10 @@ func formatFullBreakdown(result *SummaryResult, from time.Time, to time.Time) st
 		return msg
 	}
 
-	types := []string{"expense", "income", "savings", "investment"}
+	types := []string{"expense", "income"}
 	typeLabels := map[string]string{
-		"expense":    "Expenses",
-		"income":     "Income",
-		"savings":    "Savings",
-		"investment": "Investments",
+		"expense": "Expenses",
+		"income":  "Income",
 	}
 
 	for _, t := range types {

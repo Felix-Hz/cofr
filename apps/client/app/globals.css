@@ -188,7 +188,7 @@ h6 {
 .recharts-wrapper *:focus,
 .recharts-wrapper *:focus-visible,
 .recharts-wrapper *:focus-within {
-  outline: none !important;
-  box-shadow: none !important;
+  outline: none;
+  box-shadow: none;
   -webkit-tap-highlight-color: transparent;
 }

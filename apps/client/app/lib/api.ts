@@ -1,5 +1,10 @@
 import { getToken, removeToken } from "./auth";
 import {
+  type Account,
+  type AccountBalance,
+  AccountBalanceSchema,
+  type AccountCreate,
+  AccountSchema,
   type Category,
   type CategoryCreate,
   CategorySchema,
@@ -14,6 +19,9 @@ import {
   type ExpenseUpdate,
   type MonthlyStats,
   MonthlyStatsSchema,
+  type TransferCreate,
+  type TransferResponse,
+  TransferResponseSchema,
 } from "./schemas";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5173";
@@ -98,6 +106,47 @@ export async function toggleCategory(id: string): Promise<{ is_active: boolean }
     method: "PATCH",
   });
   return response.json();
+}
+
+// ── Accounts ──
+
+export async function getAccounts(): Promise<Account[]> {
+  const response = await fetchWithAuth("/accounts/");
+  const json = await response.json();
+  return json.map((a: unknown) => AccountSchema.parse(a));
+}
+
+export async function createAccount(data: AccountCreate): Promise<Account> {
+  const response = await fetchWithAuth("/accounts/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  const json = await response.json();
+  return AccountSchema.parse(json);
+}
+
+export async function updateAccount(id: string, data: { name?: string }): Promise<Account> {
+  const response = await fetchWithAuth(`/accounts/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  const json = await response.json();
+  return AccountSchema.parse(json);
+}
+
+export async function deleteAccount(id: string): Promise<{ success: boolean; message: string }> {
+  const response = await fetchWithAuth(`/accounts/${id}`, {
+    method: "DELETE",
+  });
+  return response.json();
+}
+
+export async function getAccountBalances(currency?: string): Promise<AccountBalance[]> {
+  const params = new URLSearchParams();
+  if (currency) params.set("currency", currency);
+  const response = await fetchWithAuth(`/accounts/balances?${params}`);
+  const json = await response.json();
+  return json.map((b: unknown) => AccountBalanceSchema.parse(b));
 }
 
 // ── Expenses ──
@@ -205,6 +254,40 @@ export async function deleteExpense(id: string): Promise<ExpenseDeleteResponse> 
   return ExpenseDeleteResponseSchema.parse(json);
 }
 
+// ── Transfers ──
+
+export async function createTransfer(data: TransferCreate): Promise<TransferResponse> {
+  const response = await fetchWithAuth(`/transfers/`, {
+    method: "POST",
+    body: JSON.stringify({
+      ...data,
+      created_at: data.created_at?.toISOString(),
+    }),
+  });
+  const json = await response.json();
+  return TransferResponseSchema.parse(json);
+}
+
+export async function updateTransfer(id: string, data: TransferCreate): Promise<TransferResponse> {
+  const response = await fetchWithAuth(`/transfers/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      ...data,
+      created_at: data.created_at?.toISOString(),
+    }),
+  });
+  const json = await response.json();
+  return TransferResponseSchema.parse(json);
+}
+
+export async function deleteTransfer(id: string): Promise<ExpenseDeleteResponse> {
+  const response = await fetchWithAuth(`/transfers/${id}`, {
+    method: "DELETE",
+  });
+  const json = await response.json();
+  return ExpenseDeleteResponseSchema.parse(json);
+}
+
 // ── Account / Provider Linking ──
 
 export async function getLinkedProviders(): Promise<
@@ -239,6 +322,7 @@ export async function initTelegramLink(): Promise<{ code: string; deep_link: str
 export async function getPreferences(): Promise<{
   preferred_currency: string;
   session_timeout_minutes: number | null;
+  default_account_id: string | null;
 }> {
   const response = await fetchWithAuth("/account/preferences");
   return response.json();
@@ -247,7 +331,12 @@ export async function getPreferences(): Promise<{
 export async function updatePreferences(data: {
   preferred_currency?: string;
   session_timeout_minutes?: number | null;
-}): Promise<{ preferred_currency: string; session_timeout_minutes: number | null }> {
+  default_account_id?: string;
+}): Promise<{
+  preferred_currency: string;
+  session_timeout_minutes: number | null;
+  default_account_id: string | null;
+}> {
   const response = await fetchWithAuth("/account/preferences", {
     method: "PUT",
     body: JSON.stringify(data),
@@ -325,7 +414,7 @@ export async function changePassword(
 
 // ── Account Deletion ──
 
-export async function deleteAccount(
+export async function deleteUserAccount(
   mode: "soft" | "hard",
   confirmationText: string,
   password?: string,

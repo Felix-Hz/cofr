@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.auth.jwt import create_access_token
 from app.database import get_db
 from app.db.models import AuthProvider, User
+from app.services.account_service import ensure_system_accounts
 
 router = APIRouter(prefix="/auth/local", tags=["Local Auth"])
 
@@ -84,6 +85,7 @@ async def register(body: RegisterRequest, db: Session = Depends(get_db)):
         password_hash=_hash_password(body.password),
     )
     db.add(auth_provider)
+    ensure_system_accounts(db, user)
     db.commit()
 
     token = create_access_token(user_id=str(user.id), username=body.name or email_normalized)

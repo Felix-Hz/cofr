@@ -11,8 +11,9 @@ import (
 type FlowType string
 
 const (
-	FlowAdd  FlowType = "add"
-	FlowEdit FlowType = "edit"
+	FlowAdd      FlowType = "add"
+	FlowEdit     FlowType = "edit"
+	FlowTransfer FlowType = "transfer"
 )
 
 // FlowStep represents the current step in a guided flow.
@@ -31,6 +32,13 @@ const (
 	StepEditCategory      FlowStep = "edit_category"
 	StepEditCurrency      FlowStep = "edit_currency"
 	StepEditNotes         FlowStep = "edit_notes"
+	// Transfer flow steps
+	StepSelectFromAccount FlowStep = "select_from_account"
+	StepSelectToAccount   FlowStep = "select_to_account"
+	StepTransferAmount    FlowStep = "transfer_amount"
+	StepTransferConfirm   FlowStep = "transfer_confirm"
+	StepTransferNotes     FlowStep = "transfer_notes"
+	StepTransferCurrency  FlowStep = "transfer_currency"
 )
 
 // FlowSession stores the state of an active multi-step flow.
@@ -51,6 +59,11 @@ type FlowSession struct {
 	CreatedAt        time.Time
 	// Short ID mapping for callback data (UUID is too long for 64-byte callback limit)
 	IDMap map[string]uuid.UUID
+	// Transfer flow fields
+	FromAccountID   uuid.UUID
+	FromAccountName string
+	ToAccountID     uuid.UUID
+	ToAccountName   string
 }
 
 const sessionTTL = 5 * time.Minute

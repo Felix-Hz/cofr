@@ -1,70 +1,67 @@
 import { useEffect, useState } from "react";
 import { useAccounts } from "~/lib/accounts";
-import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
-import type { Expense, ExpenseCreate } from "~/lib/schemas";
+import type { Expense, TransferCreate } from "~/lib/schemas";
 
-interface ExpenseFormModalProps {
+interface TransferFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: ExpenseCreate) => Promise<void>;
+  onSubmit: (data: TransferCreate) => Promise<void>;
   onDelete?: () => Promise<void>;
   expense?: Expense | null;
   isLoading?: boolean;
 }
 
-export default function ExpenseFormModal({
+export default function TransferFormModal({
   isOpen,
   onClose,
   onSubmit,
   onDelete,
   expense,
   isLoading = false,
-}: ExpenseFormModalProps) {
-  const { activeCategories } = useCategories();
+}: TransferFormModalProps) {
   const { accounts } = useAccounts();
+  const [fromAccountId, setFromAccountId] = useState("");
+  const [toAccountId, setToAccountId] = useState("");
   const [amount, setAmount] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [accountId, setAccountId] = useState("");
   const [description, setDescription] = useState("");
   const [currency, setCurrency] = useState("NZD");
   const [date, setDate] = useState("");
-  const [isOpeningBalance, setIsOpeningBalance] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isEditMode = !!expense;
-
-  // Default to first active category or Miscellaneous
-  const defaultCategoryId =
-    activeCategories.find((c) => c.slug === "miscellaneous")?.id || activeCategories[0]?.id || "";
-
+  const sameAccountError = fromAccountId && toAccountId && fromAccountId === toAccountId;
   const storedDefaultAccountId =
     typeof window !== "undefined" ? localStorage.getItem("cofr_default_account_id") : null;
-  const defaultAccountId =
+  const defaultFromAccountId =
     accounts.find((account) => account.id === storedDefaultAccountId)?.id || accounts[0]?.id || "";
+  const defaultToAccountId =
+    accounts.find((account) => account.id !== defaultFromAccountId)?.id || "";
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: isOpen resets form when modal reopens
+  // biome-ignore lint/correctness/useExhaustiveDependencies: isOpen resets form
   useEffect(() => {
     if (expense) {
+      // Edit mode: expense is the 'from' side of the transfer
+      setFromAccountId(expense.account_id);
       setAmount(expense.amount.toString());
-      setCategoryId(expense.category_id || defaultCategoryId);
-      setAccountId(expense.account_id || defaultAccountId);
       setDescription(expense.description);
       setCurrency(expense.currency);
-      setIsOpeningBalance(expense.is_opening_balance);
       setShowDeleteConfirm(false);
       const d = new Date(expense.created_at);
       const pad = (n: number) => n.toString().padStart(2, "0");
       setDate(
         `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`,
       );
+      // We need to figure out the 'to' account from the description pattern or linked tx
+      // The description shows "AccountA -> AccountB", parse it if possible
+      // For now, we'll need the linked tx's account_name. We store the to account from the description.
+      setToAccountId("");
     } else {
+      setFromAccountId(defaultFromAccountId);
+      setToAccountId(defaultToAccountId);
       setAmount("");
-      setCategoryId(defaultCategoryId);
-      setAccountId(defaultAccountId);
       setDescription("");
       setCurrency("NZD");
-      setIsOpeningBalance(false);
       setShowDeleteConfirm(false);
       const now = new Date();
       const pad = (n: number) => n.toString().padStart(2, "0");
@@ -72,19 +69,19 @@ export default function ExpenseFormModal({
         `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
       );
     }
-  }, [expense, isOpen, defaultCategoryId, defaultAccountId]);
+  }, [expense, isOpen, defaultFromAccountId, defaultToAccountId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (sameAccountError) return;
 
-    const data: ExpenseCreate = {
+    const data: TransferCreate = {
       amount: parseFloat(amount),
-      category_id: categoryId,
+      from_account_id: fromAccountId,
+      to_account_id: toAccountId,
       description,
       currency,
       created_at: date ? new Date(date) : undefined,
-      is_opening_balance: isOpeningBalance,
-      account_id: accountId || undefined,
     };
 
     await onSubmit(data);
@@ -100,26 +97,30 @@ export default function ExpenseFormModal({
 
         {/* Modal */}
         <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6">
-          <h3 className="text-lg font-semibold mb-4">
-            {isEditMode ? "Edit Transaction" : "Add Transaction"}
+          <h3 className="text-lg font-semibold text-content-primary mb-4">
+            {isEditMode ? "Edit Transfer" : "New Transfer"}
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Account */}
-            {accounts.length > 0 && (
-              <div>
+            {/* From / To accounts */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+              <div className="flex-1">
                 <label
-                  htmlFor="account"
-                  className="block text-sm font-medium text-content-secondary mb-1"
+                  htmlFor="from-account"
+                  className="block text-xs font-medium text-content-secondary mb-1"
                 >
-                  Account
+                  From
                 </label>
                 <select
-                  id="account"
-                  value={accountId}
-                  onChange={(e) => setAccountId(e.target.value)}
+                  id="from-account"
+                  value={fromAccountId}
+                  onChange={(e) => setFromAccountId(e.target.value)}
                   className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  required
                 >
+                  <option value="" disabled>
+                    Select account
+                  </option>
                   {accounts.map((acct) => (
                     <option key={acct.id} value={acct.id}>
                       {acct.name}
@@ -127,19 +128,60 @@ export default function ExpenseFormModal({
                   ))}
                 </select>
               </div>
+
+              {/* Arrow icon */}
+              <div className="hidden sm:flex w-8 h-8 items-center justify-center rounded-full bg-accent-soft-bg text-accent-soft-text shrink-0 self-center mt-4">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14 5l7 7m0 0l-7 7m7-7H3"
+                  />
+                </svg>
+              </div>
+
+              <div className="flex-1">
+                <label
+                  htmlFor="to-account"
+                  className="block text-xs font-medium text-content-secondary mb-1"
+                >
+                  To
+                </label>
+                <select
+                  id="to-account"
+                  value={toAccountId}
+                  onChange={(e) => setToAccountId(e.target.value)}
+                  className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  required
+                >
+                  <option value="" disabled>
+                    Select account
+                  </option>
+                  {accounts.map((acct) => (
+                    <option key={acct.id} value={acct.id}>
+                      {acct.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {sameAccountError && (
+              <p className="text-xs text-warning-text">Cannot transfer to the same account</p>
             )}
 
             {/* Amount */}
             <div>
               <label
-                htmlFor="amount"
+                htmlFor="transfer-amount"
                 className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Amount
               </label>
               <input
                 type="number"
-                id="amount"
+                id="transfer-amount"
                 step="0.01"
                 min="0"
                 value={amount}
@@ -149,38 +191,16 @@ export default function ExpenseFormModal({
               />
             </div>
 
-            {/* Category */}
-            <div>
-              <label
-                htmlFor="category"
-                className="block text-sm font-medium text-content-secondary mb-1"
-              >
-                Category
-              </label>
-              <select
-                id="category"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-              >
-                {activeCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* Description */}
             <div>
               <label
-                htmlFor="description"
+                htmlFor="transfer-description"
                 className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Description
               </label>
               <textarea
-                id="description"
+                id="transfer-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={360}
@@ -196,13 +216,13 @@ export default function ExpenseFormModal({
             {/* Currency */}
             <div>
               <label
-                htmlFor="currency"
+                htmlFor="transfer-currency"
                 className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Currency
               </label>
               <select
-                id="currency"
+                id="transfer-currency"
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
                 className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
@@ -218,33 +238,19 @@ export default function ExpenseFormModal({
             {/* Date */}
             <div>
               <label
-                htmlFor="date"
+                htmlFor="transfer-date"
                 className="block text-sm font-medium text-content-secondary mb-1"
               >
                 Date
               </label>
               <input
                 type="datetime-local"
-                id="date"
+                id="transfer-date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
               />
             </div>
-
-            {/* Opening Balance */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isOpeningBalance}
-                onChange={(e) => setIsOpeningBalance(e.target.checked)}
-                className="w-4 h-4 rounded border-edge-strong text-emerald focus:ring-emerald accent-emerald"
-              />
-              <span className="text-sm text-content-secondary">
-                Opening balance
-                <span className="text-content-tertiary"> — excluded from stats</span>
-              </span>
-            </label>
 
             {/* Actions */}
             <div className="flex justify-between pt-4">
@@ -297,9 +303,9 @@ export default function ExpenseFormModal({
                 <button
                   type="submit"
                   className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50"
-                  disabled={isLoading}
+                  disabled={isLoading || !!sameAccountError}
                 >
-                  {isLoading ? "Saving..." : isEditMode ? "Update" : "Add"}
+                  {isLoading ? "Saving..." : isEditMode ? "Save Changes" : "Transfer"}
                 </button>
               </div>
             </div>

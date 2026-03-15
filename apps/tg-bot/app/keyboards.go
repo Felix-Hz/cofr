@@ -138,9 +138,12 @@ func buildEditTransactionKeyboard(txs []*db.Transaction) (telegramClient.InlineK
 		shortID := fmt.Sprintf("%d", i)
 		idMap[shortID] = tx.ID
 
-		catName := tx.CategoryRel.Name
-		if catName == "" {
-			catName = "?"
+		catName := "Transfer"
+		if tx.CategoryRel != nil {
+			catName = tx.CategoryRel.Name
+			if catName == "" {
+				catName = "?"
+			}
 		}
 
 		notes := tx.Notes
@@ -182,6 +185,60 @@ func buildEditFieldKeyboard() telegramClient.InlineKeyboardMarkup {
 		),
 		telegramClient.NewInlineKeyboardRow(
 			telegramClient.NewInlineKeyboardButtonData("Save", "edf:save"),
+			telegramClient.NewInlineKeyboardButtonData("Cancel", "cnl:"),
+		),
+	)
+}
+
+// buildAccountKeyboard builds an inline keyboard of the user's accounts.
+func buildAccountKeyboard(userID uuid.UUID, exclude uuid.UUID) (telegramClient.InlineKeyboardMarkup, map[string]uuid.UUID, error) {
+	accounts, err := r.AccountRepo().GetByUser(userID)
+	if err != nil {
+		return telegramClient.InlineKeyboardMarkup{}, nil, err
+	}
+
+	idMap := make(map[string]uuid.UUID)
+	var rows [][]telegramClient.InlineKeyboardButton
+	var row []telegramClient.InlineKeyboardButton
+
+	idx := 0
+	for _, acct := range accounts {
+		if acct.ID == exclude {
+			continue
+		}
+		shortID := fmt.Sprintf("%d", idx)
+		idMap[shortID] = acct.ID
+		idx++
+
+		row = append(row, telegramClient.NewInlineKeyboardButtonData(acct.Name, "acct:"+shortID))
+
+		if len(row) == 3 || idx == len(accounts) {
+			rows = append(rows, row)
+			row = nil
+		}
+	}
+
+	// Flush remaining buttons
+	if len(row) > 0 {
+		rows = append(rows, row)
+	}
+
+	rows = append(rows, []telegramClient.InlineKeyboardButton{
+		telegramClient.NewInlineKeyboardButtonData("Cancel", "cnl:"),
+	})
+
+	return telegramClient.NewInlineKeyboardMarkup(rows...), idMap, nil
+}
+
+// buildTransferConfirmKeyboard builds the confirmation keyboard for a transfer flow.
+func buildTransferConfirmKeyboard() telegramClient.InlineKeyboardMarkup {
+	return telegramClient.NewInlineKeyboardMarkup(
+		telegramClient.NewInlineKeyboardRow(
+			telegramClient.NewInlineKeyboardButtonData("Confirm", "tcfm:"),
+			telegramClient.NewInlineKeyboardButtonData("Currency", "tcur:pick"),
+			telegramClient.NewInlineKeyboardButtonData("Notes", "tnote:"),
+		),
+		telegramClient.NewInlineKeyboardRow(
 			telegramClient.NewInlineKeyboardButtonData("Cancel", "cnl:"),
 		),
 	)

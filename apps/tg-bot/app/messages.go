@@ -32,13 +32,16 @@ func generateSuccessMessage(r CommandResult) string {
 
 // formatHTMLReceipt formats a single transaction as an HTML receipt.
 func formatHTMLReceipt(operation Command, tx *Transaction) string {
-	catName := tx.CategoryRel.Name
-	if catName == "" {
-		catName = "Unknown"
-	}
+	catName := "Transfer"
 	icon := ""
-	if tx.CategoryRel.Icon != nil && *tx.CategoryRel.Icon != "" {
-		icon = *tx.CategoryRel.Icon + " "
+	if tx.CategoryRel != nil {
+		catName = tx.CategoryRel.Name
+		if catName == "" {
+			catName = "Unknown"
+		}
+		if tx.CategoryRel.Icon != nil && *tx.CategoryRel.Icon != "" {
+			icon = *tx.CategoryRel.Icon + " "
+		}
 	}
 
 	header := operationHeaders[operation]
@@ -73,9 +76,12 @@ func txSuccessMessage(operation Command, txs []*Transaction) string {
 	msg := fmt.Sprintf("<b>%s</b>\n%s\n", operationHeaders[operation], SEPARATOR)
 
 	for _, tx := range txs {
-		catName := tx.CategoryRel.Name
-		if catName == "" {
-			catName = "Unknown"
+		catName := "Transfer"
+		if tx.CategoryRel != nil {
+			catName = tx.CategoryRel.Name
+			if catName == "" {
+				catName = "Unknown"
+			}
 		}
 		notes := ""
 		if tx.Notes != "" {
@@ -156,6 +162,7 @@ var operationHeaders = map[Command]string{
 	Edit:          "Expense Updated",
 	Configuration: "Configuration",
 	Summary:       "Summary",
+	Transfer:      "Transfer Complete",
 }
 
 // userErrors maps command types to user-friendly error messages.
@@ -200,6 +207,21 @@ Usage:
 
 After selecting, tap a field to change it,
 then tap "Save" to commit changes.
+`
+
+const helpTransferText = `
+Command: /transfer
+
+Transfer money between accounts.
+
+Usage:
+  /transfer — Guided flow with buttons
+
+Steps:
+  1. Select the "from" account
+  2. Select the "to" account
+  3. Enter the amount
+  4. Confirm (optionally change currency or add notes)
 `
 
 // userHelp contains detailed help messages for each command.
@@ -282,6 +304,7 @@ Note:
 
 <b>Quick Add</b> — just type: G 45 Lunch
 <b>/add</b> — Record an expense or income
+<b>/transfer</b> — Transfer between accounts
 <b>/list</b> — View recent transactions
 <b>/summary</b> — Spending summary
 <b>/edit</b> — Edit a recent transaction

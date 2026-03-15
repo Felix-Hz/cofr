@@ -52,10 +52,19 @@ class User(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     link_code: Mapped[str | None] = mapped_column(String, nullable=True)
     link_code_expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    default_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        SaUuid, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True
+    )
 
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="user")
     auth_providers: Mapped[list["AuthProvider"]] = relationship(back_populates="user")
     categories: Mapped[list["Category"]] = relationship(back_populates="user")
+    default_account: Mapped["Account | None"] = relationship(
+        foreign_keys=[default_account_id], back_populates="default_for_users"
+    )
+    accounts: Mapped[list["Account"]] = relationship(
+        back_populates="user", foreign_keys="Account.user_id"
+    )
 
 
 class Category(Base):
@@ -94,12 +103,36 @@ class UserCategoryPreference(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
+class Account(Base):
+    __tablename__ = "accounts"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_account_user_name"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(60))
+    type: Mapped[str] = mapped_column(String(20))
+    is_system: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
+    display_order: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped["User"] = relationship(back_populates="accounts", foreign_keys=[user_id])
+    default_for_users: Mapped[list["User"]] = relationship(
+        back_populates="default_account", foreign_keys="User.default_account_id"
+    )
+    transactions: Mapped[list["Transaction"]] = relationship(back_populates="account_rel")
+
+
 class Transaction(Base):
     __tablename__ = "transactions"
 
     id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(SaUuid, ForeignKey("users.id"), index=True)
-    category_id: Mapped[uuid.UUID] = mapped_column(SaUuid, ForeignKey("categories.id"), index=True)
+    category_id: Mapped[uuid.UUID | None] = mapped_column(
+        SaUuid, ForeignKey("categories.id"), index=True, nullable=True
+    )
+    account_id: Mapped[uuid.UUID] = mapped_column(SaUuid, ForeignKey("accounts.id"), index=True)
     amount: Mapped[float] = mapped_column(Float)
     currency: Mapped[str] = mapped_column(String, default="NZD", index=True)
     notes: Mapped[str] = mapped_column(String, default="")
@@ -116,9 +149,15 @@ class Transaction(Base):
     is_opening_balance: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default=text("false")
     )
+    linked_transaction_id: Mapped[uuid.UUID | None] = mapped_column(
+        SaUuid, ForeignKey("transactions.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+    is_transfer: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    transfer_direction: Mapped[str | None] = mapped_column(String(4), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="transactions")
-    category_rel: Mapped["Category"] = relationship(back_populates="transactions")
+    category_rel: Mapped["Category | None"] = relationship(back_populates="transactions")
+    account_rel: Mapped["Account"] = relationship(back_populates="transactions")
 
 
 class Offset(Base):

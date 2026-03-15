@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import PasswordInput from "~/components/PasswordInput";
-import { deleteAccount } from "~/lib/api";
+import { deleteUserAccount } from "~/lib/api";
 import { removeToken } from "~/lib/auth";
 
 interface DeleteAccountModalProps {
@@ -46,7 +46,7 @@ export default function DeleteAccountModal({
     setError(null);
     setLoading(true);
     try {
-      await deleteAccount(mode, confirmationText, hasLocalAuth ? password : undefined);
+      await deleteUserAccount(mode, confirmationText, hasLocalAuth ? password : undefined);
       removeToken();
       navigate("/");
     } catch (err) {

@@ -5,8 +5,9 @@ from sqlalchemy import case, func
 from sqlalchemy import false as sa_false
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.models import Category, Transaction, User
+from app.db.models import Account, Category, Transaction, User
 from app.db.schemas import (
+    AccountBalance,
     CategoryTotal,
     ExpenseCreateRequest,
     ExpenseSchema,
@@ -49,7 +50,7 @@ class ExpenseService:
 
         transactions = (
             self.db.query(Transaction)
-            .options(joinedload(Transaction.category_rel))
+            .options(joinedload(Transaction.category_rel), joinedload(Transaction.account_rel))
             .filter(*filters)
             .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
@@ -72,7 +73,7 @@ class ExpenseService:
 
         transactions = (
             self.db.query(Transaction)
-            .options(joinedload(Transaction.category_rel))
+            .options(joinedload(Transaction.category_rel), joinedload(Transaction.account_rel))
             .filter(Transaction.user_id == user_id, Transaction.category_id == category_id)
             .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
@@ -102,7 +103,7 @@ class ExpenseService:
 
         transactions = (
             self.db.query(Transaction)
-            .options(joinedload(Transaction.category_rel))
+            .options(joinedload(Transaction.category_rel), joinedload(Transaction.account_rel))
             .filter(*base_filter)
             .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
             .limit(limit)
@@ -122,14 +123,17 @@ class ExpenseService:
             func.extract("month", Transaction.timestamp) == month,
             func.extract("year", Transaction.timestamp) == year,
             Transaction.is_opening_balance == sa_false(),
+            Transaction.is_transfer == sa_false(),
         ]
 
         if currency:
             base_filter.append(Transaction.currency == currency)
-            return self._aggregate_sql(base_filter, currency)
+            stats = self._aggregate_sql(base_filter, currency)
+        else:
+            stats = self._aggregate_with_conversion(base_filter, user_id)
 
-        # All currencies — convert to user's preferred currency
-        return self._aggregate_with_conversion(base_filter, user_id)
+        stats.account_balances = self.get_account_balances(user_id)
+        return stats
 
     async def get_range_stats(
         self, user_id: str, start_date: datetime, end_date: datetime, currency: str | None = None
@@ -140,14 +144,17 @@ class ExpenseService:
             Transaction.timestamp >= start_date,
             Transaction.timestamp <= end_date,
             Transaction.is_opening_balance == sa_false(),
+            Transaction.is_transfer == sa_false(),
         ]
 
         if currency:
             base_filter.append(Transaction.currency == currency)
-            return self._aggregate_sql(base_filter, currency)
+            stats = self._aggregate_sql(base_filter, currency)
+        else:
+            stats = self._aggregate_with_conversion(base_filter, user_id)
 
-        # All currencies — convert to user's preferred currency
-        return self._aggregate_with_conversion(base_filter, user_id)
+        stats.account_balances = self.get_account_balances(user_id)
+        return stats
 
     def _aggregate_sql(self, base_filter: list, currency: str) -> MonthlyStats:
         """Aggregate stats using SQL (single-currency path)."""
@@ -166,14 +173,6 @@ class ExpenseService:
                     func.sum(case((Category.type == "income", Transaction.amount), else_=0)),
                     0,
                 ).label("total_income"),
-                func.coalesce(
-                    func.sum(case((Category.type == "savings", Transaction.amount), else_=0)),
-                    0,
-                ).label("total_savings"),
-                func.coalesce(
-                    func.sum(case((Category.type == "investment", Transaction.amount), else_=0)),
-                    0,
-                ).label("total_investment"),
                 func.count(case((Category.type == "expense", 1))).label("expense_count"),
                 func.count(Transaction.id).label("transaction_count"),
             )
@@ -221,8 +220,6 @@ class ExpenseService:
         return MonthlyStats(
             total_spent=summary.total_spent if summary else 0,
             total_income=summary.total_income if summary else 0,
-            total_savings=summary.total_savings if summary else 0,
-            total_investment=summary.total_investment if summary else 0,
             transaction_count=summary.transaction_count if summary else 0,
             expense_count=summary.expense_count if summary else 0,
             category_breakdown=category_breakdown,
@@ -244,14 +241,14 @@ class ExpenseService:
 
         total_spent = 0.0
         total_income = 0.0
-        total_savings = 0.0
-        total_investment = 0.0
         expense_count = 0
         cat_totals: dict[str, dict] = {}
 
         for tx in transactions:
             amt = convert(tx.amount, tx.currency, preferred, rates)
             cat = tx.category_rel
+            if not cat:
+                continue
             cat_key = str(tx.category_id)
 
             if cat_key not in cat_totals:
@@ -268,10 +265,6 @@ class ExpenseService:
 
             if cat.type == "income":
                 total_income += amt
-            elif cat.type == "savings":
-                total_savings += amt
-            elif cat.type == "investment":
-                total_investment += amt
             else:
                 total_spent += amt
                 expense_count += 1
@@ -296,8 +289,6 @@ class ExpenseService:
         return MonthlyStats(
             total_spent=total_spent,
             total_income=total_income,
-            total_savings=total_savings,
-            total_investment=total_investment,
             transaction_count=len(transactions),
             expense_count=expense_count,
             category_breakdown=category_breakdown,
@@ -305,11 +296,55 @@ class ExpenseService:
             is_converted=True,
         )
 
+    def get_account_balances(self, user_id: str) -> list[AccountBalance]:
+        """Calculate balance for each of the user's accounts."""
+        accounts = (
+            self.db.query(Account)
+            .filter(Account.user_id == user_id)
+            .order_by(Account.display_order)
+            .all()
+        )
+
+        balances = []
+        for account in accounts:
+            # Sum all transactions for this account with sign:
+            # - income type or transfer 'to' = positive
+            # - expense type or transfer 'from' = negative
+            txs = (
+                self.db.query(Transaction)
+                .outerjoin(Category, Transaction.category_id == Category.id)
+                .filter(Transaction.account_id == account.id)
+                .all()
+            )
+
+            balance = 0.0
+            for tx in txs:
+                if tx.is_transfer:
+                    if tx.transfer_direction == "to":
+                        balance += tx.amount
+                    else:
+                        balance -= tx.amount
+                elif tx.category_rel and tx.category_rel.type == "income":
+                    balance += tx.amount
+                else:
+                    balance -= tx.amount
+
+            balances.append(
+                AccountBalance(
+                    account_id=str(account.id),
+                    account_name=account.name,
+                    account_type=account.type,
+                    balance=balance,
+                )
+            )
+
+        return balances
+
     async def get_expense_by_id(self, user_id: str, expense_id: str) -> ExpenseSchema:
         """Get single expense with ownership check"""
         transaction = (
             self.db.query(Transaction)
-            .options(joinedload(Transaction.category_rel))
+            .options(joinedload(Transaction.category_rel), joinedload(Transaction.account_rel))
             .filter(Transaction.id == expense_id, Transaction.user_id == user_id)
             .first()
         )
@@ -322,10 +357,28 @@ class ExpenseService:
         """Create a new expense"""
         created_at = data.created_at or datetime.now(UTC)
 
+        # Resolve account_id: use provided or fall back to user's default
+        account_id = data.account_id
+        if not account_id:
+            user = self.db.query(User).filter(User.id == user_id).first()
+            if user and user.default_account_id:
+                account_id = str(user.default_account_id)
+            else:
+                # Fall back to first account
+                first_account = (
+                    self.db.query(Account)
+                    .filter(Account.user_id == user_id)
+                    .order_by(Account.display_order)
+                    .first()
+                )
+                if first_account:
+                    account_id = str(first_account.id)
+
         transaction = Transaction(
             user_id=user_id,
             amount=data.amount,
             category_id=data.category_id,
+            account_id=account_id,
             notes=data.description,
             timestamp=created_at,
             currency=data.currency,
@@ -361,6 +414,8 @@ class ExpenseService:
             transaction.timestamp = data.created_at
         if data.is_opening_balance is not None:
             transaction.is_opening_balance = data.is_opening_balance
+        if data.account_id is not None:
+            transaction.account_id = data.account_id
 
         self.db.commit()
         self.db.refresh(transaction)
@@ -368,7 +423,7 @@ class ExpenseService:
         return self._to_schema(transaction)
 
     async def delete_expense(self, user_id: str, expense_id: str) -> bool:
-        """Delete an expense with ownership verification"""
+        """Delete an expense with ownership verification. Also deletes linked transfer."""
         transaction = (
             self.db.query(Transaction)
             .filter(Transaction.id == expense_id, Transaction.user_id == user_id)
@@ -376,6 +431,20 @@ class ExpenseService:
         )
         if not transaction:
             raise HTTPException(status_code=404, detail="Expense not found")
+
+        # If this is a transfer, delete the linked transaction too
+        if transaction.linked_transaction_id:
+            linked = (
+                self.db.query(Transaction)
+                .filter(Transaction.id == transaction.linked_transaction_id)
+                .first()
+            )
+            if linked:
+                # Clear linked refs to avoid FK constraint issues
+                linked.linked_transaction_id = None
+                transaction.linked_transaction_id = None
+                self.db.flush()
+                self.db.delete(linked)
 
         self.db.delete(transaction)
         self.db.commit()
@@ -385,16 +454,24 @@ class ExpenseService:
     def _to_schema(transaction: Transaction) -> ExpenseSchema:
         """Convert a Transaction ORM object to ExpenseSchema"""
         cat = transaction.category_rel
+        account = transaction.account_rel
         return ExpenseSchema(
             id=str(transaction.id),
             amount=transaction.amount,
-            category_id=str(transaction.category_id),
-            category_name=cat.name,
-            category_color_light=cat.color_light,
-            category_color_dark=cat.color_dark,
-            category_type=cat.type,
+            category_id=str(transaction.category_id) if transaction.category_id else None,
+            category_name=cat.name if cat else "Transfer",
+            category_color_light=cat.color_light if cat else "#6B7280",
+            category_color_dark=cat.color_dark if cat else "#9CA3AF",
+            category_type=cat.type if cat else "transfer",
             description=transaction.notes or "",
             created_at=transaction.timestamp,
             currency=transaction.currency,
             is_opening_balance=transaction.is_opening_balance,
+            account_id=str(transaction.account_id),
+            account_name=account.name if account else "",
+            is_transfer=transaction.is_transfer,
+            linked_transaction_id=str(transaction.linked_transaction_id)
+            if transaction.linked_transaction_id
+            else None,
+            transfer_direction=transaction.transfer_direction,
         )

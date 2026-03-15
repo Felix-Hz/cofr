@@ -66,7 +66,7 @@ export default function CategoryFormModal({
         name,
         color_light: colorLight,
         color_dark: colorDark,
-        type: type as "expense" | "income" | "savings" | "investment",
+        type: type as "expense" | "income",
         alias: alias || null,
       });
     } catch (err) {
@@ -162,8 +162,6 @@ export default function CategoryFormModal({
               >
                 <option value="expense">Expense</option>
                 <option value="income">Income</option>
-                <option value="savings">Savings</option>
-                <option value="investment">Investment</option>
               </select>
             </div>
 

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_user_id
 from app.config import settings
 from app.database import get_db
-from app.db.models import AuthProvider, Transaction, User
+from app.db.models import Account, AuthProvider, Transaction, User
 
 router = APIRouter(prefix="/account", tags=["Account"])
 
@@ -34,11 +34,13 @@ VALID_TIMEOUT_VALUES = {0, 1, 5, 15, 30, 60, 120, 240}
 class PreferencesResponse(BaseModel):
     preferred_currency: str
     session_timeout_minutes: int | None
+    default_account_id: str | None = None
 
 
 class PreferencesUpdate(BaseModel):
     preferred_currency: str | None = None
     session_timeout_minutes: int | None = None
+    default_account_id: str | None = None
 
     @field_validator("session_timeout_minutes")
     @classmethod
@@ -221,6 +223,7 @@ async def get_preferences(
     return PreferencesResponse(
         preferred_currency=user.preferred_currency,
         session_timeout_minutes=user.session_timeout_minutes,
+        default_account_id=str(user.default_account_id) if user.default_account_id else None,
     )
 
 
@@ -238,10 +241,13 @@ async def update_preferences(
         user.preferred_currency = data.preferred_currency
     if "session_timeout_minutes" in data.model_fields_set:
         user.session_timeout_minutes = data.session_timeout_minutes
+    if data.default_account_id is not None:
+        user.default_account_id = data.default_account_id
     db.commit()
     return PreferencesResponse(
         preferred_currency=user.preferred_currency,
         session_timeout_minutes=user.session_timeout_minutes,
+        default_account_id=str(user.default_account_id) if user.default_account_id else None,
     )
 
 
@@ -304,8 +310,12 @@ async def delete_account(
             message="Account deactivated. Log back in anytime to reactivate.",
         )
 
-    # Hard delete: remove transactions, auth providers, then user
+    # Hard delete: remove transactions, accounts, auth providers, then user
+    # Clear default_account_id FK before deleting accounts
+    user.default_account_id = None
+    db.flush()
     db.query(Transaction).filter(Transaction.user_id == user_id).delete()
+    db.query(Account).filter(Account.user_id == user_id).delete()
     db.query(AuthProvider).filter(AuthProvider.user_id == user_id).delete()
     db.delete(user)
     db.commit()

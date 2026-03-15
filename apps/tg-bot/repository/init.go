@@ -7,6 +7,7 @@ type Repositories struct {
 	OffsetRepo      IOffsetRepository
 	TransactionRepo ITransactionRepository
 	CategoryRepo    ICategoryRepository
+	AccountRepo     IAccountRepository
 }
 
 var instance *Repositories
@@ -17,6 +18,7 @@ func InitRepositories(db *gorm.DB) {
 		OffsetRepo:      OffsetRepositoryImpl(db),
 		TransactionRepo: TransactionRepositoryImpl(db),
 		CategoryRepo:    CategoryRepositoryImpl(db),
+		AccountRepo:     AccountRepositoryImpl(db),
 	}
 }
 
@@ -34,4 +36,8 @@ func TxRepo() ITransactionRepository {
 
 func CategoryRepo() ICategoryRepository {
 	return instance.CategoryRepo
+}
+
+func AccountRepo() IAccountRepository {
+	return instance.AccountRepo
 }

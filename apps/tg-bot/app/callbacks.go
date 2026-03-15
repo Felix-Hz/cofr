@@ -50,6 +50,14 @@ func HandleCallbackQuery(bot *telegramClient.BotAPI, query *telegramClient.Callb
 		handleEditSelectCallback(bot, chatID, messageID, param)
 	case "edf":
 		handleEditFieldCallback(bot, chatID, messageID, param)
+	case "acct":
+		handleAccountCallback(bot, chatID, messageID, param)
+	case "tcfm":
+		handleTransferConfirmCallback(bot, chatID, messageID)
+	case "tcur":
+		handleTransferCurrencyCallback(bot, chatID, messageID, param)
+	case "tnote":
+		handleTransferNotesCallback(bot, chatID, messageID)
 	case "sum":
 		handleSummaryCallback(bot, chatID, messageID, param)
 	case "ob":
@@ -149,6 +157,13 @@ func handleCurrencyCallback(bot *telegramClient.BotAPI, chatID int64, messageID 
 		Sessions.Set(chatID, session)
 		showEditDetails(bot, chatID, messageID, session)
 	}
+
+	// If transfer currency
+	if session.Flow == FlowTransfer {
+		session.Step = StepTransferConfirm
+		Sessions.Set(chatID, session)
+		showTransferConfirmation(bot, chatID, messageID, session)
+	}
 }
 
 // --- Confirm add ---
@@ -176,13 +191,24 @@ func commitGuidedAdd(bot *telegramClient.BotAPI, chatID int64, messageID int, se
 		return
 	}
 
+	// Resolve account
+	user, err := r.UserRepo().GetByID(session.UserID)
+	if err != nil {
+		editHTML(bot, chatID, messageID, "Failed to load user data.", nil)
+		Sessions.Delete(chatID)
+		return
+	}
+	accountID := resolveAccountID(user)
+	catID := session.CategoryID
+
 	txs, err := r.TxRepo().Create([]*Transaction{{
 		Hash:             hash,
 		Notes:            session.Notes,
 		UserID:           session.UserID,
 		Amount:           session.Amount,
 		Currency:         session.Currency,
-		CategoryID:       session.CategoryID,
+		CategoryID:       &catID,
+		AccountID:        accountID,
 		Timestamp:        timestamp,
 		ReceiptFileID:    nilIfEmpty(session.ReceiptFileID),
 		IsOpeningBalance: session.IsOpeningBalance,
@@ -321,19 +347,21 @@ func handleEditSelectCallback(bot *telegramClient.BotAPI, chatID int64, messageI
 	}
 
 	// Look up category name
-	cats, _ := r.CategoryRepo().GetForUser(session.UserID)
-	for _, cat := range cats {
-		if cat.ID == tx.CategoryID {
-			session.CategoryName = cat.Name
-			if cat.Icon != nil {
-				session.CategoryIcon = *cat.Icon
+	if tx.CategoryID != nil {
+		cats, _ := r.CategoryRepo().GetForUser(session.UserID)
+		for _, cat := range cats {
+			if cat.ID == *tx.CategoryID {
+				session.CategoryName = cat.Name
+				if cat.Icon != nil {
+					session.CategoryIcon = *cat.Icon
+				}
+				break
 			}
-			break
 		}
+		session.CategoryID = *tx.CategoryID
 	}
 
 	session.TransactionID = txID
-	session.CategoryID = tx.CategoryID
 	session.Amount = tx.Amount
 	session.Currency = tx.Currency
 	session.Notes = tx.Notes
@@ -400,7 +428,8 @@ func commitEdit(bot *telegramClient.BotAPI, chatID int64, messageID int, session
 	tx.Amount = session.Amount
 	tx.Currency = session.Currency
 	tx.Notes = session.Notes
-	tx.CategoryID = session.CategoryID
+	catID := session.CategoryID
+	tx.CategoryID = &catID
 
 	if err := r.TxRepo().Update(tx); err != nil {
 		log.Printf("⚠️ Edit error: %v", err)
@@ -432,6 +461,187 @@ func showEditDetails(bot *telegramClient.BotAPI, chatID int64, messageID int, se
 		escapeHTML(label), session.Amount, session.Currency, escapeHTML(notes))
 
 	kb := buildEditFieldKeyboard()
+	editHTML(bot, chatID, messageID, text, &kb)
+}
+
+// --- Account selection (transfer flow) ---
+
+func handleAccountCallback(bot *telegramClient.BotAPI, chatID int64, messageID int, shortID string) {
+	session := Sessions.Get(chatID)
+	if session == nil || session.Flow != FlowTransfer {
+		return
+	}
+
+	acctID, ok := session.IDMap[shortID]
+	if !ok {
+		return
+	}
+
+	// Look up account name
+	acct, err := r.AccountRepo().GetByID(acctID, session.UserID)
+	if err != nil {
+		return
+	}
+
+	session.MessageID = messageID
+
+	if session.Step == StepSelectFromAccount {
+		session.FromAccountID = acctID
+		session.FromAccountName = acct.Name
+		session.Step = StepSelectToAccount
+
+		// Build account keyboard excluding the "from" account
+		kb, idMap, err := buildAccountKeyboard(session.UserID, acctID)
+		if err != nil || len(idMap) == 0 {
+			editHTML(bot, chatID, messageID, "No other accounts available.", nil)
+			Sessions.Delete(chatID)
+			return
+		}
+		session.IDMap = idMap
+		Sessions.Set(chatID, session)
+
+		text := fmt.Sprintf("<b>Transfer from %s</b>\n\nSelect the <b>to</b> account:",
+			escapeHTML(acct.Name))
+		editHTML(bot, chatID, messageID, text, &kb)
+
+	} else if session.Step == StepSelectToAccount {
+		session.ToAccountID = acctID
+		session.ToAccountName = acct.Name
+		session.Step = StepTransferAmount
+		Sessions.Set(chatID, session)
+
+		text := fmt.Sprintf("<b>%s → %s</b>\n\nEnter the amount:",
+			escapeHTML(session.FromAccountName), escapeHTML(acct.Name))
+		editHTML(bot, chatID, messageID, text, nil)
+	}
+}
+
+// --- Transfer confirm ---
+
+func handleTransferConfirmCallback(bot *telegramClient.BotAPI, chatID int64, messageID int) {
+	session := Sessions.Get(chatID)
+	if session == nil || session.Flow != FlowTransfer {
+		return
+	}
+	commitTransfer(bot, chatID, messageID, session)
+}
+
+func commitTransfer(bot *telegramClient.BotAPI, chatID int64, messageID int, session *FlowSession) {
+	timestamp := time.Now()
+
+	// Generate hashes for both sides
+	hashFrom := generateMessageHash(session.FromAccountID, session.Amount, session.Notes, timestamp, session.UserID, 0, session.Currency)
+	hashTo := generateMessageHash(session.ToAccountID, session.Amount, session.Notes, timestamp, session.UserID, 1, session.Currency)
+
+	dirFrom := "from"
+	dirTo := "to"
+
+	fromTx := &Transaction{
+		Hash:              hashFrom,
+		Notes:             session.Notes,
+		UserID:            session.UserID,
+		Amount:            session.Amount,
+		Currency:          session.Currency,
+		AccountID:         session.FromAccountID,
+		IsTransfer:        true,
+		TransferDirection: &dirFrom,
+		Timestamp:         timestamp,
+	}
+
+	toTx := &Transaction{
+		Hash:              hashTo,
+		Notes:             session.Notes,
+		UserID:            session.UserID,
+		Amount:            session.Amount,
+		Currency:          session.Currency,
+		AccountID:         session.ToAccountID,
+		IsTransfer:        true,
+		TransferDirection: &dirTo,
+		Timestamp:         timestamp,
+	}
+
+	// Create both transactions
+	txs, err := r.TxRepo().Create([]*Transaction{fromTx, toTx})
+	if err != nil {
+		log.Printf("⚠️ Transfer error: %v", err)
+		editHTML(bot, chatID, messageID, "Failed to save transfer.", nil)
+		Sessions.Delete(chatID)
+		return
+	}
+
+	// Link them together
+	if len(txs) == 2 {
+		txs[0].LinkedTransactionID = &txs[1].ID
+		txs[1].LinkedTransactionID = &txs[0].ID
+		r.TxRepo().Update(txs[0])
+		r.TxRepo().Update(txs[1])
+	}
+
+	Sessions.Delete(chatID)
+
+	text := fmt.Sprintf(
+		"<b>Transfer Complete</b>\n\n"+
+			"<b>%s → %s</b>\n"+
+			"<code>$%.2f %s</code>\n"+
+			"🕒 %s",
+		escapeHTML(session.FromAccountName), escapeHTML(session.ToAccountName),
+		session.Amount, session.Currency,
+		timestamp.Format("02 Jan 2006 15:04"),
+	)
+	if session.Notes != "" {
+		text += fmt.Sprintf("\n📌 %s", escapeHTML(session.Notes))
+	}
+
+	kb := buildUndoKeyboard(txs[0].ID)
+	editHTML(bot, chatID, messageID, text, &kb)
+}
+
+func handleTransferCurrencyCallback(bot *telegramClient.BotAPI, chatID int64, messageID int, param string) {
+	session := Sessions.Get(chatID)
+	if session == nil || session.Flow != FlowTransfer {
+		return
+	}
+
+	if param == "pick" {
+		user, err := r.UserRepo().GetByID(session.UserID)
+		if err != nil {
+			return
+		}
+		kb := buildCurrencyKeyboard(user.PreferredCurrency)
+		// Override callback prefix to use tcur instead of cur
+		editHTML(bot, chatID, messageID, "Select currency:", &kb)
+		return
+	}
+
+	session.Currency = param
+	session.MessageID = messageID
+	session.Step = StepTransferConfirm
+	Sessions.Set(chatID, session)
+	showTransferConfirmation(bot, chatID, messageID, session)
+}
+
+func handleTransferNotesCallback(bot *telegramClient.BotAPI, chatID int64, messageID int) {
+	session := Sessions.Get(chatID)
+	if session == nil || session.Flow != FlowTransfer {
+		return
+	}
+
+	session.Step = StepTransferNotes
+	session.MessageID = messageID
+	Sessions.Set(chatID, session)
+	editHTML(bot, chatID, messageID, "Type your notes:", nil)
+}
+
+// showTransferConfirmation shows the confirmation view during guided transfer.
+func showTransferConfirmation(bot *telegramClient.BotAPI, chatID int64, messageID int, session *FlowSession) {
+	text := fmt.Sprintf("<b>%s → %s</b> — $%.2f %s",
+		escapeHTML(session.FromAccountName), escapeHTML(session.ToAccountName),
+		session.Amount, session.Currency)
+	if session.Notes != "" {
+		text += fmt.Sprintf("\n📌 %s", escapeHTML(session.Notes))
+	}
+
+	kb := buildTransferConfirmKeyboard()
 	editHTML(bot, chatID, messageID, text, &kb)
 }
 
@@ -485,6 +695,8 @@ func handleHelpCallback(bot *telegramClient.BotAPI, chatID int64, messageID int,
 		text = helpSummaryText
 	case "edit":
 		text = helpEditText
+	case "transfer":
+		text = helpTransferText
 	case "config":
 		text = userHelp[HelpTopic{Command: Configuration}]
 	case "categories":
