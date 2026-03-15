@@ -177,9 +177,9 @@ type HelpTopic struct {
 
 var currenciesHelpMessage = getCurrenciesListMessage()
 
-// Help text for new commands
+// Help text for commands
 const helpSummaryText = `
-Command: /summary
+Command: /summary (s)
 
 Shows spending summary for the current calendar month.
 
@@ -191,7 +191,7 @@ Tap "Last Month" for previous month.
 `
 
 const helpEditText = `
-Command: /edit
+Command: /edit (e, update, u)
 
 Edit a recent transaction.
 
@@ -205,53 +205,77 @@ then tap "Save" to commit changes.
 // userHelp contains detailed help messages for each command.
 var userHelp = map[HelpTopic]string{
 	{Command: Add}: `
-Command: /add (or just type)
+Command: /add (a, or just type)
+
+Record an expense, income, or opening balance.
 
 Usage:
-  /add <category> <amount or (n-n)> <notes?> $<currency?>
+  /add <category> <amount> [notes] [ob:] [$currency]
   Or just type: G 45 Woolworths
 
+Options:
+  (n-n)     Batch amounts (e.g. (2.5-8) adds two transactions)
+  ob:       Mark as opening balance
+  $CODE     Override currency (e.g. $USD)
+
 Examples:
-  G 45 Woolworths (45 in your default currency)
-  /add G 45 Woolworths $USD (45 USD)
-  /add G (2.5-8) Farmers market $EUR (2.5 and 8 EUR)
-  /add (no args — guided flow with buttons)
+  G 45 Woolworths             (default currency)
+  /add G 45 Woolworths $USD   (45 USD)
+  /add G (2.5-8) Market $EUR  (2.5 and 8 EUR)
+  /add G 1000 ob:             (opening balance)
+  /add G 500 Savings ob: $NZD (OB with notes + currency)
+  /add                        (guided flow with buttons)
 
 Note:
-  • Use /help categories for category list
-  • Use /help currencies for currency list
+  • Use /help categories for your category list
+  • Use /help currencies for currency codes
   • Set your default: /config set-default-currency USD
 `,
 	{Command: Remove}: `
-Command: /remove
+Command: /remove (rm, r, delete, del, d)
+
+Delete one or more transactions.
 
 Usage:
-  /remove <ID1> <ID2> ...: Remove one or more transactions by ID
+  /remove ID1 ID2 ...
+  /remove               (guided — pick from recent)
 
 Examples:
-  /remove abc123... (Remove transaction by UUID)
+  /remove abc123...      (delete by UUID)
+  /remove id1 id2        (delete multiple)
+  /remove                (shows last 5 with delete buttons)
 
-Note: IDs can be found using the /list command
+Note:
+  • IDs can be found using the /list command
 `,
 	{Command: List}: `
-Command: /list
+Command: /list (ls, l)
+
+View transactions for the current cycle (28th → 27th).
 
 Usage:
   /list [options]
 
 Options (any order):
-  <category>: Filter by category alias
-  <DD/MM/YYYY>: From specific date
-  <1-100>: Limit number of results (Defaults to 10)
-  +: Aggregate by category
-  *: Show all-time transactions
-  $<CODE>: Filter by currency (e.g., $USD)
+  category      Filter by category alias
+  DD/MM/YYYY    Show transactions from a specific date
+  1-100         Limit results (default: 10)
+  +               Aggregate totals by category
+  *               Show all-time (not just this cycle)
+  $CODE           Filter by currency (e.g. $USD)
 
 Examples:
-  /list (Last 10 transactions this cycle)
-  /list G (All Groceries transactions)
-  /list + 20 (Last 20 grouped by category)
-  /list $USD (All USD transactions)
+  /list                  (last 10 this cycle)
+  /list 20               (last 20 this cycle)
+  /list + 50             (top 50 grouped by category)
+  /list * 30             (last 30 all-time)
+  /list $USD             (USD transactions this cycle)
+  /list 01/03/2026       (from 1 Mar 2026 onwards)
+  /list + *              (all-time category breakdown)
+
+Note:
+  • "This cycle" runs from the 28th of last month to today
+  • Use /help categories to see your category aliases
 `,
 	{Command: Help}: `
 <b>Cofr Bot — Commands</b>
@@ -268,7 +292,9 @@ Examples:
 Tap a topic below for details:
 `,
 	{Command: Configuration}: `
-Command: /config (or !c, !cfg)
+Command: /config (c, cfg)
+
+Set your default currency.
 
 Usage:
   /config set-default-currency <CODE>
@@ -281,8 +307,8 @@ Examples:
   /config sdc NZD
 
 Note:
-  This currency will be used for all transactions when you don't
-  specify a currency explicitly. Use /help currencies for codes.
+  • This currency is used when you don't specify one explicitly
+  • Use /help currencies for supported codes
 `,
 	{Command: Help, Subtopic: "Currencies"}: currenciesHelpMessage,
 }
