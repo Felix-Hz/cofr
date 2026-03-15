@@ -42,7 +42,6 @@ export default function TransferFormModal({
     accounts.find((account) => account.id !== defaultFromAccountId)?.id || "";
 
   // Fetch account balances when modal opens
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only fetch when modal opens
   useEffect(() => {
     if (isOpen) {
       getAccountBalances()
@@ -128,7 +127,7 @@ export default function TransferFormModal({
           </h3>
 
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-            <div className="overflow-y-auto flex-1 min-h-0 space-y-3 sm:space-y-4">
+            <div className="overflow-y-auto flex-1 min-h-0 space-y-3 sm:space-y-4 px-0.5">
               {/* From / To accounts */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
                 <div className="flex-1">
@@ -201,7 +200,7 @@ export default function TransferFormModal({
               {negativeBalanceWarning && !sameAccountError && (
                 <p className="text-xs text-warning-text">
                   This will leave {fromAccountName} with a negative balance of{" "}
-                  {formatCurrency(resultingBalance!, currency)}
+                  {formatCurrency(resultingBalance as number, currency)}
                 </p>
               )}
 

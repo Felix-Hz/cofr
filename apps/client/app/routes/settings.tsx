@@ -698,19 +698,19 @@ export default function Settings() {
           {accounts.length > 0 && (
             <>
               <div className="border-t border-edge-default mt-4 pt-4" />
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="font-medium text-content-primary">Default Payment Account</p>
                   <p className="text-sm text-content-tertiary">
                     Pre-selected when adding transactions
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <select
                     value={defaultAccountId || ""}
                     onChange={(e) => handleDefaultAccountChange(e.target.value)}
                     disabled={savingDefaultAccount}
-                    className="px-3 py-1.5 text-sm font-medium bg-surface-primary text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors disabled:opacity-50"
+                    className="max-w-40 truncate px-3 py-1.5 text-sm font-medium bg-surface-primary text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors disabled:opacity-50"
                   >
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -789,9 +789,9 @@ export default function Settings() {
         <div className="divide-y divide-edge-default border-t border-edge-default">
           {systemAccounts.map((acct) => (
             <div key={acct.id}>
-              <div className="px-6 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="w-4 h-4 text-content-tertiary">
+              <div className="px-6 py-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="w-4 h-4 shrink-0 text-content-tertiary">
                     {acct.type === "checking" ? (
                       <svg
                         className="w-4 h-4"
@@ -836,8 +836,10 @@ export default function Settings() {
                       </svg>
                     )}
                   </span>
-                  <span className="text-sm font-medium text-content-primary">{acct.name}</span>
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated text-content-tertiary">
+                  <span className="text-sm font-medium text-content-primary truncate">
+                    {acct.name}
+                  </span>
+                  <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated text-content-tertiary">
                     System
                   </span>
                   {defaultAccountId === acct.id && (
@@ -846,7 +848,7 @@ export default function Settings() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   {editingAccount?.id === acct.id ? (
                     <div className="flex items-center gap-2">
                       <input
@@ -893,7 +895,8 @@ export default function Settings() {
                         }}
                         className="px-2 py-1 text-xs font-medium text-emerald hover:bg-emerald/5 rounded"
                       >
-                        Set balance
+                        <span className="sm:hidden">Set</span>
+                        <span className="hidden sm:inline">Set balance</span>
                       </button>
                     </>
                   )}
@@ -908,12 +911,12 @@ export default function Settings() {
                     value={balanceAmount}
                     onChange={(e) => setBalanceAmount(e.target.value)}
                     placeholder="Amount"
-                    className="flex-1 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
                   />
                   <select
                     value={balanceCurrency}
                     onChange={(e) => setBalanceCurrency(e.target.value)}
-                    className="w-20 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                   >
                     {SUPPORTED_CURRENCIES.map((c) => (
                       <option key={c} value={c}>
@@ -925,14 +928,14 @@ export default function Settings() {
                     type="button"
                     onClick={handleSetBalance}
                     disabled={acctLoading || !balanceAmount || parseFloat(balanceAmount) <= 0}
-                    className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                    className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
                   >
                     {acctLoading ? "..." : "Save"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setBalanceAccountId(null)}
-                    className="text-xs font-medium text-content-tertiary px-2 py-1.5"
+                    className="shrink-0 text-xs font-medium text-content-tertiary px-2 py-1.5"
                   >
                     Cancel
                   </button>
@@ -952,9 +955,9 @@ export default function Settings() {
           <div className="divide-y divide-edge-default border-t border-edge-default">
             {customAccounts.map((acct) => (
               <div key={acct.id}>
-                <div className="px-6 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="w-4 h-4 text-content-tertiary">
+                <div className="px-6 py-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-4 h-4 shrink-0 text-content-tertiary">
                       {acct.type === "checking" ? (
                         <svg
                           className="w-4 h-4"
@@ -999,14 +1002,16 @@ export default function Settings() {
                         </svg>
                       )}
                     </span>
-                    <span className="text-sm font-medium text-content-primary">{acct.name}</span>
+                    <span className="text-sm font-medium text-content-primary truncate">
+                      {acct.name}
+                    </span>
                     {defaultAccountId === acct.id && (
                       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald/10 text-emerald">
                         Default
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     {editingAccount?.id === acct.id ? (
                       <div className="flex items-center gap-2">
                         <input
@@ -1076,12 +1081,12 @@ export default function Settings() {
                       value={balanceAmount}
                       onChange={(e) => setBalanceAmount(e.target.value)}
                       placeholder="Amount"
-                      className="flex-1 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                      className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
                     />
                     <select
                       value={balanceCurrency}
                       onChange={(e) => setBalanceCurrency(e.target.value)}
-                      className="w-20 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                      className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                     >
                       {SUPPORTED_CURRENCIES.map((c) => (
                         <option key={c} value={c}>
@@ -1093,14 +1098,14 @@ export default function Settings() {
                       type="button"
                       onClick={handleSetBalance}
                       disabled={acctLoading || !balanceAmount || parseFloat(balanceAmount) <= 0}
-                      className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                      className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
                     >
                       {acctLoading ? "..." : "Save"}
                     </button>
                     <button
                       type="button"
                       onClick={() => setBalanceAccountId(null)}
-                      className="text-xs font-medium text-content-tertiary px-2 py-1.5"
+                      className="shrink-0 text-xs font-medium text-content-tertiary px-2 py-1.5"
                     >
                       Cancel
                     </button>
@@ -1118,7 +1123,7 @@ export default function Settings() {
         <div className="px-6 py-4 border-t border-edge-default">
           {addingAccount ? (
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={newAccountName}
@@ -1130,7 +1135,7 @@ export default function Settings() {
                 <select
                   value={newAccountType}
                   onChange={(e) => setNewAccountType(e.target.value)}
-                  className="w-32 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="sm:w-32 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                 >
                   <option value="checking">Checking</option>
                   <option value="savings">Savings</option>
@@ -1144,13 +1149,13 @@ export default function Settings() {
                   min="0"
                   value={newAccountStartingBalance}
                   onChange={(e) => setNewAccountStartingBalance(e.target.value)}
-                  placeholder="Starting balance (optional)"
-                  className="flex-1 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                  placeholder="Starting balance"
+                  className="flex-1 min-w-0 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
                 />
                 <select
                   value={newAccountCurrency}
                   onChange={(e) => setNewAccountCurrency(e.target.value)}
-                  className="w-20 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="w-20 shrink-0 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                 >
                   {SUPPORTED_CURRENCIES.map((c) => (
                     <option key={c} value={c}>
@@ -1162,7 +1167,7 @@ export default function Settings() {
                   type="button"
                   onClick={handleCreateAccount}
                   disabled={acctLoading || !newAccountName.trim()}
-                  className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                  className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
                 >
                   {acctLoading ? "..." : "Save"}
                 </button>
