@@ -19,10 +19,12 @@ type User struct {
 	LastName          string     `gorm:"index"`         // Index last names
 	Username          string     `gorm:"uniqueIndex"`   // Index usernames
 	PreferredCurrency string     `gorm:"default:'NZD'"` // User's preferred currency
+	DefaultAccountID  *uuid.UUID `gorm:"type:uuid;column:default_account_id"`
 	LinkCode          *string    `gorm:"column:link_code"`
 	LinkCodeExpires   *time.Time `gorm:"column:link_code_expires"`
 	DeletedAt         gorm.DeletedAt
 	Expenses          []Transaction `gorm:"foreignKey:UserID"` // One-to-Many Relationship
+	Accounts          []Account     `gorm:"foreignKey:UserID"`
 }
 
 /*
@@ -42,6 +44,22 @@ type AuthProvider struct {
 
 func (AuthProvider) TableName() string {
 	return "auth_providers"
+}
+
+/*
+ * 							Account Model
+ *
+ * Financial accounts (Checking, Savings, Investment, custom).
+ *
+ */
+type Account struct {
+	ID           uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID       uuid.UUID `gorm:"type:uuid;index"`
+	Name         string    `gorm:"size:60"`
+	Type         string    `gorm:"size:20"` // checking, savings, investment
+	IsSystem     bool      `gorm:"default:false"`
+	DisplayOrder int       `gorm:"default:0"`
+	CreatedAt    time.Time
 }
 
 /*
@@ -90,18 +108,23 @@ func (UserCategoryPreference) TableName() string {
  *
  */
 type Transaction struct {
-	ID               uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	UserID           uuid.UUID `gorm:"type:uuid;index"`
-	User             User      `gorm:"constraint:OnDelete:CASCADE"`
-	CategoryID       uuid.UUID `gorm:"type:uuid;index;column:category_id"`
-	CategoryRel      Category  `gorm:"foreignKey:CategoryID"`
-	Amount           float64
-	Currency         string `gorm:"default:'NZD';index"` // ISO 4217 currency code
-	Notes            string
-	Timestamp        time.Time `gorm:"autoCreateTime"`
-	Hash             string    `gorm:"uniqueIndex"`
-	ReceiptFileID    *string   `gorm:"column:receipt_file_id"`
-	IsOpeningBalance bool      `gorm:"column:is_opening_balance;default:false"`
+	ID                  uuid.UUID  `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID              uuid.UUID  `gorm:"type:uuid;index"`
+	User                User       `gorm:"constraint:OnDelete:CASCADE"`
+	CategoryID          *uuid.UUID `gorm:"type:uuid;index;column:category_id"`
+	CategoryRel         *Category  `gorm:"foreignKey:CategoryID"`
+	AccountID           uuid.UUID  `gorm:"type:uuid;index;column:account_id"`
+	AccountRel          Account    `gorm:"foreignKey:AccountID"`
+	LinkedTransactionID *uuid.UUID `gorm:"type:uuid;column:linked_transaction_id"`
+	IsTransfer          bool       `gorm:"column:is_transfer;default:false"`
+	TransferDirection   *string    `gorm:"column:transfer_direction;size:4"` // 'from' or 'to'
+	Amount              float64
+	Currency            string `gorm:"default:'NZD';index"` // ISO 4217 currency code
+	Notes               string
+	Timestamp           time.Time `gorm:"autoCreateTime"`
+	Hash                string    `gorm:"uniqueIndex"`
+	ReceiptFileID       *string   `gorm:"column:receipt_file_id"`
+	IsOpeningBalance    bool      `gorm:"column:is_opening_balance;default:false"`
 }
 
 /*
@@ -111,12 +134,10 @@ type Transaction struct {
  *
  */
 type SummaryResult struct {
-	TotalIncome     float64
-	TotalExpense    float64
-	TotalSavings    float64
-	TotalInvestment float64
-	TxCount         int
-	ByCategory      []CategorySummary
+	TotalIncome  float64
+	TotalExpense float64
+	TxCount      int
+	ByCategory   []CategorySummary
 }
 
 type CategorySummary struct {
@@ -124,6 +145,19 @@ type CategorySummary struct {
 	CategoryType string
 	Total        float64
 	Count        int
+}
+
+/*
+ * 							AccountBalance
+ *
+ * Returned by GetAccountBalances — per-account balance.
+ *
+ */
+type AccountBalance struct {
+	AccountID   uuid.UUID
+	AccountName string
+	AccountType string
+	Balance     float64
 }
 
 /*

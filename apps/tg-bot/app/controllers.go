@@ -24,6 +24,7 @@ func ConnectBot(bot *telegramClient.BotAPI, offset *Offset) telegramClient.Updat
 func RegisterCommands(bot *telegramClient.BotAPI) {
 	commands := []telegramClient.BotCommand{
 		{Command: "add", Description: "Record an expense or income"},
+		{Command: "transfer", Description: "Transfer between accounts"},
 		{Command: "list", Description: "View recent transactions"},
 		{Command: "summary", Description: "Spending summary for current cycle"},
 		{Command: "edit", Description: "Edit a recent transaction"},
@@ -182,6 +183,9 @@ func handleSlashCommand(bot *telegramClient.BotAPI, chatID int64, body string, t
 		kb := buildSummaryKeyboard()
 		sendHTMLWithKeyboard(bot, chatID, text, kb)
 
+	case "transfer", "t", "xfer":
+		startGuidedTransfer(bot, chatID, user.ID)
+
 	case "edit", "e", "update", "u":
 		startEditFlow(bot, chatID, user.ID)
 
@@ -259,6 +263,26 @@ func handleSessionInput(bot *telegramClient.BotAPI, chatID int64, text string, s
 
 	case StepEditCategory:
 		sendHTML(bot, chatID, "Please tap a category from the buttons above.")
+
+	case StepTransferAmount:
+		amount, err := stringToFloat(strings.TrimSpace(text))
+		if err != nil || amount <= 0 {
+			sendHTML(bot, chatID, "Please enter a valid amount (e.g. 300 or 12.50):")
+			return
+		}
+		session.Amount = amount
+		session.Step = StepTransferConfirm
+		Sessions.Set(chatID, session)
+		showTransferConfirmation(bot, chatID, session.MessageID, session)
+
+	case StepTransferNotes:
+		session.Notes = text
+		session.Step = StepTransferConfirm
+		Sessions.Set(chatID, session)
+		showTransferConfirmation(bot, chatID, session.MessageID, session)
+
+	case StepSelectFromAccount, StepSelectToAccount:
+		sendHTML(bot, chatID, "Please tap an account from the buttons above.")
 
 	default:
 		Sessions.Delete(chatID)

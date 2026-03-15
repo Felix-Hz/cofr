@@ -42,7 +42,10 @@ func aggregateCategories(txs []*db.Transaction) []AggregatedTransactions {
 	aggMap := make(map[string]AggregatedTransactions)
 
 	for _, tx := range txs {
-		catName := tx.CategoryRel.Name
+		catName := "Transfer"
+		if tx.CategoryRel != nil {
+			catName = tx.CategoryRel.Name
+		}
 		if agg, exists := aggMap[catName]; exists {
 			agg.Total += tx.Amount
 			agg.Count++
@@ -312,6 +315,18 @@ func validateLimit(limit string) (int, error) {
 //   / \ | || |\/|||  \
 //   | | | || |  |||  /_
 //   \_/ \_/\_/  \|\____\
+
+// resolveAccountID returns the user's default account ID, or the first account if no default is set.
+func resolveAccountID(user *db.User) uuid.UUID {
+	if user.DefaultAccountID != nil {
+		return *user.DefaultAccountID
+	}
+	accounts, err := r.AccountRepo().GetByUser(user.ID)
+	if err != nil || len(accounts) == 0 {
+		return uuid.Nil
+	}
+	return accounts[0].ID
+}
 
 // Cycles starting from the 28th each month
 func beginningOfMonth(t time.Time) time.Time {

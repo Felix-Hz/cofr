@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, redirect, useLoaderData } from "react-router";
 import ThemeToggle from "~/components/ThemeToggle";
 import { useSessionTimeout } from "~/hooks/useSessionTimeout";
+import { AccountsProvider } from "~/lib/accounts";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
 import { CategoriesProvider } from "~/lib/categories";
 import { getUserInitials } from "~/lib/utils";
@@ -118,9 +119,11 @@ export default function AuthenticatedLayout() {
 
       {/* Main content */}
       <CategoriesProvider>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Outlet />
-        </main>
+        <AccountsProvider>
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <Outlet />
+          </main>
+        </AccountsProvider>
       </CategoriesProvider>
     </div>
   );

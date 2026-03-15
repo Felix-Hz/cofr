@@ -22,6 +22,7 @@ const (
 	Edit          Command = "e"
 	Configuration Command = "config"
 	Summary       Command = "summary"
+	Transfer      Command = "transfer"
 )
 
 type CommandResult struct {
@@ -93,6 +94,31 @@ func startRemoveFlow(bot *telegramClient.BotAPI, chatID int64, userID uuid.UUID)
 	}
 }
 
+// startGuidedTransfer begins the guided transfer flow — shows account picker for "from" account.
+func startGuidedTransfer(bot *telegramClient.BotAPI, chatID int64, userID uuid.UUID) {
+	user, err := r.UserRepo().GetByID(userID)
+	if err != nil {
+		sendHTML(bot, chatID, "Failed to load user data.")
+		return
+	}
+
+	kb, idMap, err := buildAccountKeyboard(userID, uuid.Nil)
+	if err != nil || len(idMap) == 0 {
+		sendHTML(bot, chatID, "No accounts found. Create accounts in Settings first.")
+		return
+	}
+
+	Sessions.Set(chatID, &FlowSession{
+		Flow:     FlowTransfer,
+		Step:     StepSelectFromAccount,
+		UserID:   userID,
+		Currency: user.PreferredCurrency,
+		IDMap:    idMap,
+	})
+
+	sendHTMLWithKeyboard(bot, chatID, "<b>Transfer</b>\n\nSelect the <b>from</b> account:", kb)
+}
+
 func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 
 	// Get user to retrieve preferred currency.
@@ -107,6 +133,9 @@ func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 		return CommandResult{Command: Add, Error: err, UserError: userErrors[Add]}
 	}
 
+	// Resolve account ID (use default or first account)
+	accountID := resolveAccountID(user)
+
 	// Setup required transactions to be created.
 	_txs := []*Transaction{}
 	for i, amount := range amounts {
@@ -119,13 +148,15 @@ func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 			return CommandResult{Command: Add, Error: fmt.Errorf("duplicate transaction"), UserError: userErrors[Unknown]}
 		}
 
+		catID := category.ID
 		_txs = append(_txs, &Transaction{
 			Hash:       hash,
 			Notes:      notes,
 			UserID:     userId,
 			Amount:     amount,
 			Currency:   currency,
-			CategoryID: category.ID,
+			CategoryID: &catID,
+			AccountID:  accountID,
 			Timestamp:  timestamp,
 		})
 	}
@@ -249,6 +280,8 @@ func help(args []string, userId uuid.UUID) CommandResult {
 		return CommandResult{Command: Help, UserInfo: userHelp[HelpTopic{Command: Configuration}]}
 	case "edit", "e", "update", "u":
 		return CommandResult{Command: Help, UserInfo: helpEditText}
+	case "transfer", "t", "xfer":
+		return CommandResult{Command: Help, UserInfo: helpTransferText}
 	default:
 		return CommandResult{Command: Help, UserError: "Unknown command. Use /help for available commands."}
 	}

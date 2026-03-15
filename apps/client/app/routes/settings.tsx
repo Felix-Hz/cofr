@@ -4,22 +4,26 @@ import CategoryFormModal from "~/components/CategoryFormModal";
 import DeleteAccountModal from "~/components/DeleteAccountModal";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
+import { useAccounts } from "~/lib/accounts";
 import {
   changePassword,
+  createAccount,
   createCategory,
+  deleteAccount,
   deleteCategory,
   getLinkedProviders,
   getPreferences,
   initTelegramLink,
   toggleCategory,
   unlinkProvider,
+  updateAccount,
   updateCategory,
   updatePreferences,
 } from "~/lib/api";
 import { isAuthenticated } from "~/lib/auth";
 import { useCategories } from "~/lib/categories";
 import { isPasswordValid } from "~/lib/password";
-import type { Category, CategoryCreate, CategoryUpdate } from "~/lib/schemas";
+import type { Account, Category, CategoryCreate, CategoryUpdate } from "~/lib/schemas";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
 
@@ -43,8 +47,9 @@ const ALL_PROVIDERS = ["google", "telegram"];
 
 const SECTIONS = [
   { id: "preferences", label: "Preferences" },
-  { id: "categories", label: "Categories" },
   { id: "accounts", label: "Accounts" },
+  { id: "categories", label: "Categories" },
+  { id: "linked-accounts", label: "Linked Accounts" },
   { id: "security", label: "Security" },
   { id: "danger-zone", label: "Danger Zone" },
 ] as const;
@@ -137,6 +142,24 @@ function AlertTriangleIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+      />
+    </svg>
+  );
+}
+
+function VaultIcon() {
+  return (
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21m-3.75 3H21"
       />
     </svg>
   );
@@ -244,10 +267,25 @@ export default function Settings() {
   const [catLoading, setCatLoading] = useState(false);
   const [deletingCatId, setDeletingCatId] = useState<string | null>(null);
 
+  // Accounts (financial)
+  const { accounts, refresh: refreshAccounts } = useAccounts();
+  const [defaultAccountId, setDefaultAccountId] = useState<string | null>(null);
+  const [savingDefaultAccount, setSavingDefaultAccount] = useState(false);
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [newAccountName, setNewAccountName] = useState("");
+  const [newAccountType, setNewAccountType] = useState<string>("checking");
+  const [acctLoading, setAcctLoading] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [editAccountName, setEditAccountName] = useState("");
+  const [deletingAcctId, setDeletingAcctId] = useState<string | null>(null);
+
+  const systemAccounts = accounts.filter((a) => a.is_system);
+  const customAccounts = accounts.filter((a) => !a.is_system);
+
   const systemCategories = categories.filter((c) => c.is_system);
   const customCategories = categories.filter((c) => !c.is_system);
-  // Income, Savings, Investment are always active — not toggleable
-  const POSITIVE_TYPES = ["income", "savings", "investment"];
+  // Income is always active — not toggleable
+  const POSITIVE_TYPES = ["income"];
 
   const hasLocalAuth = providers.some((p) => p.provider === "local");
   // Filter sections — hide Security if no local auth
@@ -313,6 +351,64 @@ export default function Settings() {
     }
   };
 
+  const handleDefaultAccountChange = async (accountId: string) => {
+    setDefaultAccountId(accountId);
+    setSavingDefaultAccount(true);
+    try {
+      await updatePreferences({ default_account_id: accountId });
+    } catch {
+      setError("Failed to save default account");
+    } finally {
+      setSavingDefaultAccount(false);
+    }
+  };
+
+  const handleCreateAccount = async () => {
+    if (!newAccountName.trim()) return;
+    setAcctLoading(true);
+    try {
+      await createAccount({
+        name: newAccountName.trim(),
+        type: newAccountType as "checking" | "savings" | "investment",
+      });
+      await refreshAccounts();
+      setAddingAccount(false);
+      setNewAccountName("");
+      setNewAccountType("checking");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create account");
+    } finally {
+      setAcctLoading(false);
+    }
+  };
+
+  const handleUpdateAccount = async (id: string) => {
+    if (!editAccountName.trim()) return;
+    setAcctLoading(true);
+    try {
+      await updateAccount(id, { name: editAccountName.trim() });
+      await refreshAccounts();
+      setEditingAccount(null);
+      setEditAccountName("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update account");
+    } finally {
+      setAcctLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async (id: string) => {
+    setDeletingAcctId(id);
+    try {
+      await deleteAccount(id);
+      await refreshAccounts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete account");
+    } finally {
+      setDeletingAcctId(null);
+    }
+  };
+
   const fetchProviders = async () => {
     try {
       const data = await getLinkedProviders();
@@ -329,6 +425,7 @@ export default function Settings() {
       const prefs = await getPreferences();
       setPreferredCurrency(prefs.preferred_currency);
       setSessionTimeout(prefs.session_timeout_minutes);
+      setDefaultAccountId(prefs.default_account_id ?? null);
     } catch {
       // Silently fall back to default
     }
@@ -577,6 +674,337 @@ export default function Settings() {
               )}
             </div>
           </div>
+
+          {accounts.length > 0 && (
+            <>
+              <div className="border-t border-edge-default mt-4 pt-4" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-content-primary">Default Payment Account</p>
+                  <p className="text-sm text-content-tertiary">
+                    Pre-selected when adding transactions
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={defaultAccountId || ""}
+                    onChange={(e) => handleDefaultAccountChange(e.target.value)}
+                    disabled={savingDefaultAccount}
+                    className="px-3 py-1.5 text-sm font-medium bg-surface-primary text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors disabled:opacity-50"
+                  >
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                  {savingDefaultAccount && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-content-primary" />
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Accounts (Financial) ── */}
+      <div
+        id="accounts"
+        ref={(el) => {
+          sectionRefs.current.accounts = el;
+        }}
+        style={{ scrollMarginTop: "4rem" }}
+        className="bg-surface-primary rounded-xl border border-edge-default mb-6 shadow-sm hover:shadow-md transition-shadow"
+      >
+        <div className="px-6 py-4 border-b border-edge-default flex items-center gap-3">
+          <span className="text-content-tertiary">
+            <VaultIcon />
+          </span>
+          <div>
+            <h3 className="text-lg font-medium text-content-primary">Accounts</h3>
+            <p className="text-sm text-content-tertiary mt-0.5">Manage your financial accounts</p>
+          </div>
+        </div>
+
+        {/* System Accounts */}
+        <div className="px-6 py-3">
+          <p className="text-xs font-medium text-content-tertiary uppercase tracking-wide mb-2">
+            System Accounts
+          </p>
+        </div>
+        <div className="divide-y divide-edge-default border-t border-edge-default">
+          {systemAccounts.map((acct) => (
+            <div key={acct.id} className="px-6 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="w-4 h-4 text-content-tertiary">
+                  {acct.type === "checking" ? (
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
+                      />
+                    </svg>
+                  ) : acct.type === "savings" ? (
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"
+                      />
+                    </svg>
+                  )}
+                </span>
+                <span className="text-sm font-medium text-content-primary">{acct.name}</span>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated text-content-tertiary">
+                  System
+                </span>
+                {defaultAccountId === acct.id && (
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald/10 text-emerald">
+                    Default
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                {editingAccount?.id === acct.id ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={editAccountName}
+                      onChange={(e) => setEditAccountName(e.target.value)}
+                      maxLength={60}
+                      className="px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateAccount(acct.id)}
+                      disabled={acctLoading}
+                      className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingAccount(null)}
+                      className="text-xs font-medium text-content-tertiary px-2 py-1.5"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingAccount(acct);
+                      setEditAccountName(acct.name);
+                    }}
+                    className="px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft-bg rounded"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Custom Accounts */}
+        <div className="px-6 py-3 border-t border-edge-default">
+          <p className="text-xs font-medium text-content-tertiary uppercase tracking-wide mb-2">
+            Custom Accounts
+          </p>
+        </div>
+        {customAccounts.length > 0 ? (
+          <div className="divide-y divide-edge-default border-t border-edge-default">
+            {customAccounts.map((acct) => (
+              <div key={acct.id} className="px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="w-4 h-4 text-content-tertiary">
+                    {acct.type === "checking" ? (
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
+                        />
+                      </svg>
+                    ) : acct.type === "savings" ? (
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="text-sm font-medium text-content-primary">{acct.name}</span>
+                  {defaultAccountId === acct.id && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald/10 text-emerald">
+                      Default
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  {editingAccount?.id === acct.id ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editAccountName}
+                        onChange={(e) => setEditAccountName(e.target.value)}
+                        maxLength={60}
+                        className="px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateAccount(acct.id)}
+                        disabled={acctLoading}
+                        className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingAccount(null)}
+                        className="text-xs font-medium text-content-tertiary px-2 py-1.5"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingAccount(acct);
+                          setEditAccountName(acct.name);
+                        }}
+                        className="px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft-bg rounded"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAccount(acct.id)}
+                        disabled={deletingAcctId === acct.id}
+                        className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded disabled:opacity-50"
+                      >
+                        {deletingAcctId === acct.id ? "..." : "Delete"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="px-6 pb-2">
+            <p className="text-sm text-content-muted">No custom accounts yet</p>
+          </div>
+        )}
+
+        <div className="px-6 py-4 border-t border-edge-default">
+          {addingAccount ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+                maxLength={60}
+                placeholder="Account name"
+                className="flex-1 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+              />
+              <select
+                value={newAccountType}
+                onChange={(e) => setNewAccountType(e.target.value)}
+                className="w-32 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+              >
+                <option value="checking">Checking</option>
+                <option value="savings">Savings</option>
+                <option value="investment">Investment</option>
+              </select>
+              <button
+                type="button"
+                onClick={handleCreateAccount}
+                disabled={acctLoading || !newAccountName.trim()}
+                className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+              >
+                {acctLoading ? "..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAddingAccount(false);
+                  setNewAccountName("");
+                  setNewAccountType("checking");
+                }}
+                className="text-xs font-medium text-content-tertiary px-2 py-1.5"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAddingAccount(true)}
+              className="w-full py-2.5 text-sm font-medium text-emerald border-2 border-dashed border-emerald/40 hover:border-emerald hover:bg-emerald/5 rounded-lg transition-colors"
+            >
+              + Add Account
+            </button>
+          )}
         </div>
       </div>
 
@@ -727,9 +1155,9 @@ export default function Settings() {
 
       {/* ── Linked Accounts ── */}
       <div
-        id="accounts"
+        id="linked-accounts"
         ref={(el) => {
-          sectionRefs.current.accounts = el;
+          sectionRefs.current["linked-accounts"] = el;
         }}
         style={{ scrollMarginTop: "4rem" }}
         className="bg-surface-primary rounded-xl border border-edge-default mb-6 shadow-sm hover:shadow-md transition-shadow"

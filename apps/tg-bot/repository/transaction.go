@@ -38,26 +38,59 @@ func (r *transactionRepository) Create(txs []*Transaction) ([]*Transaction, erro
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	// Preload category for display
+	// Preload category and account for display
 	ids := make([]uuid.UUID, len(txs))
 	for i, tx := range txs {
 		ids[i] = tx.ID
 	}
-	r.dbClient.Preload("CategoryRel").Where("id IN ?", ids).Find(&txs)
+	r.dbClient.Preload("CategoryRel").Preload("AccountRel").Where("id IN ?", ids).Find(&txs)
 	return txs, nil
 }
 
 func (r *transactionRepository) Delete(txs []*Transaction) error {
-	result := r.dbClient.Delete(&txs)
-	if result.Error != nil || result.RowsAffected == 0 {
-		return result.Error
+	// Collect linked transaction IDs for transfer pairs
+	var linkedIDs []uuid.UUID
+	for _, tx := range txs {
+		if tx.LinkedTransactionID != nil {
+			linkedIDs = append(linkedIDs, *tx.LinkedTransactionID)
+		}
 	}
-	return nil
+
+	return r.dbClient.Transaction(func(dbTx *gorm.DB) error {
+		// Clear linked_transaction_id references to avoid FK issues
+		allIDs := make([]uuid.UUID, len(txs))
+		for i, tx := range txs {
+			allIDs[i] = tx.ID
+		}
+		allIDs = append(allIDs, linkedIDs...)
+
+		if len(allIDs) > 0 {
+			if err := dbTx.Model(&Transaction{}).
+				Where("linked_transaction_id IN ?", allIDs).
+				Update("linked_transaction_id", nil).Error; err != nil {
+				return err
+			}
+		}
+
+		// Delete the primary transactions
+		if err := dbTx.Delete(&txs).Error; err != nil {
+			return err
+		}
+
+		// Delete linked transactions (transfer pairs)
+		if len(linkedIDs) > 0 {
+			if err := dbTx.Where("id IN ?", linkedIDs).Delete(&Transaction{}).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (r *transactionRepository) GetById(id uuid.UUID, userId uuid.UUID) (*Transaction, error) {
 	var transaction Transaction
-	result := r.dbClient.Where("id = ? and user_id = ?", id, userId).First(&transaction)
+	result := r.dbClient.Preload("CategoryRel").Preload("AccountRel").Where("id = ? and user_id = ?", id, userId).First(&transaction)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -66,7 +99,7 @@ func (r *transactionRepository) GetById(id uuid.UUID, userId uuid.UUID) (*Transa
 
 func (r *transactionRepository) GetManyById(ids []uuid.UUID, userId uuid.UUID) ([]*Transaction, error) {
 	var transactions []*Transaction
-	result := r.dbClient.Where("id IN ? and user_id = ?", ids, userId).Find(&transactions)
+	result := r.dbClient.Preload("CategoryRel").Preload("AccountRel").Where("id IN ? and user_id = ?", ids, userId).Find(&transactions)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -88,6 +121,7 @@ func (r *transactionRepository) GetAll(userId uuid.UUID, fromTime time.Time, lim
 
 	result := r.dbClient.
 		Preload("CategoryRel").
+		Preload("AccountRel").
 		Where("user_id = ? and timestamp >= ? and timestamp < ?", userId, fromTime, time.Now()).
 		Order("timestamp DESC, id DESC").
 		Limit(limit).
@@ -106,6 +140,7 @@ func (r *transactionRepository) GetManyByCategory(userId uuid.UUID, categoryID u
 
 	result := r.dbClient.
 		Preload("CategoryRel").
+		Preload("AccountRel").
 		Where("category_id = ? and user_id = ? and timestamp >= ? and timestamp < ?", categoryID, userId, fromTime, time.Now()).
 		Order("timestamp DESC, id DESC").
 		Limit(limit).
@@ -124,6 +159,7 @@ func (r *transactionRepository) GetManyByCurrency(userId uuid.UUID, currency str
 
 	result := r.dbClient.
 		Preload("CategoryRel").
+		Preload("AccountRel").
 		Where("currency = ? and user_id = ? and timestamp >= ? and timestamp < ?", currency, userId, fromTime, time.Now()).
 		Order("timestamp DESC, id DESC").
 		Limit(limit).
@@ -144,6 +180,7 @@ func (r *transactionRepository) GetRecent(userId uuid.UUID, limit int) ([]*Trans
 	var transactions []*Transaction
 	result := r.dbClient.
 		Preload("CategoryRel").
+		Preload("AccountRel").
 		Where("user_id = ?", userId).
 		Order("timestamp DESC, id DESC").
 		Limit(limit).
@@ -167,7 +204,7 @@ func (r *transactionRepository) GetSummary(userId uuid.UUID, from time.Time, to 
 		Table("transactions").
 		Select("categories.name as category_name, categories.type as category_type, SUM(transactions.amount) as total, COUNT(*) as count").
 		Joins("JOIN categories ON categories.id = transactions.category_id").
-		Where("transactions.user_id = ? AND transactions.timestamp >= ? AND transactions.timestamp < ?", userId, from, to).
+		Where("transactions.user_id = ? AND transactions.timestamp >= ? AND transactions.timestamp < ? AND transactions.is_transfer = false", userId, from, to).
 		Group("categories.name, categories.type").
 		Order("total DESC").
 		Scan(&rows).Error
@@ -189,10 +226,6 @@ func (r *transactionRepository) GetSummary(userId uuid.UUID, from time.Time, to 
 			result.TotalIncome += row.Total
 		case "expense":
 			result.TotalExpense += row.Total
-		case "savings":
-			result.TotalSavings += row.Total
-		case "investment":
-			result.TotalInvestment += row.Total
 		}
 	}
 

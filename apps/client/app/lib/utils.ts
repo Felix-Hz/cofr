@@ -66,7 +66,7 @@ export function getCategoryColor(
 
 // Check if a category type is "positive" (non-expense)
 export function isPositiveType(type: string): boolean {
-  return type === "income" || type === "savings" || type === "investment";
+  return type === "income";
 }
 
 // Text truncation
