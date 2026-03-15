@@ -31,6 +31,12 @@ export default function TransferFormModal({
 
   const isEditMode = !!expense;
   const sameAccountError = fromAccountId && toAccountId && fromAccountId === toAccountId;
+  const storedDefaultAccountId =
+    typeof window !== "undefined" ? localStorage.getItem("cofr_default_account_id") : null;
+  const defaultFromAccountId =
+    accounts.find((account) => account.id === storedDefaultAccountId)?.id || accounts[0]?.id || "";
+  const defaultToAccountId =
+    accounts.find((account) => account.id !== defaultFromAccountId)?.id || "";
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: isOpen resets form
   useEffect(() => {
@@ -51,8 +57,8 @@ export default function TransferFormModal({
       // For now, we'll need the linked tx's account_name. We store the to account from the description.
       setToAccountId("");
     } else {
-      setFromAccountId(accounts[0]?.id || "");
-      setToAccountId(accounts[1]?.id || "");
+      setFromAccountId(defaultFromAccountId);
+      setToAccountId(defaultToAccountId);
       setAmount("");
       setDescription("");
       setCurrency("NZD");
@@ -63,7 +69,7 @@ export default function TransferFormModal({
         `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
       );
     }
-  }, [expense, isOpen, accounts]);
+  }, [expense, isOpen, defaultFromAccountId, defaultToAccountId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

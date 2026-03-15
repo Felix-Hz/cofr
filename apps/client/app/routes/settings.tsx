@@ -355,7 +355,8 @@ export default function Settings() {
     setDefaultAccountId(accountId);
     setSavingDefaultAccount(true);
     try {
-      await updatePreferences({ default_account_id: accountId });
+      const prefs = await updatePreferences({ default_account_id: accountId });
+      localStorage.setItem("cofr_default_account_id", prefs.default_account_id ?? "");
     } catch {
       setError("Failed to save default account");
     } finally {
@@ -426,6 +427,7 @@ export default function Settings() {
       setPreferredCurrency(prefs.preferred_currency);
       setSessionTimeout(prefs.session_timeout_minutes);
       setDefaultAccountId(prefs.default_account_id ?? null);
+      localStorage.setItem("cofr_default_account_id", prefs.default_account_id ?? "");
     } catch {
       // Silently fall back to default
     }

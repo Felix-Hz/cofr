@@ -123,8 +123,17 @@ export default function Dashboard() {
 
   // Stats calculations
   const netBalance = monthlyStats.total_income - monthlyStats.total_spent;
-  const averagePerExpense =
-    monthlyStats.expense_count > 0 ? monthlyStats.total_spent / monthlyStats.expense_count : 0;
+
+  // Savings Rate & Spending Pulse
+  const periodDays = Math.max(
+    1,
+    Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1,
+  );
+  const dailyAverage = monthlyStats.total_spent / periodDays;
+  const savingsRate =
+    monthlyStats.total_income > 0
+      ? ((monthlyStats.total_income - monthlyStats.total_spent) / monthlyStats.total_income) * 100
+      : 0;
 
   // Account balances
   const accountBalances = monthlyStats.account_balances || [];
@@ -238,7 +247,9 @@ export default function Dashboard() {
       percentage: getPercentageDisplay(cat.category_type, cat.total),
       fill: isDark ? cat.category_color_dark : cat.category_color_light,
       formatted: formatCurrency(cat.total, monthlyStats.currency),
-    }));
+    }))
+    .sort((a, b) => b.total - a.total);
+  const topExpenseCategories = pieData.slice(0, 3);
 
   // Filter out 'to' side of transfers from the display list
   const displayExpenses = expenses.filter(
@@ -509,9 +520,19 @@ export default function Dashboard() {
       <div className="grid gap-4 lg:grid-cols-[2fr_3fr]">
         {/* Cards — 2x2 */}
         <div className="grid grid-cols-2 gap-4">
-          {/* Income */}
-          <div className="rounded-xl border border-positive-border bg-positive-bg p-4 sm:p-5">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-positive-text-strong/70">
+          {/* Savings Rate */}
+          <div
+            className={`rounded-xl border p-4 sm:p-5 ${
+              savingsRate >= 0
+                ? "border-positive-border bg-positive-bg"
+                : "border-negative-border bg-negative-bg"
+            }`}
+          >
+            <div
+              className={`flex items-center gap-2 text-xs font-medium uppercase tracking-wider ${
+                savingsRate >= 0 ? "text-positive-text-strong/70" : "text-negative-text/70"
+              }`}
+            >
               <svg
                 className="w-3.5 h-3.5"
                 fill="none"
@@ -522,18 +543,28 @@ export default function Dashboard() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M12 6v12m-3-2.818l2.828 2.818L15 13.182"
+                  d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
                 />
               </svg>
-              Income
+              Savings Rate
             </div>
-            <div className="mt-2 text-xl sm:text-2xl font-bold text-positive-text-strong tabular-nums">
-              {formatCurrency(monthlyStats.total_income, monthlyStats.currency)}
+            <div
+              className={`mt-2 text-xl sm:text-2xl font-bold tabular-nums ${
+                savingsRate >= 0 ? "text-positive-text-strong" : "text-negative-text"
+              }`}
+            >
+              {savingsRate.toFixed(1)}%
             </div>
-            <p className="mt-1 text-[11px] text-positive-text">Money received</p>
+            <p
+              className={`mt-1 text-[11px] ${
+                savingsRate >= 0 ? "text-positive-text" : "text-negative-text/70"
+              }`}
+            >
+              {formatCurrency(netBalance, monthlyStats.currency)} net
+            </p>
           </div>
 
-          {/* Spent */}
+          {/* Spending Pulse */}
           <div className="rounded-xl border border-edge-default bg-surface-primary p-4 sm:p-5 shadow-sm">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
               <svg
@@ -546,123 +577,141 @@ export default function Dashboard() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M12 18V6m3 2.818L12.172 6 9 8.818"
+                  d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
                 />
               </svg>
-              Spent
+              Spending Pulse
             </div>
             <div className="mt-2 text-xl sm:text-2xl font-bold text-content-primary tabular-nums">
-              {formatCurrency(monthlyStats.total_spent, monthlyStats.currency)}
+              {formatCurrency(dailyAverage, monthlyStats.currency)}
+              <span className="text-sm font-medium text-content-tertiary">/day</span>
             </div>
             <p className="mt-1 text-[11px] text-content-tertiary">
-              {monthlyStats.expense_count} tx · avg{" "}
-              {formatCurrency(averagePerExpense, monthlyStats.currency)}
+              {monthlyStats.expense_count} transactions
             </p>
           </div>
 
-          {/* Net Balance */}
-          <div
-            className={`rounded-xl border p-4 sm:p-5 ${
-              netBalance >= 0
-                ? "border-positive-border bg-positive-bg"
-                : "border-negative-text/20 bg-negative-bg"
-            }`}
-          >
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
-                />
-              </svg>
-              Net Balance
+          {/* Top Categories */}
+          <div className="hidden sm:block rounded-xl border border-edge-default bg-surface-primary p-4 sm:p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
+                <svg
+                  className="h-3.5 w-3.5 shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 20V10m5 10V4m5 16v-7" />
+                </svg>
+                <span className="leading-tight">Top Categories</span>
+              </div>
+              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-content-muted">
+                Top 3
+              </span>
             </div>
-            <div
-              className={`mt-2 text-xl sm:text-2xl font-bold tabular-nums ${netBalance >= 0 ? "text-positive-text-strong" : "text-negative-text"}`}
-            >
-              {formatCurrency(netBalance, monthlyStats.currency)}
-            </div>
-            <p className="mt-1 text-[11px] text-content-tertiary">
-              {netBalance >= 0
-                ? [
-                    "Vibes intact",
-                    "Wallet's breathing",
-                    "Still in the game",
-                    "Living within means",
-                    "Budget boss",
-                  ][Math.abs(Math.floor(netBalance * 7)) % 5]
-                : [
-                    "Wallet says ouch",
-                    "Ramen month activated",
-                    "Uh oh spaghettio",
-                    "Budget has left the chat",
-                    "Money machine broke",
-                  ][Math.abs(Math.floor(netBalance * 7)) % 5]}
-            </p>
-          </div>
-
-          {/* Accounts */}
-          <div className="rounded-xl border border-accent/20 bg-accent-soft-bg p-4 sm:p-5">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-accent-soft-text/70">
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 7.5h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"
-                />
-              </svg>
-              Accounts
-            </div>
-            {accountBalances.length <= 2 ? (
-              <>
-                <div className="mt-2 text-xl sm:text-2xl font-bold text-accent-soft-text tabular-nums">
-                  {formatCurrency(totalNetWorth, monthlyStats.currency)}
-                </div>
-                <div className="flex flex-col gap-1 mt-2">
-                  {accountBalances.map((ab) => (
-                    <div key={ab.account_id} className="flex items-center justify-between">
-                      <span className="text-[11px] text-accent-soft-text truncate">
-                        {ab.account_name}
-                      </span>
-                      <span className="text-[11px] font-semibold text-accent-soft-text tabular-nums">
-                        {formatCurrency(ab.balance, monthlyStats.currency)}
-                      </span>
+            {topExpenseCategories.length > 0 ? (
+              <div className="mt-3 space-y-2">
+                {topExpenseCategories.map((entry, index) => (
+                  <div
+                    key={entry.category}
+                    className="rounded-lg border border-edge-default bg-surface-page px-3 py-3"
+                  >
+                    <div>
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 w-5 text-[11px] font-semibold tabular-nums text-content-muted">
+                          {index + 1}
+                        </span>
+                        <span
+                          className="mt-1.5 h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: entry.fill }}
+                        />
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-content-primary">
+                            {entry.category}
+                          </div>
+                          <div className="mt-1 text-[11px] font-medium text-content-tertiary">
+                            {entry.percentage} of spend
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-2 pl-8 text-right">
+                        <div className="text-sm font-semibold text-content-primary tabular-nums">
+                          {entry.formatted}
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col gap-1 mt-2">
-                {accountBalances.slice(0, 3).map((ab) => (
-                  <div key={ab.account_id} className="flex items-center justify-between">
-                    <span className="text-[11px] text-accent-soft-text truncate">
-                      {ab.account_name}
-                    </span>
-                    <span className="text-[11px] font-semibold text-accent-soft-text tabular-nums">
-                      {formatCurrency(ab.balance, monthlyStats.currency)}
-                    </span>
                   </div>
                 ))}
-                {accountBalances.length > 3 && (
-                  <span className="text-[10px] text-accent-soft-text/60">
-                    +{accountBalances.length - 3} more
-                  </span>
-                )}
+              </div>
+            ) : (
+              <div className="mt-3 rounded-lg border border-dashed border-edge-default px-3 py-4 text-center text-xs text-content-muted">
+                No expense categories yet for this period
               </div>
             )}
+          </div>
+
+          {/* Cash Flow */}
+          <div
+            className={`col-span-2 sm:col-span-1 rounded-xl border p-4 sm:p-5 ${
+              netBalance >= 0
+                ? "border-edge-default bg-accent-soft-bg"
+                : "border-negative-border bg-negative-bg"
+            }`}
+          >
+            <div
+              className={`flex items-center gap-2 text-xs font-medium uppercase tracking-wider ${
+                netBalance >= 0 ? "text-accent-soft-text/70" : "text-negative-text/70"
+              }`}
+            >
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h16M7 15l3-3 2 2 5-6" />
+              </svg>
+              Cash Flow
+            </div>
+            <div className="mt-3">
+              <div>
+                <div className="flex items-center gap-2 text-xl font-bold text-content-primary tabular-nums sm:text-2xl">
+                  {formatCurrency(netBalance, monthlyStats.currency)}
+                  <span
+                    className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ${
+                      netBalance >= 0
+                        ? "bg-positive-bg text-positive-text-strong"
+                        : "bg-negative-bg text-negative-text"
+                    }`}
+                  >
+                    {netBalance >= 0 ? "+" : "-"}
+                  </span>
+                </div>
+                <p className="mt-1 text-[11px] text-content-tertiary">
+                  Net movement for {periodLabel.toLowerCase()}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2.5">
+              <div className="flex items-center justify-between rounded-lg bg-surface-primary/65 px-3 py-2 backdrop-blur-sm">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
+                  In
+                </span>
+                <span className="text-sm font-semibold text-positive-text-strong tabular-nums">
+                  {formatCurrency(monthlyStats.total_income, monthlyStats.currency)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-surface-primary/65 px-3 py-2 backdrop-blur-sm">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
+                  Out
+                </span>
+                <span className="text-sm font-semibold text-content-primary tabular-nums">
+                  {formatCurrency(monthlyStats.total_spent, monthlyStats.currency)}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -765,11 +814,11 @@ export default function Dashboard() {
               {formatCurrency(totalNetWorth, monthlyStats.currency)}
             </span>
           </div>
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          <div className="flex flex-wrap gap-2">
             {accountBalances.map((ab) => (
               <div
                 key={ab.account_id}
-                className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border border-edge-default bg-surface-elevated hover:bg-surface-hover transition-colors cursor-default"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge-default bg-surface-elevated hover:bg-surface-hover transition-colors cursor-default"
               >
                 <svg
                   className="w-3.5 h-3.5 text-content-tertiary"

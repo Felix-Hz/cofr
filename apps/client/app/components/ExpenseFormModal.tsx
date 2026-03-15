@@ -38,7 +38,10 @@ export default function ExpenseFormModal({
   const defaultCategoryId =
     activeCategories.find((c) => c.slug === "miscellaneous")?.id || activeCategories[0]?.id || "";
 
-  const defaultAccountId = accounts[0]?.id || "";
+  const storedDefaultAccountId =
+    typeof window !== "undefined" ? localStorage.getItem("cofr_default_account_id") : null;
+  const defaultAccountId =
+    accounts.find((account) => account.id === storedDefaultAccountId)?.id || accounts[0]?.id || "";
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: isOpen resets form when modal reopens
   useEffect(() => {
