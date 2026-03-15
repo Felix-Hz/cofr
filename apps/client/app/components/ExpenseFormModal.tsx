@@ -163,7 +163,7 @@ export default function ExpenseFormModal({
                     htmlFor="account"
                     className="block text-sm font-medium text-content-secondary mb-1"
                   >
-                    Account
+                    {mode === "fund" ? "Into Account" : "From Account"}
                   </label>
                   <select
                     id="account"

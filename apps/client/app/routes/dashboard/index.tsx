@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useLoaderData, useNavigate, useRevalidator } from "react-router";
-import { Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Pie, PieChart, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import CategoryPieTooltip from "~/components/CategoryPieTooltip";
 import ControlsPanel, {
   getPresetDates,
@@ -9,8 +9,9 @@ import ControlsPanel, {
   shiftPreset,
 } from "~/components/ControlsPanel";
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
+import ExchangeRatesModal from "~/components/ExchangeRatesModal";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
-import FilterModal from "~/components/FilterModal";
+import Tooltip from "~/components/Tooltip";
 import TransferFormModal from "~/components/TransferFormModal";
 import {
   createExpense,
@@ -79,6 +80,61 @@ export async function clientLoader({ request }: { request: Request }) {
   };
 }
 
+function TransferButton({
+  onClick,
+  className,
+  showLabel = false,
+}: {
+  onClick: () => void;
+  className?: string;
+  showLabel?: boolean;
+}) {
+  return (
+    <Tooltip content="Transfer between accounts" position={showLabel ? "top" : "bottom"}>
+      <button
+        onClick={onClick}
+        className={`h-9 sm:h-8 w-9 sm:w-auto sm:px-3 sm:gap-1.5 items-center justify-center rounded-lg border border-accent/30 text-accent hover:bg-accent-soft-bg transition-colors ${className ?? "flex"}`}
+        aria-label="New transfer"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
+          />
+        </svg>
+        {showLabel && <span className="hidden sm:inline text-xs font-medium">Transfer</span>}
+      </button>
+    </Tooltip>
+  );
+}
+
+function AddButton({
+  onClick,
+  className,
+  showLabel = false,
+}: {
+  onClick: () => void;
+  className?: string;
+  showLabel?: boolean;
+}) {
+  return (
+    <Tooltip content="Add an expense or fund an account" position={showLabel ? "top" : "bottom"}>
+      <button
+        onClick={onClick}
+        className={`h-9 sm:h-8 w-9 sm:w-auto sm:px-3.5 sm:gap-1.5 items-center justify-center bg-emerald text-white rounded-lg hover:bg-emerald-hover transition-colors ${className ?? "flex"}`}
+        aria-label="Add an expense or fund an account"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+        {showLabel && <span className="hidden sm:inline text-xs font-medium">Add</span>}
+      </button>
+    </Tooltip>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const revalidator = useRevalidator();
@@ -103,16 +159,11 @@ export default function Dashboard() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isRatesModalOpen, setIsRatesModalOpen] = useState(false);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
   const controlsToggleRef = useRef<HTMLButtonElement>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Local filter state
-  const [filterCategory, setFilterCategory] = useState(currentCategory);
-  const [filterMinAmount, setFilterMinAmount] = useState(currentMinAmount);
-  const [filterMaxAmount, setFilterMaxAmount] = useState(currentMaxAmount);
 
   // Custom range local state (for ControlsPanel inputs)
   const [customStart, setCustomStart] = useState(startDate);
@@ -212,21 +263,19 @@ export default function Dashboard() {
     navigate(buildUrl({ offset: (page - 1) * currentLimit }));
   };
 
-  const applyFilters = () => {
-    navigate(
-      buildUrl({
-        offset: 0,
-        category: filterCategory,
-        minAmount: filterMinAmount,
-        maxAmount: filterMaxAmount,
-      }),
-    );
+  const handleCategoryFilterChange = (value: string) => {
+    navigate(buildUrl({ offset: 0, category: value }));
+  };
+
+  const handleMinAmountChange = (value: string) => {
+    navigate(buildUrl({ offset: 0, minAmount: value }));
+  };
+
+  const handleMaxAmountChange = (value: string) => {
+    navigate(buildUrl({ offset: 0, maxAmount: value }));
   };
 
   const clearFilters = () => {
-    setFilterCategory("");
-    setFilterMinAmount("");
-    setFilterMaxAmount("");
     navigate(buildUrl({ offset: 0, category: "", minAmount: "", maxAmount: "" }));
   };
 
@@ -372,20 +421,22 @@ export default function Dashboard() {
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Prev arrow */}
           {showArrows && (
-            <button
-              onClick={goToPrev}
-              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary shrink-0"
-              aria-label="Previous period"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
+            <Tooltip content="Previous period">
+              <button
+                onClick={goToPrev}
+                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary shrink-0"
+                aria-label="Previous period"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+            </Tooltip>
           )}
 
           <div className="min-w-0">
@@ -399,20 +450,22 @@ export default function Dashboard() {
 
           {/* Next arrow */}
           {showArrows && (
-            <button
-              onClick={goToNext}
-              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary shrink-0"
-              aria-label="Next period"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
+            <Tooltip content="Next period">
+              <button
+                onClick={goToNext}
+                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary shrink-0"
+                aria-label="Next period"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </Tooltip>
           )}
         </div>
 
@@ -431,34 +484,39 @@ export default function Dashboard() {
 
           {/* Controls toggle */}
           <div className="relative">
-            <button
-              ref={controlsToggleRef}
-              onClick={() => setIsControlsOpen(!isControlsOpen)}
-              className={`h-9 w-9 flex items-center justify-center rounded-lg transition-colors ${
-                isControlsOpen
-                  ? "bg-emerald text-white"
-                  : "border border-edge-strong hover:bg-surface-hover text-content-tertiary hover:text-content-primary"
-              }`}
-              aria-label="Controls"
-            >
-              {/* Sliders icon */}
-              <svg
-                className="w-4 h-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            <Tooltip content="Filters & controls">
+              <button
+                ref={controlsToggleRef}
+                onClick={() => setIsControlsOpen(!isControlsOpen)}
+                className={`relative h-9 w-9 flex items-center justify-center rounded-lg transition-colors ${
+                  isControlsOpen
+                    ? "bg-emerald text-white"
+                    : "border border-edge-strong hover:bg-surface-hover text-content-tertiary hover:text-content-primary"
+                }`}
+                aria-label="Filters & controls"
               >
-                <line x1="4" y1="7" x2="20" y2="7" />
-                <line x1="4" y1="12" x2="20" y2="12" />
-                <line x1="4" y1="17" x2="20" y2="17" />
-                <circle cx="8" cy="7" r="2" fill="currentColor" />
-                <circle cx="16" cy="12" r="2" fill="currentColor" />
-                <circle cx="10" cy="17" r="2" fill="currentColor" />
-              </svg>
-            </button>
+                {/* Sliders icon */}
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="4" y1="7" x2="20" y2="7" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="4" y1="17" x2="20" y2="17" />
+                  <circle cx="8" cy="7" r="2" fill="currentColor" />
+                  <circle cx="16" cy="12" r="2" fill="currentColor" />
+                  <circle cx="10" cy="17" r="2" fill="currentColor" />
+                </svg>
+                {hasActiveFilters && (
+                  <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-accent" />
+                )}
+              </button>
+            </Tooltip>
 
             <ControlsPanel
               isOpen={isControlsOpen}
@@ -473,38 +531,20 @@ export default function Dashboard() {
               onCustomStartChange={handleCustomStartChange}
               onCustomEndChange={handleCustomEndChange}
               currencies={CURRENCIES}
+              categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+              category={currentCategory}
+              onCategoryChange={handleCategoryFilterChange}
+              minAmount={currentMinAmount}
+              onMinAmountChange={handleMinAmountChange}
+              maxAmount={currentMaxAmount}
+              onMaxAmountChange={handleMaxAmountChange}
+              hasActiveFilters={hasActiveFilters}
+              onClearFilters={clearFilters}
             />
           </div>
 
-          {/* Mobile-only buttons */}
-          <button
-            onClick={handleTransfer}
-            className="h-9 w-9 flex items-center justify-center rounded-lg border border-accent/30 text-accent hover:bg-accent-soft-bg transition-colors sm:hidden"
-            aria-label="New transfer"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
-              />
-            </svg>
-          </button>
-          <button
-            onClick={handleAdd}
-            className="h-9 w-9 flex items-center justify-center bg-emerald text-white rounded-lg hover:bg-emerald-hover transition-colors sm:hidden"
-            aria-label="Add transaction"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </button>
+          <TransferButton onClick={handleTransfer} className="flex sm:hidden" />
+          <AddButton onClick={handleAdd} className="flex sm:hidden" />
         </div>
       </div>
 
@@ -519,8 +559,18 @@ export default function Dashboard() {
               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          Totals converted to {monthlyStats.currency} at approximate rates. Select a specific
-          currency to view only those transactions.
+          <span>
+            Totals converted to {monthlyStats.currency} at approximate rates. Select a specific
+            currency to view only those transactions, or{" "}
+            <button
+              type="button"
+              onClick={() => setIsRatesModalOpen(true)}
+              className="underline font-medium hover:text-accent cursor-pointer"
+            >
+              view daily rates
+            </button>
+            .
+          </span>
         </div>
       )}
 
@@ -568,7 +618,7 @@ export default function Dashboard() {
                 savingsRate >= 0 ? "text-positive-text" : "text-negative-text/70"
               }`}
             >
-              {formatCurrency(netBalance, monthlyStats.currency)} net
+              {formatCurrency(netBalance, monthlyStats.currency, true)} net
             </p>
           </div>
 
@@ -591,7 +641,7 @@ export default function Dashboard() {
               Spending Pulse
             </div>
             <div className="mt-2 text-xl sm:text-2xl font-bold text-content-primary tabular-nums">
-              {formatCurrency(dailyAverage, monthlyStats.currency)}
+              {formatCurrency(dailyAverage, monthlyStats.currency, true)}
               <span className="text-sm font-medium text-content-tertiary">/day</span>
             </div>
             <p className="mt-1 text-[11px] text-content-tertiary">
@@ -667,7 +717,7 @@ export default function Dashboard() {
             <div className="mt-3 flex items-end justify-between gap-4 sm:flex-col sm:items-start sm:gap-0">
               <div>
                 <div className="flex items-center gap-2 text-xl font-bold text-content-primary tabular-nums sm:text-2xl">
-                  {formatCurrency(netBalance, monthlyStats.currency)}
+                  {formatCurrency(netBalance, monthlyStats.currency, true)}
                   <span
                     className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ${
                       netBalance >= 0
@@ -679,7 +729,7 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-content-tertiary">
-                  Net movement for {periodLabel.toLowerCase()}
+                  Net balance for {periodLabel.toLowerCase()}
                 </p>
               </div>
               <div className="flex flex-col gap-1.5 sm:gap-2.5 sm:mt-4 sm:w-full">
@@ -688,7 +738,7 @@ export default function Dashboard() {
                     In
                   </span>
                   <span className="text-xs sm:text-sm font-semibold text-positive-text-strong tabular-nums">
-                    {formatCurrency(monthlyStats.total_income, monthlyStats.currency)}
+                    {formatCurrency(monthlyStats.total_income, monthlyStats.currency, true, 0)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg bg-surface-primary/65 px-3 py-1.5 sm:py-2 backdrop-blur-sm sm:justify-between">
@@ -696,7 +746,7 @@ export default function Dashboard() {
                     Out
                   </span>
                   <span className="text-xs sm:text-sm font-semibold text-content-primary tabular-nums">
-                    {formatCurrency(monthlyStats.total_spent, monthlyStats.currency)}
+                    {formatCurrency(monthlyStats.total_spent, monthlyStats.currency, true, 0)}
                   </span>
                 </div>
               </div>
@@ -747,7 +797,7 @@ export default function Dashboard() {
                         strokeOpacity={0.65}
                         focusable={false}
                       />
-                      <Tooltip content={<CategoryPieTooltip />} />
+                      <RechartsTooltip content={<CategoryPieTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -886,52 +936,8 @@ export default function Dashboard() {
                 Clear
               </button>
             )}
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className={`h-8 w-8 flex items-center justify-center rounded-lg transition-colors ${
-                hasActiveFilters
-                  ? "bg-accent-soft-bg text-accent-soft-text"
-                  : "hover:bg-surface-hover text-content-tertiary"
-              }`}
-              aria-label="Filter transactions"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                />
-              </svg>
-            </button>
-            <button
-              onClick={handleTransfer}
-              className="h-8 w-8 flex items-center justify-center rounded-lg border border-accent/30 text-accent hover:bg-accent-soft-bg transition-colors"
-              aria-label="New transfer"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
-                />
-              </svg>
-            </button>
-            <button
-              onClick={handleAdd}
-              className="h-8 w-8 flex items-center justify-center bg-emerald text-white rounded-lg hover:bg-emerald-hover transition-colors"
-              aria-label="Add transaction"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-            </button>
+            <TransferButton onClick={handleTransfer} showLabel />
+            <AddButton onClick={handleAdd} showLabel />
           </div>
         </div>
 
@@ -1123,18 +1129,11 @@ export default function Dashboard() {
         onConfirm={handleDeleteConfirm}
         isLoading={isLoading}
       />
-      <FilterModal
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
-        onApply={applyFilters}
-        onClear={clearFilters}
-        category={filterCategory}
-        setCategory={setFilterCategory}
-        minAmount={filterMinAmount}
-        setMinAmount={setFilterMinAmount}
-        maxAmount={filterMaxAmount}
-        setMaxAmount={setFilterMaxAmount}
-        hasActiveFilters={hasActiveFilters}
+
+      <ExchangeRatesModal
+        isOpen={isRatesModalOpen}
+        onClose={() => setIsRatesModalOpen(false)}
+        preferredCurrency={monthlyStats.currency}
       />
     </div>
   );

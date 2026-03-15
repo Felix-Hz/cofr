@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type Preset = "thisMonth" | "last7Days" | "lastYear" | "custom";
 
@@ -15,6 +15,15 @@ interface ControlsPanelProps {
   onCustomStartChange: (value: string) => void;
   onCustomEndChange: (value: string) => void;
   currencies: string[];
+  categories: { id: string; name: string }[];
+  category: string;
+  onCategoryChange: (value: string) => void;
+  minAmount: string;
+  onMinAmountChange: (value: string) => void;
+  maxAmount: string;
+  onMaxAmountChange: (value: string) => void;
+  hasActiveFilters: boolean;
+  onClearFilters: () => void;
 }
 
 const PRESETS: { value: Preset; label: string }[] = [
@@ -37,9 +46,26 @@ export default function ControlsPanel({
   onCustomStartChange,
   onCustomEndChange,
   currencies,
+  categories,
+  category,
+  onCategoryChange,
+  minAmount,
+  onMinAmountChange,
+  maxAmount,
+  onMaxAmountChange,
+  hasActiveFilters,
+  onClearFilters,
 }: ControlsPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number | null>(null);
+
+  // Local state for amount inputs (navigate only on blur)
+  const [localMin, setLocalMin] = useState(minAmount);
+  const [localMax, setLocalMax] = useState(maxAmount);
+
+  // Sync local state when props change (e.g. URL navigation)
+  useEffect(() => setLocalMin(minAmount), [minAmount]);
+  useEffect(() => setLocalMax(maxAmount), [maxAmount]);
 
   // Swipe down to close on mobile
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -100,7 +126,7 @@ export default function ControlsPanel({
           onTouchEnd={handleTouchEnd}
           className="
             w-full max-h-[85dvh] overflow-y-auto
-            sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:w-80 sm:max-h-none sm:overflow-visible
+            sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:w-80 sm:max-h-[80vh] sm:overflow-y-auto
             bg-surface-primary border border-edge-default rounded-t-2xl sm:rounded-xl
             shadow-xl p-5 pb-8 sm:pb-5
           "
@@ -193,6 +219,75 @@ export default function ControlsPanel({
                 ))}
               </select>
             </div>
+
+            <hr className="border-edge-default" />
+
+            {/* Category */}
+            <div>
+              <label
+                htmlFor="ctrl-category"
+                className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
+              >
+                Category
+              </label>
+              <select
+                id="ctrl-category"
+                value={category}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs font-medium bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              >
+                <option value="">All Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Amount range */}
+            <div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5">
+                Amount Range
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="number"
+                  placeholder="Min"
+                  value={localMin}
+                  onChange={(e) => setLocalMin(e.target.value)}
+                  onBlur={() => {
+                    if (localMin !== minAmount) onMinAmountChange(localMin);
+                  }}
+                  min="0"
+                  step="0.01"
+                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40 tabular-nums"
+                />
+                <input
+                  type="number"
+                  placeholder="Max"
+                  value={localMax}
+                  onChange={(e) => setLocalMax(e.target.value)}
+                  onBlur={() => {
+                    if (localMax !== maxAmount) onMaxAmountChange(localMax);
+                  }}
+                  min="0"
+                  step="0.01"
+                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40 tabular-nums"
+                />
+              </div>
+            </div>
+
+            {/* Clear filters */}
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={onClearFilters}
+                className="w-full text-xs text-negative-text hover:text-negative-text-strong font-medium py-1.5 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         </div>
       </div>

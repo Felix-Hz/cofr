@@ -9,11 +9,23 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Currency formatting
-export function formatCurrency(amount: number, currency: string): string {
-  return new Intl.NumberFormat("en-US", {
+export function formatCurrency(
+  amount: number,
+  currency: string,
+  compact = false,
+  maximumFractionDigits?: number,
+): string {
+  const opts: Intl.NumberFormatOptions = {
     style: "currency",
     currency,
-  }).format(amount);
+  };
+  if (compact && Math.abs(amount) >= 1_000_000) {
+    opts.notation = "compact";
+    opts.maximumFractionDigits = 1;
+  } else if (maximumFractionDigits !== undefined) {
+    opts.maximumFractionDigits = maximumFractionDigits;
+  }
+  return new Intl.NumberFormat("en-US", opts).format(amount);
 }
 
 // Date formatting
