@@ -152,7 +152,7 @@ func parseAmounts(amountStr string) ([]float64, error) {
 /**
  * Validate and process an add transaction message.
  */
-func parseAddTx(msg string, preferredCurrency string, userID uuid.UUID) (*db.Category, []float64, string, string, error) {
+func parseAddTx(msg string, preferredCurrency string, userID uuid.UUID) (*db.Category, []float64, string, string, bool, error) {
 
 	/**
 	 * Split the message into parts divided by spaces,
@@ -160,7 +160,7 @@ func parseAddTx(msg string, preferredCurrency string, userID uuid.UUID) (*db.Cat
 	 */
 	parts := strings.Fields(msg)
 	if len(parts) < 2 {
-		return nil, nil, "", "", fmt.Errorf("invalid message format")
+		return nil, nil, "", "", false, fmt.Errorf("invalid message format")
 	}
 
 	/**
@@ -168,7 +168,7 @@ func parseAddTx(msg string, preferredCurrency string, userID uuid.UUID) (*db.Cat
 	 */
 	cat, exists := findCategory(parts[0], userID)
 	if !exists {
-		return nil, nil, "", "", fmt.Errorf("invalid category alias")
+		return nil, nil, "", "", false, fmt.Errorf("invalid category alias")
 	}
 
 	/**
@@ -176,37 +176,51 @@ func parseAddTx(msg string, preferredCurrency string, userID uuid.UUID) (*db.Cat
 	 */
 	amounts, err := parseAmounts(parts[1])
 	if err != nil {
-		return nil, nil, "", "", fmt.Errorf("failed to parse amount %q: %w", parts[1], err)
+		return nil, nil, "", "", false, fmt.Errorf("failed to parse amount %q: %w", parts[1], err)
 	}
 
 	// At least one valid amount is required
 	if len(amounts) == 0 {
-		return nil, nil, "", "", fmt.Errorf("no valid amounts found")
+		return nil, nil, "", "", false, fmt.Errorf("no valid amounts found")
 	}
 
 	/**
-	 * Extract transaction notes and preferred currency if they exist.
+	 * Extract transaction notes, preferred currency, and opening balance flag.
 	 */
 	notes := ""
 	currency := preferredCurrency
+	isOpeningBalance := false
 
 	if len(parts) > 2 {
 		notesParts := parts[2:]
 
+		// Scan for ob: flag (case-insensitive) and remove it
+		filtered := make([]string, 0, len(notesParts))
+		for _, p := range notesParts {
+			if strings.EqualFold(p, "ob:") {
+				isOpeningBalance = true
+			} else {
+				filtered = append(filtered, p)
+			}
+		}
+		notesParts = filtered
+
 		// Check if last part is a currency code starting with $
-		lastPart := notesParts[len(notesParts)-1]
-		if strings.HasPrefix(lastPart, "$") {
-			currencyCode := strings.ToUpper(strings.TrimPrefix(lastPart, "$"))
-			if isValidCurrency(currencyCode) {
-				currency = currencyCode
-				notesParts = notesParts[:len(notesParts)-1]
+		if len(notesParts) > 0 {
+			lastPart := notesParts[len(notesParts)-1]
+			if strings.HasPrefix(lastPart, "$") {
+				currencyCode := strings.ToUpper(strings.TrimPrefix(lastPart, "$"))
+				if isValidCurrency(currencyCode) {
+					currency = currencyCode
+					notesParts = notesParts[:len(notesParts)-1]
+				}
 			}
 		}
 
 		notes = strings.Join(notesParts, " ")
 	}
 
-	return cat, amounts, notes, currency, nil
+	return cat, amounts, notes, currency, isOpeningBalance, nil
 }
 
 /**

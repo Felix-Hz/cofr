@@ -43,19 +43,20 @@ const (
 
 // FlowSession stores the state of an active multi-step flow.
 type FlowSession struct {
-	Flow          FlowType
-	Step          FlowStep
-	UserID        uuid.UUID
-	CategoryID    uuid.UUID
-	CategoryName  string
-	CategoryIcon  string
-	Amount        float64
-	Currency      string
-	Notes         string
-	MessageID     int // The bot message being edited in-place
-	TransactionID uuid.UUID
-	ReceiptFileID string
-	CreatedAt     time.Time
+	Flow             FlowType
+	Step             FlowStep
+	UserID           uuid.UUID
+	CategoryID       uuid.UUID
+	CategoryName     string
+	CategoryIcon     string
+	Amount           float64
+	Currency         string
+	Notes            string
+	MessageID        int // The bot message being edited in-place
+	TransactionID    uuid.UUID
+	ReceiptFileID    string
+	IsOpeningBalance bool
+	CreatedAt        time.Time
 	// Short ID mapping for callback data (UUID is too long for 64-byte callback limit)
 	IDMap map[string]uuid.UUID
 	// Transfer flow fields

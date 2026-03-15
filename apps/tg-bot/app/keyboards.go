@@ -82,7 +82,11 @@ func buildCurrencyKeyboard(preferred string) telegramClient.InlineKeyboardMarkup
 }
 
 // buildConfirmKeyboard builds the confirmation keyboard for a guided add flow.
-func buildConfirmKeyboard() telegramClient.InlineKeyboardMarkup {
+func buildConfirmKeyboard(isOpeningBalance bool) telegramClient.InlineKeyboardMarkup {
+	obLabel := "OB: Off"
+	if isOpeningBalance {
+		obLabel = "OB: On"
+	}
 	return telegramClient.NewInlineKeyboardMarkup(
 		telegramClient.NewInlineKeyboardRow(
 			telegramClient.NewInlineKeyboardButtonData("Confirm", "cfm:"),
@@ -90,6 +94,7 @@ func buildConfirmKeyboard() telegramClient.InlineKeyboardMarkup {
 			telegramClient.NewInlineKeyboardButtonData("Notes", "note:"),
 		),
 		telegramClient.NewInlineKeyboardRow(
+			telegramClient.NewInlineKeyboardButtonData(obLabel, "ob:toggle"),
 			telegramClient.NewInlineKeyboardButtonData("Cancel", "cnl:"),
 		),
 	)
