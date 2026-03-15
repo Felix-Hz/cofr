@@ -102,7 +102,7 @@ func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 	}
 
 	// Process incoming add-request message.
-	category, amounts, notes, currency, err := parseAddTx(body, user.PreferredCurrency, userId)
+	category, amounts, notes, currency, isOpeningBalance, err := parseAddTx(body, user.PreferredCurrency, userId)
 	if err != nil {
 		return CommandResult{Command: Add, Error: err, UserError: userErrors[Add]}
 	}
@@ -120,13 +120,14 @@ func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 		}
 
 		_txs = append(_txs, &Transaction{
-			Hash:       hash,
-			Notes:      notes,
-			UserID:     userId,
-			Amount:     amount,
-			Currency:   currency,
-			CategoryID: category.ID,
-			Timestamp:  timestamp,
+			Hash:             hash,
+			Notes:            notes,
+			UserID:           userId,
+			Amount:           amount,
+			Currency:         currency,
+			CategoryID:       category.ID,
+			Timestamp:        timestamp,
+			IsOpeningBalance: isOpeningBalance,
 		})
 	}
 

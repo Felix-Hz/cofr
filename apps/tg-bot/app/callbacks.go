@@ -52,6 +52,8 @@ func HandleCallbackQuery(bot *telegramClient.BotAPI, query *telegramClient.Callb
 		handleEditFieldCallback(bot, chatID, messageID, param)
 	case "sum":
 		handleSummaryCallback(bot, chatID, messageID, param)
+	case "ob":
+		handleOBToggleCallback(bot, chatID, messageID)
 	case "hlp":
 		handleHelpCallback(bot, chatID, messageID, param)
 	}
@@ -175,14 +177,15 @@ func commitGuidedAdd(bot *telegramClient.BotAPI, chatID int64, messageID int, se
 	}
 
 	txs, err := r.TxRepo().Create([]*Transaction{{
-		Hash:          hash,
-		Notes:         session.Notes,
-		UserID:        session.UserID,
-		Amount:        session.Amount,
-		Currency:      session.Currency,
-		CategoryID:    session.CategoryID,
-		Timestamp:     timestamp,
-		ReceiptFileID: nilIfEmpty(session.ReceiptFileID),
+		Hash:             hash,
+		Notes:            session.Notes,
+		UserID:           session.UserID,
+		Amount:           session.Amount,
+		Currency:         session.Currency,
+		CategoryID:       session.CategoryID,
+		Timestamp:        timestamp,
+		ReceiptFileID:    nilIfEmpty(session.ReceiptFileID),
+		IsOpeningBalance: session.IsOpeningBalance,
 	}})
 	if err != nil {
 		log.Printf("⚠️ Guided add error: %v", err)
@@ -204,6 +207,19 @@ func nilIfEmpty(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+// --- Opening balance toggle ---
+
+func handleOBToggleCallback(bot *telegramClient.BotAPI, chatID int64, messageID int) {
+	session := Sessions.Get(chatID)
+	if session == nil || session.Flow != FlowAdd {
+		return
+	}
+
+	session.IsOpeningBalance = !session.IsOpeningBalance
+	Sessions.Set(chatID, session)
+	showAddConfirmation(bot, chatID, messageID, session)
 }
 
 // --- Notes prompt ---
@@ -499,7 +515,10 @@ func showAddConfirmation(bot *telegramClient.BotAPI, chatID int64, messageID int
 	if session.Notes != "" {
 		text += fmt.Sprintf("\n📌 %s", escapeHTML(session.Notes))
 	}
+	if session.IsOpeningBalance {
+		text += "\n📋 Opening balance"
+	}
 
-	kb := buildConfirmKeyboard()
+	kb := buildConfirmKeyboard(session.IsOpeningBalance)
 	editHTML(bot, chatID, messageID, text, &kb)
 }
