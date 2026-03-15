@@ -19,9 +19,16 @@ export function formatCurrency(amount: number, currency: string): string {
 // Date formatting
 export function formatDate(
   date: string | Date,
-  format: "short" | "long" | "compact" = "short",
+  format: "short" | "long" | "compact" | "mobile" = "short",
 ): string {
   const d = typeof date === "string" ? new Date(date) : date;
+
+  if (format === "mobile") {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+    }).format(d);
+  }
 
   if (format === "long") {
     return new Intl.DateTimeFormat("en-US", {

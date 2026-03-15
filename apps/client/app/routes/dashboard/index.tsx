@@ -246,10 +246,14 @@ export default function Dashboard() {
       count: cat.count,
       percentage: getPercentageDisplay(cat.category_type, cat.total),
       fill: isDark ? cat.category_color_dark : cat.category_color_light,
-      formatted: formatCurrency(cat.total, monthlyStats.currency),
+      formatted: new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: monthlyStats.currency,
+        maximumFractionDigits: 0,
+      }).format(cat.total),
     }))
     .sort((a, b) => b.total - a.total);
-  const topExpenseCategories = pieData.slice(0, 3);
+  const topExpenseCategories = pieData.slice(0, 5);
 
   // Filter out 'to' side of transfers from the display list
   const displayExpenses = expenses.filter(
@@ -345,13 +349,17 @@ export default function Dashboard() {
     : null;
 
   // Helper: get account name for transfer display
-  const getTransferLabel = (expense: Expense): string => {
+  const getTransferLabel = (expense: Expense, short = false): string => {
     // expense is the 'from' side; we need to look through all expenses to find the linked 'to' side
     const linkedTo = expenses.find(
       (e: Expense) => e.id === expense.linked_transaction_id && e.transfer_direction === "to",
     );
     const fromName = expense.account_name;
     const toName = linkedTo?.account_name || "?";
+    if (short) {
+      const abbr = (name: string) => (name.length > 5 ? name.slice(0, 3) : name);
+      return `${abbr(fromName)} → ${abbr(toName)}`;
+    }
     return `${fromName} → ${toName}`;
   };
 
@@ -593,59 +601,40 @@ export default function Dashboard() {
 
           {/* Top Categories */}
           <div className="hidden sm:block rounded-xl border border-edge-default bg-surface-primary p-4 sm:p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
-                <svg
-                  className="h-3.5 w-3.5 shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7 20V10m5 10V4m5 16v-7" />
-                </svg>
-                <span className="leading-tight">Top Categories</span>
-              </div>
-              <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-content-muted">
-                Top 3
-              </span>
+            <div className="flex min-w-0 items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
+              <svg
+                className="h-3.5 w-3.5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 20V10m5 10V4m5 16v-7" />
+              </svg>
+              <span className="leading-tight">Top Categories</span>
             </div>
             {topExpenseCategories.length > 0 ? (
-              <div className="mt-3 space-y-2">
-                {topExpenseCategories.map((entry, index) => (
-                  <div
-                    key={entry.category}
-                    className="rounded-lg border border-edge-default bg-surface-page px-3 py-3"
-                  >
-                    <div>
-                      <div className="flex items-start gap-3">
-                        <span className="mt-0.5 w-5 text-[11px] font-semibold tabular-nums text-content-muted">
-                          {index + 1}
-                        </span>
-                        <span
-                          className="mt-1.5 h-2.5 w-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: entry.fill }}
-                        />
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-semibold text-content-primary">
-                            {entry.category}
-                          </div>
-                          <div className="mt-1 text-[11px] font-medium text-content-tertiary">
-                            {entry.percentage} of spend
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-2 pl-8 text-right">
-                        <div className="text-sm font-semibold text-content-primary tabular-nums">
-                          {entry.formatted}
-                        </div>
-                      </div>
-                    </div>
+              <div className="mt-3 space-y-1">
+                {topExpenseCategories.map((entry) => (
+                  <div key={entry.category} className="flex items-center gap-2 py-1">
+                    <span
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{ backgroundColor: entry.fill }}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm text-content-primary">
+                      {entry.category}
+                    </span>
+                    <span className="shrink-0 text-xs text-content-tertiary tabular-nums">
+                      {entry.percentage}
+                    </span>
+                    <span className="shrink-0 text-sm font-medium text-content-primary tabular-nums">
+                      {entry.formatted}
+                    </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="mt-3 rounded-lg border border-dashed border-edge-default px-3 py-4 text-center text-xs text-content-muted">
+              <div className="mt-3 rounded-lg border border-dashed border-edge-default px-3 py-3 text-center text-xs text-content-muted">
                 No expense categories yet for this period
               </div>
             )}
@@ -675,7 +664,7 @@ export default function Dashboard() {
               </svg>
               Cash Flow
             </div>
-            <div className="mt-3">
+            <div className="mt-3 flex items-end justify-between gap-4 sm:flex-col sm:items-start sm:gap-0">
               <div>
                 <div className="flex items-center gap-2 text-xl font-bold text-content-primary tabular-nums sm:text-2xl">
                   {formatCurrency(netBalance, monthlyStats.currency)}
@@ -693,23 +682,23 @@ export default function Dashboard() {
                   Net movement for {periodLabel.toLowerCase()}
                 </p>
               </div>
-            </div>
-            <div className="mt-4 space-y-2.5">
-              <div className="flex items-center justify-between rounded-lg bg-surface-primary/65 px-3 py-2 backdrop-blur-sm">
-                <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
-                  In
-                </span>
-                <span className="text-sm font-semibold text-positive-text-strong tabular-nums">
-                  {formatCurrency(monthlyStats.total_income, monthlyStats.currency)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-surface-primary/65 px-3 py-2 backdrop-blur-sm">
-                <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
-                  Out
-                </span>
-                <span className="text-sm font-semibold text-content-primary tabular-nums">
-                  {formatCurrency(monthlyStats.total_spent, monthlyStats.currency)}
-                </span>
+              <div className="flex flex-col gap-1.5 sm:gap-2.5 sm:mt-4 sm:w-full">
+                <div className="flex items-center gap-2 rounded-lg bg-surface-primary/65 px-3 py-1.5 sm:py-2 backdrop-blur-sm sm:justify-between">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
+                    In
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-positive-text-strong tabular-nums">
+                    {formatCurrency(monthlyStats.total_income, monthlyStats.currency)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg bg-surface-primary/65 px-3 py-1.5 sm:py-2 backdrop-blur-sm sm:justify-between">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
+                    Out
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-content-primary tabular-nums">
+                    {formatCurrency(monthlyStats.total_spent, monthlyStats.currency)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -814,14 +803,14 @@ export default function Dashboard() {
               {formatCurrency(totalNetWorth, monthlyStats.currency)}
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
             {accountBalances.map((ab) => (
               <div
                 key={ab.account_id}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge-default bg-surface-elevated hover:bg-surface-hover transition-colors cursor-default"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge-default bg-surface-elevated min-w-0"
               >
                 <svg
-                  className="w-3.5 h-3.5 text-content-tertiary"
+                  className="w-3.5 h-3.5 shrink-0 text-content-tertiary"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -856,9 +845,11 @@ export default function Dashboard() {
                     />
                   )}
                 </svg>
-                <span className="text-xs font-medium text-content-primary">{ab.account_name}</span>
+                <span className="text-xs font-medium text-content-primary truncate">
+                  {ab.account_name}
+                </span>
                 <span
-                  className={`text-xs font-semibold tabular-nums ${
+                  className={`text-xs font-semibold tabular-nums shrink-0 ml-auto ${
                     ab.balance > 0
                       ? "text-positive-text-strong"
                       : ab.balance < 0
@@ -946,10 +937,10 @@ export default function Dashboard() {
 
         {/* Table */}
         <div className="rounded-xl border border-edge-default bg-surface-primary shadow-sm overflow-hidden">
-          <table className="min-w-full divide-y divide-edge-default">
+          <table className="min-w-full table-fixed divide-y divide-edge-default">
             <thead>
               <tr className="bg-surface-elevated">
-                <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+                <th className="w-[72px] sm:w-auto px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
                   Date
                 </th>
                 <th className="hidden sm:table-cell px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
@@ -961,7 +952,7 @@ export default function Dashboard() {
                 <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
                   Category
                 </th>
-                <th className="px-3 sm:px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+                <th className="w-[90px] sm:w-auto px-3 sm:px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
                   Amount
                 </th>
               </tr>
@@ -994,7 +985,7 @@ export default function Dashboard() {
                     >
                       <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-xs text-content-tertiary tabular-nums">
                         <span className="sm:hidden">
-                          {formatDate(expense.created_at, "compact")}
+                          {formatDate(expense.created_at, "mobile")}
                         </span>
                         <span className="hidden sm:inline">{formatDate(expense.created_at)}</span>
                       </td>
@@ -1008,11 +999,11 @@ export default function Dashboard() {
                           <span className="text-content-muted">—</span>
                         )}
                       </td>
-                      <td className="px-3 sm:px-5 py-3 whitespace-nowrap">
+                      <td className="px-3 sm:px-5 py-3 sm:whitespace-nowrap max-w-0 sm:max-w-none overflow-hidden text-ellipsis">
                         {isTransfer ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-soft-text">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-soft-text truncate">
                             <svg
-                              className="w-3 h-3"
+                              className="w-3 h-3 shrink-0"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -1024,15 +1015,20 @@ export default function Dashboard() {
                                 d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
                               />
                             </svg>
-                            {getTransferLabel(expense)}
+                            <span className="sm:hidden truncate">
+                              {getTransferLabel(expense, true)}
+                            </span>
+                            <span className="hidden sm:inline truncate">
+                              {getTransferLabel(expense)}
+                            </span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary truncate">
                             <span
-                              className="w-1.5 h-1.5 rounded-full"
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
                               style={{ backgroundColor: catColor }}
                             />
-                            {expense.category_name}
+                            <span className="truncate">{expense.category_name}</span>
                           </span>
                         )}
                       </td>
@@ -1049,6 +1045,11 @@ export default function Dashboard() {
                           {isTransfer && (
                             <span className="text-[9px] font-semibold leading-none px-1 py-0.5 rounded bg-accent-soft-bg text-accent-soft-text">
                               TR
+                            </span>
+                          )}
+                          {isPositive && !expense.is_opening_balance && !isTransfer && (
+                            <span className="text-[9px] font-semibold leading-none px-1 py-0.5 rounded bg-positive-bg text-positive-text-strong">
+                              IN
                             </span>
                           )}
                           {formatCurrency(expense.amount, expense.currency)}
