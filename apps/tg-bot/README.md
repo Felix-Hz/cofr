@@ -1,78 +1,57 @@
-# Remind-o
+# Cofr Telegram Bot
 
->
-> A Telegram bot for expense tracking with PostgreSQL.
->
+> Telegram bot for expense tracking with inline keyboards, guided flows, and receipt photos.
 
-<details>
-<summary>Me as you read</summary>
-<div align="center">
-  <img src="https://media3.giphy.com/media/SEWEmCymjv8XDbsb8I/giphy.gif?cid=bd3ea57ep35h7i3oqy7gl1w5l4id0nkr90015z9224g39m1r&ep=v1_gifs_search&rid=giphy.gif&ct=g" alt="Expenses Tracking Bot"/>
-</div>
-</details>
+## Features
+
+- **/add** — Guided flow with category picker, or instant add with text shortcuts
+- **/list** — View recent transactions with filters
+- **/summary** — Monthly spending summary with navigation
+- **/edit** — Edit recent transactions interactively
+- **/remove** — Delete with confirmation buttons
+- **/config** — Set default currency
+- **/help** — Interactive help with topic buttons
+- **Receipt photos** — Attach photos to transactions
+- **Backward compatible** — `!bang` commands and bare text still work
 
 ## Prerequisites
 
 - Docker
-- Telegram Bot with @BotFather
-- PostgreSQL database
+- Telegram Bot via @BotFather
+- PostgreSQL database (shared with server)
 
-## Installation
+## Setup
 
-### Setup
+Part of the Cofr monorepo. Run via Docker Compose from the repo root:
 
-1. Install docker if not installed
-
-```zsh
-sudo apt-get update
-sudo apt-get install docker.io
+```bash
+./scripts/setup_dev.sh    # Dev with hot-reload
+./scripts/setup_prod.sh   # Production deploy
 ```
 
-2. Ensure Docker Daemon is running
+### Standalone (local dev)
 
-```zsh
-# check status
-sudo systemctl status docker
-
-# if its down
-sudo systemctl start docker
-
-# enable it to start on boot
-sudo systemctl enable docker
+```bash
+cp .env.example .env      # Fill in TELEGRAM_BOT_TOKEN and DATABASE_URL
+go run main.go
 ```
 
-3. Navigate to the program
+## Environment Variables
 
-```zsh
-cd /your/path/to/remind0
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `TELEGRAM_BOT_TOKEN` | Yes | Token from @BotFather |
+| `DATABASE_URL` | Yes | PostgreSQL DSN |
+| `ENV` | No | `production` or `local` |
+
+## Quick Usage
+
 ```
-
-4. Build the docker image
-
-```zsh
-sudo docker build -t remind0 .
-```
-
-5. Run the container with the required token
-
-### Deployment
-
-Run the container with your credentials now
-
-```zsh
-docker run -d \
- -e TELEGRAM_BOT_TOKEN=<tg_api_token> \
- -e DATABASE_URL=<postgresql_dsn> \
- -e ENV=production \
- --name expenses-telegram-bot \
- remind0
-```
-
-### Additional
-
-I've had issues with Docker not pulling through the images correctly. Can also grab them manually.
-
-```zsh
-docker pull alpine:3.19
-docker pull golang:1.24
+G 45 groceries              # Quick add (bare text)
+/add G 45 groceries $USD    # Slash command with currency
+/add                         # Guided flow with buttons
+/summary                     # Monthly overview
+/edit                        # Pick and edit a transaction
+/remove                      # Delete with confirmation
+[photo with caption]         # Receipt attachment
 ```

@@ -26,6 +26,9 @@ func main() {
 	// Start-up all repositories, yeehaw!
 	r.InitRepositories(db)
 
+	// Initialize session manager for guided flows.
+	Sessions = NewSessionManager()
+
 	// Setup tg bot instance.
 	bot, err := telegramClient.NewBotAPI(config.TelegramToken)
 	if err != nil {
@@ -34,6 +37,9 @@ func main() {
 
 	// Well... what it says.
 	bot.Debug = true
+
+	// Register bot commands menu in Telegram UI.
+	RegisterCommands(bot)
 
 	// Initialise conversation's offset tracking.
 	o := r.OffsetRepo()
@@ -52,8 +58,11 @@ func main() {
 				// Update to keep track of the already processed transactions.
 				o.UpdateLastSeen(offset, update.UpdateID)
 
-				// Handle the message if it's a valid update.
-				if update.Message != nil {
+				// Handle callback queries (inline keyboard button presses).
+				if update.CallbackQuery != nil {
+					HandleCallbackQuery(bot, update.CallbackQuery)
+				} else if update.Message != nil {
+					// Handle the message if it's a valid update.
 					HandleTelegramMessage(bot, update)
 				}
 			}

@@ -90,16 +90,39 @@ func (UserCategoryPreference) TableName() string {
  *
  */
 type Transaction struct {
-	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	UserID      uuid.UUID `gorm:"type:uuid;index"`
-	User        User      `gorm:"constraint:OnDelete:CASCADE"`
-	CategoryID  uuid.UUID `gorm:"type:uuid;index;column:category_id"`
-	CategoryRel Category  `gorm:"foreignKey:CategoryID"`
-	Amount      float64
-	Currency    string `gorm:"default:'NZD';index"` // ISO 4217 currency code
-	Notes       string
-	Timestamp   time.Time `gorm:"autoCreateTime"`
-	Hash        string    `gorm:"uniqueIndex"`
+	ID            uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	UserID        uuid.UUID `gorm:"type:uuid;index"`
+	User          User      `gorm:"constraint:OnDelete:CASCADE"`
+	CategoryID    uuid.UUID `gorm:"type:uuid;index;column:category_id"`
+	CategoryRel   Category  `gorm:"foreignKey:CategoryID"`
+	Amount        float64
+	Currency      string `gorm:"default:'NZD';index"` // ISO 4217 currency code
+	Notes         string
+	Timestamp     time.Time `gorm:"autoCreateTime"`
+	Hash          string    `gorm:"uniqueIndex"`
+	ReceiptFileID *string   `gorm:"column:receipt_file_id"`
+}
+
+/*
+ * 							SummaryResult
+ *
+ * Returned by GetSummary — totals by category type + per-category breakdown.
+ *
+ */
+type SummaryResult struct {
+	TotalIncome     float64
+	TotalExpense    float64
+	TotalSavings    float64
+	TotalInvestment float64
+	TxCount         int
+	ByCategory      []CategorySummary
+}
+
+type CategorySummary struct {
+	CategoryName string
+	CategoryType string
+	Total        float64
+	Count        int
 }
 
 /*

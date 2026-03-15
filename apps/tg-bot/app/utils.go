@@ -75,7 +75,7 @@ func aggregateCategories(txs []*db.Transaction) []AggregatedTransactions {
  * Validate the message length and content.
  */
 func validateMessage(message string) bool {
-	if message == "" || len(message) > 160 {
+	if message == "" || len(message) > 500 {
 		return false
 	}
 	return true

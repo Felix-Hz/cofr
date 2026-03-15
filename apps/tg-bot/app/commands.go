@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	telegramClient "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/google/uuid"
 )
 
@@ -20,6 +21,7 @@ const (
 	Help          Command = "h"
 	Edit          Command = "e"
 	Configuration Command = "config"
+	Summary       Command = "summary"
 )
 
 type CommandResult struct {
@@ -31,49 +33,81 @@ type CommandResult struct {
 	Aggregated   []AggregatedTransactions // Optional as not all commands return aggregated data.
 }
 
-/**
- * Dispatcher that handles incoming commands from the user.
- */
-func dispatch(msg string, timestamp time.Time, userId uuid.UUID) CommandResult {
-	switch content := strings.Fields(msg); content[0] {
-	case "add", "a":
-		return add(strings.Join(content[1:], ""), timestamp, userId)
-	case "remove", "rm", "r", "delete", "del", "d":
-		return remove(content[1:], userId)
-	case "list", "ls", "l":
-		return list(content, timestamp, userId)
-	case "help", "h":
-		return help(content, userId)
-	case "config", "c", "cfg":
-		return config(content[1:], userId)
-	case "edit", "e", "update", "u":
-		return CommandResult{Command: Edit, Error: fmt.Errorf("edit not implemented"), UserError: userErrors[Edit]}
-	default:
-		return CommandResult{Command: Unknown, Error: fmt.Errorf("%s not implemented", content[0]), UserError: userErrors[Unknown]}
+// startGuidedAdd begins the guided add flow (no args) — sends category picker.
+func startGuidedAdd(bot *telegramClient.BotAPI, chatID int64, userID uuid.UUID) {
+	user, err := r.UserRepo().GetByID(userID)
+	if err != nil {
+		sendHTML(bot, chatID, "Failed to load user data.")
+		return
+	}
+
+	kb, idMap, err := buildCategoryKeyboard(userID)
+	if err != nil {
+		sendHTML(bot, chatID, "Failed to load categories.")
+		return
+	}
+
+	Sessions.Set(chatID, &FlowSession{
+		Flow:     FlowAdd,
+		Step:     StepSelectCategory,
+		UserID:   userID,
+		Currency: user.PreferredCurrency,
+		IDMap:    idMap,
+	})
+
+	sendHTMLWithKeyboard(bot, chatID, "Select a category:", kb)
+}
+
+// startEditFlow begins the edit flow — shows last 5 transactions.
+func startEditFlow(bot *telegramClient.BotAPI, chatID int64, userID uuid.UUID) {
+	txs, err := r.TxRepo().GetRecent(userID, 5)
+	if err != nil || len(txs) == 0 {
+		sendHTML(bot, chatID, "No recent transactions to edit.")
+		return
+	}
+
+	kb, idMap := buildEditTransactionKeyboard(txs)
+	Sessions.Set(chatID, &FlowSession{
+		Flow:   FlowEdit,
+		Step:   StepSelectTransaction,
+		UserID: userID,
+		IDMap:  idMap,
+	})
+
+	sendHTMLWithKeyboard(bot, chatID, "<b>Select a transaction to edit:</b>", kb)
+}
+
+// startRemoveFlow begins the remove flow — shows last 5 transactions with delete confirmation.
+func startRemoveFlow(bot *telegramClient.BotAPI, chatID int64, userID uuid.UUID) {
+	txs, err := r.TxRepo().GetRecent(userID, 5)
+	if err != nil || len(txs) == 0 {
+		sendHTML(bot, chatID, "No recent transactions to delete.")
+		return
+	}
+
+	// Show each transaction with a delete confirmation button
+	for _, tx := range txs {
+		text := formatHTMLReceipt(Remove, tx)
+		kb := buildDeleteConfirmKeyboard(tx.ID)
+		sendHTMLWithKeyboard(bot, chatID, text, kb)
 	}
 }
 
 func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 
-	/**
-	 * Get user to retrieve preferred currency.
-	 */
+	// Get user to retrieve preferred currency.
 	user, err := r.UserRepo().GetByID(userId)
 	if err != nil {
 		return CommandResult{Command: Add, Error: err, UserError: userErrors[Unknown]}
 	}
 
-	/**
-	 * Process incoming add-request message.
-	 */
+	// Process incoming add-request message.
 	category, amounts, notes, currency, err := parseAddTx(body, user.PreferredCurrency, userId)
 	if err != nil {
 		return CommandResult{Command: Add, Error: err, UserError: userErrors[Add]}
 	}
 
-	/**
-	 * Setup required transactions to be created.
-	 */
+	// Setup required transactions to be created.
 	_txs := []*Transaction{}
 	for i, amount := range amounts {
 		// Hash message to prevent duplicates. Include batch index and currency to allow duplicate amounts.
@@ -96,9 +130,7 @@ func add(body string, timestamp time.Time, userId uuid.UUID) CommandResult {
 		})
 	}
 
-	/**
-	 * Create the transaction(s).
-	 */
+	// Create the transaction(s).
 	txs, err := r.TxRepo().Create(_txs)
 	if err != nil {
 		return CommandResult{Command: Add, Error: err, UserError: userErrors[Unknown]}
@@ -112,9 +144,7 @@ func remove(strIds []string, userId uuid.UUID) CommandResult {
 	// Slice to hold validated IDs to delete
 	ids := []uuid.UUID{}
 
-	/**
-	 * Validate and convert txId to UUID
-	 */
+	// Validate and convert txId to UUID
 	for _, strId := range strIds {
 		id, err := uuid.Parse(strId)
 		if err != nil {
@@ -123,17 +153,13 @@ func remove(strIds []string, userId uuid.UUID) CommandResult {
 		ids = append(ids, id)
 	}
 
-	/**
-	 * Verify the transaction exists
-	 */
+	// Verify the transaction exists
 	txs, err := r.TxRepo().GetManyById(ids, userId)
 	if len(txs) == 0 || err != nil {
 		return CommandResult{Command: Remove, Error: fmt.Errorf("IDs %v not found: %s", ids, err), UserError: userErrors[Remove]}
 	}
 
-	/**
-	 * Delete the transaction
-	 */
+	// Delete the transaction
 	if err := r.TxRepo().Delete(txs); err != nil {
 		return CommandResult{Command: Remove, Error: fmt.Errorf("failed to delete IDs %v: %s", ids, err), UserError: userErrors[Unknown]}
 	}
@@ -213,6 +239,8 @@ func help(args []string, userId uuid.UUID) CommandResult {
 		return CommandResult{Command: Help, UserInfo: userHelp[HelpTopic{Command: List}]}
 	case "help", "h":
 		return CommandResult{Command: Help, UserInfo: userHelp[HelpTopic{Command: Help}]}
+	case "summary", "s":
+		return CommandResult{Command: Help, UserInfo: helpSummaryText}
 	case "categories", "cats":
 		return CommandResult{Command: Help, UserInfo: getCategoriesMessageForUser(userId)}
 	case "currencies", "curr":
@@ -220,9 +248,9 @@ func help(args []string, userId uuid.UUID) CommandResult {
 	case "config", "cfg":
 		return CommandResult{Command: Help, UserInfo: userHelp[HelpTopic{Command: Configuration}]}
 	case "edit", "e", "update", "u":
-		return CommandResult{Command: Help, UserError: userErrors[Edit]}
+		return CommandResult{Command: Help, UserInfo: helpEditText}
 	default:
-		return CommandResult{Command: Help, UserError: "Unknown command. Available commands are: add, rm, ls, help, config, edit."}
+		return CommandResult{Command: Help, UserError: "Unknown command. Use /help for available commands."}
 	}
 }
 
@@ -245,7 +273,7 @@ func config(args []string, userId uuid.UUID) CommandResult {
 			return CommandResult{
 				Command:   Configuration,
 				Error:     fmt.Errorf("invalid currency: %s", currencyCode),
-				UserError: "Invalid currency code. Use !help currencies for supported currencies.",
+				UserError: "Invalid currency code. Use /help currencies for supported currencies.",
 			}
 		}
 
@@ -270,14 +298,14 @@ func config(args []string, userId uuid.UUID) CommandResult {
 
 		return CommandResult{
 			Command:  Configuration,
-			UserInfo: fmt.Sprintf("✅ Default currency set to %s (%s)", currencyCode, supportedCurrencies[currencyCode]),
+			UserInfo: fmt.Sprintf("Default currency set to %s (%s)", currencyCode, supportedCurrencies[currencyCode]),
 		}
 
 	default:
 		return CommandResult{
 			Command:   Configuration,
 			Error:     fmt.Errorf("unknown config action: %s", action),
-			UserError: "Unknown config option. Use !help config for guidance.",
+			UserError: "Unknown config option. Use /help config for guidance.",
 		}
 	}
 }

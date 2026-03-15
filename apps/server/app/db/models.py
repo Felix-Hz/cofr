@@ -102,6 +102,7 @@ class Transaction(Base):
         )
     )
     hash: Mapped[str | None] = mapped_column(String, unique=True, index=True, nullable=True)
+    receipt_file_id: Mapped[str | None] = mapped_column(String, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="transactions")
     category_rel: Mapped["Category"] = relationship(back_populates="transactions")

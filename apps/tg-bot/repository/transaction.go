@@ -14,6 +14,7 @@ type transactionRepository struct {
 
 type ITransactionRepository interface {
 	Create(transaction []*Transaction) ([]*Transaction, error)
+	Update(tx *Transaction) error
 	Delete(transaction []*Transaction) error
 
 	GetById(id uuid.UUID, userId uuid.UUID) (*Transaction, error)
@@ -21,6 +22,8 @@ type ITransactionRepository interface {
 	GetByHash(hash string, userId uuid.UUID) (*Transaction, error)
 
 	GetAll(userId uuid.UUID, timestamp time.Time, limit int) ([]*Transaction, error)
+	GetRecent(userId uuid.UUID, limit int) ([]*Transaction, error)
+	GetSummary(userId uuid.UUID, from time.Time, to time.Time) (*SummaryResult, error)
 	GetManyByCategory(userId uuid.UUID, categoryID uuid.UUID, timestamp time.Time, limit int) ([]*Transaction, error)
 	GetManyByCurrency(userId uuid.UUID, currency string, fromTime time.Time, limit int) ([]*Transaction, error)
 }
@@ -131,4 +134,67 @@ func (r *transactionRepository) GetManyByCurrency(userId uuid.UUID, currency str
 	}
 
 	return transactions, nil
+}
+
+func (r *transactionRepository) Update(tx *Transaction) error {
+	return r.dbClient.Save(tx).Error
+}
+
+func (r *transactionRepository) GetRecent(userId uuid.UUID, limit int) ([]*Transaction, error) {
+	var transactions []*Transaction
+	result := r.dbClient.
+		Preload("CategoryRel").
+		Where("user_id = ?", userId).
+		Order("timestamp DESC, id DESC").
+		Limit(limit).
+		Find(&transactions)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return transactions, nil
+}
+
+func (r *transactionRepository) GetSummary(userId uuid.UUID, from time.Time, to time.Time) (*SummaryResult, error) {
+	type categoryRow struct {
+		CategoryName string
+		CategoryType string
+		Total        float64
+		Count        int
+	}
+
+	var rows []categoryRow
+	err := r.dbClient.
+		Table("transactions").
+		Select("categories.name as category_name, categories.type as category_type, SUM(transactions.amount) as total, COUNT(*) as count").
+		Joins("JOIN categories ON categories.id = transactions.category_id").
+		Where("transactions.user_id = ? AND transactions.timestamp >= ? AND transactions.timestamp < ?", userId, from, to).
+		Group("categories.name, categories.type").
+		Order("total DESC").
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := &SummaryResult{}
+	for _, row := range rows {
+		result.TxCount += row.Count
+		result.ByCategory = append(result.ByCategory, CategorySummary{
+			CategoryName: row.CategoryName,
+			CategoryType: row.CategoryType,
+			Total:        row.Total,
+			Count:        row.Count,
+		})
+		switch row.CategoryType {
+		case "income":
+			result.TotalIncome += row.Total
+		case "expense":
+			result.TotalExpense += row.Total
+		case "savings":
+			result.TotalSavings += row.Total
+		case "investment":
+			result.TotalInvestment += row.Total
+		}
+	}
+
+	return result, nil
 }
