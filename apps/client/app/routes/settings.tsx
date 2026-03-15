@@ -9,6 +9,7 @@ import {
   changePassword,
   createAccount,
   createCategory,
+  createExpense,
   deleteAccount,
   deleteCategory,
   getLinkedProviders,
@@ -22,6 +23,7 @@ import {
 } from "~/lib/api";
 import { isAuthenticated } from "~/lib/auth";
 import { useCategories } from "~/lib/categories";
+import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 import { isPasswordValid } from "~/lib/password";
 import type { Account, Category, CategoryCreate, CategoryUpdate } from "~/lib/schemas";
 
@@ -274,10 +276,15 @@ export default function Settings() {
   const [addingAccount, setAddingAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountType, setNewAccountType] = useState<string>("checking");
+  const [newAccountStartingBalance, setNewAccountStartingBalance] = useState("");
+  const [newAccountCurrency, setNewAccountCurrency] = useState("NZD");
   const [acctLoading, setAcctLoading] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editAccountName, setEditAccountName] = useState("");
   const [deletingAcctId, setDeletingAcctId] = useState<string | null>(null);
+  const [balanceAccountId, setBalanceAccountId] = useState<string | null>(null);
+  const [balanceAmount, setBalanceAmount] = useState("");
+  const [balanceCurrency, setBalanceCurrency] = useState("NZD");
 
   const systemAccounts = accounts.filter((a) => a.is_system);
   const customAccounts = accounts.filter((a) => !a.is_system);
@@ -368,14 +375,30 @@ export default function Settings() {
     if (!newAccountName.trim()) return;
     setAcctLoading(true);
     try {
-      await createAccount({
+      const account = await createAccount({
         name: newAccountName.trim(),
         type: newAccountType as "checking" | "savings" | "investment",
       });
+      const startBal = parseFloat(newAccountStartingBalance);
+      if (startBal > 0) {
+        const incomeCategory = categories.find((c) => c.type === "income");
+        if (incomeCategory) {
+          await createExpense({
+            amount: startBal,
+            category_id: incomeCategory.id,
+            description: "",
+            currency: newAccountCurrency,
+            is_opening_balance: true,
+            account_id: account.id,
+          });
+        }
+      }
       await refreshAccounts();
       setAddingAccount(false);
       setNewAccountName("");
       setNewAccountType("checking");
+      setNewAccountStartingBalance("");
+      setNewAccountCurrency("NZD");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create account");
     } finally {
@@ -393,6 +416,34 @@ export default function Settings() {
       setEditAccountName("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update account");
+    } finally {
+      setAcctLoading(false);
+    }
+  };
+
+  const handleSetBalance = async () => {
+    if (!balanceAccountId) return;
+    const amt = parseFloat(balanceAmount);
+    if (Number.isNaN(amt) || amt <= 0) return;
+    setAcctLoading(true);
+    try {
+      const incomeCategory = categories.find((c) => c.type === "income");
+      if (incomeCategory) {
+        await createExpense({
+          amount: amt,
+          category_id: incomeCategory.id,
+          description: "",
+          currency: balanceCurrency,
+          is_opening_balance: true,
+          account_id: balanceAccountId,
+        });
+      }
+      await refreshAccounts();
+      setBalanceAccountId(null);
+      setBalanceAmount("");
+      setBalanceCurrency("NZD");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set balance");
     } finally {
       setAcctLoading(false);
     }
@@ -737,116 +788,8 @@ export default function Settings() {
         </div>
         <div className="divide-y divide-edge-default border-t border-edge-default">
           {systemAccounts.map((acct) => (
-            <div key={acct.id} className="px-6 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="w-4 h-4 text-content-tertiary">
-                  {acct.type === "checking" ? (
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.5}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
-                      />
-                    </svg>
-                  ) : acct.type === "savings" ? (
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.5}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.5}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"
-                      />
-                    </svg>
-                  )}
-                </span>
-                <span className="text-sm font-medium text-content-primary">{acct.name}</span>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated text-content-tertiary">
-                  System
-                </span>
-                {defaultAccountId === acct.id && (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald/10 text-emerald">
-                    Default
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
-                {editingAccount?.id === acct.id ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={editAccountName}
-                      onChange={(e) => setEditAccountName(e.target.value)}
-                      maxLength={60}
-                      className="px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleUpdateAccount(acct.id)}
-                      disabled={acctLoading}
-                      className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingAccount(null)}
-                      className="text-xs font-medium text-content-tertiary px-2 py-1.5"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingAccount(acct);
-                      setEditAccountName(acct.name);
-                    }}
-                    className="px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft-bg rounded"
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Custom Accounts */}
-        <div className="px-6 py-3 border-t border-edge-default">
-          <p className="text-xs font-medium text-content-tertiary uppercase tracking-wide mb-2">
-            Custom Accounts
-          </p>
-        </div>
-        {customAccounts.length > 0 ? (
-          <div className="divide-y divide-edge-default border-t border-edge-default">
-            {customAccounts.map((acct) => (
-              <div key={acct.id} className="px-6 py-3 flex items-center justify-between">
+            <div key={acct.id}>
+              <div className="px-6 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="w-4 h-4 text-content-tertiary">
                     {acct.type === "checking" ? (
@@ -894,6 +837,9 @@ export default function Settings() {
                     )}
                   </span>
                   <span className="text-sm font-medium text-content-primary">{acct.name}</span>
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-elevated text-content-tertiary">
+                    System
+                  </span>
                   {defaultAccountId === acct.id && (
                     <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald/10 text-emerald">
                       Default
@@ -940,15 +886,226 @@ export default function Settings() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDeleteAccount(acct.id)}
-                        disabled={deletingAcctId === acct.id}
-                        className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded disabled:opacity-50"
+                        onClick={() => {
+                          setBalanceAccountId(acct.id);
+                          setBalanceAmount("");
+                          setBalanceCurrency("NZD");
+                        }}
+                        className="px-2 py-1 text-xs font-medium text-emerald hover:bg-emerald/5 rounded"
                       >
-                        {deletingAcctId === acct.id ? "..." : "Delete"}
+                        Set balance
                       </button>
                     </>
                   )}
                 </div>
+              </div>
+              {balanceAccountId === acct.id && (
+                <div className="px-6 pb-3 flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={balanceAmount}
+                    onChange={(e) => setBalanceAmount(e.target.value)}
+                    placeholder="Amount"
+                    className="flex-1 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                  />
+                  <select
+                    value={balanceCurrency}
+                    onChange={(e) => setBalanceCurrency(e.target.value)}
+                    className="w-20 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  >
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleSetBalance}
+                    disabled={acctLoading || !balanceAmount || parseFloat(balanceAmount) <= 0}
+                    className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                  >
+                    {acctLoading ? "..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBalanceAccountId(null)}
+                    className="text-xs font-medium text-content-tertiary px-2 py-1.5"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Custom Accounts */}
+        <div className="px-6 py-3 border-t border-edge-default">
+          <p className="text-xs font-medium text-content-tertiary uppercase tracking-wide mb-2">
+            Custom Accounts
+          </p>
+        </div>
+        {customAccounts.length > 0 ? (
+          <div className="divide-y divide-edge-default border-t border-edge-default">
+            {customAccounts.map((acct) => (
+              <div key={acct.id}>
+                <div className="px-6 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="w-4 h-4 text-content-tertiary">
+                      {acct.type === "checking" ? (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
+                          />
+                        </svg>
+                      ) : acct.type === "savings" ? (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"
+                          />
+                        </svg>
+                      )}
+                    </span>
+                    <span className="text-sm font-medium text-content-primary">{acct.name}</span>
+                    {defaultAccountId === acct.id && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald/10 text-emerald">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {editingAccount?.id === acct.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editAccountName}
+                          onChange={(e) => setEditAccountName(e.target.value)}
+                          maxLength={60}
+                          className="px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateAccount(acct.id)}
+                          disabled={acctLoading}
+                          className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingAccount(null)}
+                          className="text-xs font-medium text-content-tertiary px-2 py-1.5"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingAccount(acct);
+                            setEditAccountName(acct.name);
+                          }}
+                          className="px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft-bg rounded"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBalanceAccountId(acct.id);
+                            setBalanceAmount("");
+                            setBalanceCurrency("NZD");
+                          }}
+                          className="px-2 py-1 text-xs font-medium text-emerald hover:bg-emerald/5 rounded"
+                        >
+                          Set balance
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAccount(acct.id)}
+                          disabled={deletingAcctId === acct.id}
+                          className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded disabled:opacity-50"
+                        >
+                          {deletingAcctId === acct.id ? "..." : "Delete"}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {balanceAccountId === acct.id && (
+                  <div className="px-6 pb-3 flex items-center gap-2">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={balanceAmount}
+                      onChange={(e) => setBalanceAmount(e.target.value)}
+                      placeholder="Amount"
+                      className="flex-1 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                    />
+                    <select
+                      value={balanceCurrency}
+                      onChange={(e) => setBalanceCurrency(e.target.value)}
+                      className="w-20 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    >
+                      {SUPPORTED_CURRENCIES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleSetBalance}
+                      disabled={acctLoading || !balanceAmount || parseFloat(balanceAmount) <= 0}
+                      className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                    >
+                      {acctLoading ? "..." : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBalanceAccountId(null)}
+                      className="text-xs font-medium text-content-tertiary px-2 py-1.5"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -960,43 +1117,69 @@ export default function Settings() {
 
         <div className="px-6 py-4 border-t border-edge-default">
           {addingAccount ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={newAccountName}
-                onChange={(e) => setNewAccountName(e.target.value)}
-                maxLength={60}
-                placeholder="Account name"
-                className="flex-1 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
-              />
-              <select
-                value={newAccountType}
-                onChange={(e) => setNewAccountType(e.target.value)}
-                className="w-32 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-              >
-                <option value="checking">Checking</option>
-                <option value="savings">Savings</option>
-                <option value="investment">Investment</option>
-              </select>
-              <button
-                type="button"
-                onClick={handleCreateAccount}
-                disabled={acctLoading || !newAccountName.trim()}
-                className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
-              >
-                {acctLoading ? "..." : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAddingAccount(false);
-                  setNewAccountName("");
-                  setNewAccountType("checking");
-                }}
-                className="text-xs font-medium text-content-tertiary px-2 py-1.5"
-              >
-                Cancel
-              </button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newAccountName}
+                  onChange={(e) => setNewAccountName(e.target.value)}
+                  maxLength={60}
+                  placeholder="Account name"
+                  className="flex-1 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                />
+                <select
+                  value={newAccountType}
+                  onChange={(e) => setNewAccountType(e.target.value)}
+                  className="w-32 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                >
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                  <option value="investment">Investment</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newAccountStartingBalance}
+                  onChange={(e) => setNewAccountStartingBalance(e.target.value)}
+                  placeholder="Starting balance (optional)"
+                  className="flex-1 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                />
+                <select
+                  value={newAccountCurrency}
+                  onChange={(e) => setNewAccountCurrency(e.target.value)}
+                  className="w-20 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                >
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleCreateAccount}
+                  disabled={acctLoading || !newAccountName.trim()}
+                  className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                >
+                  {acctLoading ? "..." : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddingAccount(false);
+                    setNewAccountName("");
+                    setNewAccountType("checking");
+                    setNewAccountStartingBalance("");
+                    setNewAccountCurrency("NZD");
+                  }}
+                  className="text-xs font-medium text-content-tertiary px-2 py-1.5"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           ) : (
             <button

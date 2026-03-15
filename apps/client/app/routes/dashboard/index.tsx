@@ -345,13 +345,17 @@ export default function Dashboard() {
     : null;
 
   // Helper: get account name for transfer display
-  const getTransferLabel = (expense: Expense): string => {
+  const getTransferLabel = (expense: Expense, short = false): string => {
     // expense is the 'from' side; we need to look through all expenses to find the linked 'to' side
     const linkedTo = expenses.find(
       (e: Expense) => e.id === expense.linked_transaction_id && e.transfer_direction === "to",
     );
     const fromName = expense.account_name;
     const toName = linkedTo?.account_name || "?";
+    if (short) {
+      const abbr = (name: string) => (name.length > 5 ? name.slice(0, 3) : name);
+      return `${abbr(fromName)} → ${abbr(toName)}`;
+    }
     return `${fromName} → ${toName}`;
   };
 
@@ -946,10 +950,10 @@ export default function Dashboard() {
 
         {/* Table */}
         <div className="rounded-xl border border-edge-default bg-surface-primary shadow-sm overflow-hidden">
-          <table className="min-w-full divide-y divide-edge-default">
+          <table className="min-w-full table-fixed divide-y divide-edge-default">
             <thead>
               <tr className="bg-surface-elevated">
-                <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+                <th className="w-[72px] sm:w-auto px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
                   Date
                 </th>
                 <th className="hidden sm:table-cell px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
@@ -961,7 +965,7 @@ export default function Dashboard() {
                 <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
                   Category
                 </th>
-                <th className="px-3 sm:px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+                <th className="w-[90px] sm:w-auto px-3 sm:px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
                   Amount
                 </th>
               </tr>
@@ -994,7 +998,7 @@ export default function Dashboard() {
                     >
                       <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-xs text-content-tertiary tabular-nums">
                         <span className="sm:hidden">
-                          {formatDate(expense.created_at, "compact")}
+                          {formatDate(expense.created_at, "mobile")}
                         </span>
                         <span className="hidden sm:inline">{formatDate(expense.created_at)}</span>
                       </td>
@@ -1008,11 +1012,11 @@ export default function Dashboard() {
                           <span className="text-content-muted">—</span>
                         )}
                       </td>
-                      <td className="px-3 sm:px-5 py-3 whitespace-nowrap">
+                      <td className="px-3 sm:px-5 py-3 sm:whitespace-nowrap max-w-0 sm:max-w-none overflow-hidden text-ellipsis">
                         {isTransfer ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-soft-text">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-soft-text truncate">
                             <svg
-                              className="w-3 h-3"
+                              className="w-3 h-3 shrink-0"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -1024,15 +1028,20 @@ export default function Dashboard() {
                                 d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
                               />
                             </svg>
-                            {getTransferLabel(expense)}
+                            <span className="sm:hidden truncate">
+                              {getTransferLabel(expense, true)}
+                            </span>
+                            <span className="hidden sm:inline truncate">
+                              {getTransferLabel(expense)}
+                            </span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary truncate">
                             <span
-                              className="w-1.5 h-1.5 rounded-full"
+                              className="w-1.5 h-1.5 rounded-full shrink-0"
                               style={{ backgroundColor: catColor }}
                             />
-                            {expense.category_name}
+                            <span className="truncate">{expense.category_name}</span>
                           </span>
                         )}
                       </td>
