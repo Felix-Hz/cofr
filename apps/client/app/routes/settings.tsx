@@ -642,6 +642,37 @@ export default function Settings() {
             </div>
           </div>
 
+          {accounts.length > 0 && (
+            <>
+              <div className="border-t border-edge-default mt-4 pt-4" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-content-primary">Default Payment Account</p>
+                  <p className="text-sm text-content-tertiary">
+                    Pre-selected when adding transactions
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={defaultAccountId || ""}
+                    onChange={(e) => handleDefaultAccountChange(e.target.value)}
+                    disabled={savingDefaultAccount}
+                    className="px-3 py-1.5 text-sm font-medium bg-surface-primary text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors disabled:opacity-50"
+                  >
+                    {accounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                  {savingDefaultAccount && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-content-primary" />
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
           <div className="border-t border-edge-default mt-4 pt-4" />
 
           <div className="flex items-center justify-between">
@@ -674,37 +705,6 @@ export default function Settings() {
               )}
             </div>
           </div>
-
-          {accounts.length > 0 && (
-            <>
-              <div className="border-t border-edge-default mt-4 pt-4" />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-content-primary">Default Payment Account</p>
-                  <p className="text-sm text-content-tertiary">
-                    Pre-selected when adding transactions
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={defaultAccountId || ""}
-                    onChange={(e) => handleDefaultAccountChange(e.target.value)}
-                    disabled={savingDefaultAccount}
-                    className="px-3 py-1.5 text-sm font-medium bg-surface-primary text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors disabled:opacity-50"
-                  >
-                    {accounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name}
-                      </option>
-                    ))}
-                  </select>
-                  {savingDefaultAccount && (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-content-primary" />
-                  )}
-                </div>
-              </div>
-            </>
-          )}
         </div>
       </div>
 

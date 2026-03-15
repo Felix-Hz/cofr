@@ -222,7 +222,7 @@ export default function Dashboard() {
   };
 
   // Percentage helper
-  const getPercentageDisplay = (catType: string, total: number): string => {
+  const getPercentageDisplay = (_catType: string, total: number): string => {
     return monthlyStats.total_spent > 0
       ? `${((total / monthlyStats.total_spent) * 100).toFixed(1)}%`
       : "0.0%";
