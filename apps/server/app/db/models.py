@@ -1,7 +1,17 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint, func
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy import Uuid as SaUuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
@@ -103,6 +113,9 @@ class Transaction(Base):
     )
     hash: Mapped[str | None] = mapped_column(String, unique=True, index=True, nullable=True)
     receipt_file_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    is_opening_balance: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false")
+    )
 
     user: Mapped["User"] = relationship(back_populates="transactions")
     category_rel: Mapped["Category"] = relationship(back_populates="transactions")

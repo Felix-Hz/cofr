@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlalchemy import case, func
+from sqlalchemy import false as sa_false
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.models import Category, Transaction, User
@@ -120,6 +121,7 @@ class ExpenseService:
             Transaction.user_id == user_id,
             func.extract("month", Transaction.timestamp) == month,
             func.extract("year", Transaction.timestamp) == year,
+            Transaction.is_opening_balance == sa_false(),
         ]
 
         if currency:
@@ -137,6 +139,7 @@ class ExpenseService:
             Transaction.user_id == user_id,
             Transaction.timestamp >= start_date,
             Transaction.timestamp <= end_date,
+            Transaction.is_opening_balance == sa_false(),
         ]
 
         if currency:
@@ -326,6 +329,7 @@ class ExpenseService:
             notes=data.description,
             timestamp=created_at,
             currency=data.currency,
+            is_opening_balance=data.is_opening_balance,
         )
         self.db.add(transaction)
         self.db.commit()
@@ -355,6 +359,8 @@ class ExpenseService:
             transaction.currency = data.currency
         if data.created_at is not None:
             transaction.timestamp = data.created_at
+        if data.is_opening_balance is not None:
+            transaction.is_opening_balance = data.is_opening_balance
 
         self.db.commit()
         self.db.refresh(transaction)
@@ -390,4 +396,5 @@ class ExpenseService:
             description=transaction.notes or "",
             created_at=transaction.timestamp,
             currency=transaction.currency,
+            is_opening_balance=transaction.is_opening_balance,
         )

@@ -55,6 +55,7 @@ export const ExpenseSchema = z.object({
   description: z.string(),
   created_at: z.coerce.date(),
   currency: z.string().length(3),
+  is_opening_balance: z.boolean().default(false),
 });
 
 export const ExpensesResponseSchema = z.object({
@@ -92,6 +93,7 @@ export const ExpenseCreateSchema = z.object({
   description: z.string().default(""),
   currency: z.string().length(3).default("NZD"),
   created_at: z.coerce.date().optional(),
+  is_opening_balance: z.boolean().default(false),
 });
 
 export const ExpenseUpdateSchema = z.object({
