@@ -13,26 +13,29 @@ class CategoryService:
         self.db = db
 
     async def get_categories(self, user_id: str) -> list[CategorySchema]:
-        """Get system + user's custom categories, merged and sorted by display_order."""
-        system_cats = self.db.query(Category).filter(Category.user_id.is_(None)).all()
-        custom_cats = self.db.query(Category).filter(Category.user_id == user_id).all()
-
-        # User's toggle preferences for system categories
-        prefs = {
-            str(p.category_id): p.is_active
-            for p in self.db.query(UserCategoryPreference)
-            .filter(UserCategoryPreference.user_id == user_id)
+        """Get system + user's custom categories with preferences in a single query."""
+        rows = (
+            self.db.query(Category, UserCategoryPreference.is_active)
+            .outerjoin(
+                UserCategoryPreference,
+                (UserCategoryPreference.category_id == Category.id)
+                & (UserCategoryPreference.user_id == user_id),
+            )
+            .filter((Category.user_id == user_id) | Category.user_id.is_(None))
+            .order_by(Category.display_order)
             .all()
-        }
+        )
 
         result = []
-        for cat in system_cats:
-            is_active = prefs.get(str(cat.id), cat.is_active)
+        for cat, pref_active in rows:
+            # For system categories, use the user's preference if set, otherwise the default
+            # For custom categories, use the category's own is_active flag
+            if cat.is_system:
+                is_active = pref_active if pref_active is not None else cat.is_active
+            else:
+                is_active = cat.is_active
             result.append(_to_schema(cat, is_active))
-        for cat in custom_cats:
-            result.append(_to_schema(cat, cat.is_active))
 
-        result.sort(key=lambda c: c.display_order)
         return result
 
     async def create_category(self, user_id: str, data: CategoryCreateRequest) -> CategorySchema:

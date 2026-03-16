@@ -5,7 +5,7 @@ from sqlalchemy import case, func
 from sqlalchemy import false as sa_false
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.models import Account, Category, Transaction, User
+from app.db.models import Account, Category, ExchangeRate, Transaction, User
 from app.db.schemas import (
     AccountBalance,
     CategoryTotal,
@@ -14,12 +14,34 @@ from app.db.schemas import (
     ExpenseUpdateRequest,
     MonthlyStats,
 )
-from app.services.exchange_rates import convert, get_rates_from_db
 
 
 class ExpenseService:
     def __init__(self, db: Session):
         self.db = db
+
+    def _paginated_query(
+        self, filters: list, limit: int, offset: int
+    ) -> tuple[list[ExpenseSchema], int]:
+        """Run a paginated transaction query with total count via window function (single DB round trip)."""
+        total_count = func.count(Transaction.id).over()
+
+        rows = (
+            self.db.query(Transaction, total_count.label("_total"))
+            .options(joinedload(Transaction.category_rel), joinedload(Transaction.account_rel))
+            .filter(*filters)
+            .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
+            .limit(limit)
+            .offset(offset)
+            .all()
+        )
+
+        if not rows:
+            return [], 0
+
+        total = rows[0]._total
+        expenses = [self._to_schema(tx) for tx, _ in rows]
+        return expenses, total
 
     async def get_expenses(
         self,
@@ -46,43 +68,14 @@ class ExpenseService:
         if max_amount is not None:
             filters.append(Transaction.amount <= max_amount)
 
-        total = self.db.query(func.count(Transaction.id)).filter(*filters).scalar()
-
-        transactions = (
-            self.db.query(Transaction)
-            .options(joinedload(Transaction.category_rel), joinedload(Transaction.account_rel))
-            .filter(*filters)
-            .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
-            .limit(limit)
-            .offset(offset)
-            .all()
-        )
-
-        expenses = [self._to_schema(t) for t in transactions]
-        return expenses, total
+        return self._paginated_query(filters, limit, offset)
 
     async def get_expenses_by_category(
         self, user_id: str, category_id: str, limit: int = 50, offset: int = 0
     ) -> tuple[list[ExpenseSchema], int]:
         """Get paginated expenses filtered by category"""
-        total = (
-            self.db.query(func.count(Transaction.id))
-            .filter(Transaction.user_id == user_id, Transaction.category_id == category_id)
-            .scalar()
-        )
-
-        transactions = (
-            self.db.query(Transaction)
-            .options(joinedload(Transaction.category_rel), joinedload(Transaction.account_rel))
-            .filter(Transaction.user_id == user_id, Transaction.category_id == category_id)
-            .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
-            .limit(limit)
-            .offset(offset)
-            .all()
-        )
-
-        expenses = [self._to_schema(t) for t in transactions]
-        return expenses, total
+        filters = [Transaction.user_id == user_id, Transaction.category_id == category_id]
+        return self._paginated_query(filters, limit, offset)
 
     async def get_expenses_by_date_range(
         self,
@@ -93,26 +86,12 @@ class ExpenseService:
         offset: int = 0,
     ) -> tuple[list[ExpenseSchema], int]:
         """Get paginated expenses within a date range"""
-        base_filter = [
+        filters = [
             Transaction.user_id == user_id,
             Transaction.timestamp >= start_date,
             Transaction.timestamp <= end_date,
         ]
-
-        total = self.db.query(func.count(Transaction.id)).filter(*base_filter).scalar()
-
-        transactions = (
-            self.db.query(Transaction)
-            .options(joinedload(Transaction.category_rel), joinedload(Transaction.account_rel))
-            .filter(*base_filter)
-            .order_by(Transaction.timestamp.desc(), Transaction.inserted_at.desc())
-            .limit(limit)
-            .offset(offset)
-            .all()
-        )
-
-        expenses = [self._to_schema(t) for t in transactions]
-        return expenses, total
+        return self._paginated_query(filters, limit, offset)
 
     async def get_monthly_stats(
         self, user_id: str, month: int, year: int, currency: str | None = None
@@ -227,118 +206,141 @@ class ExpenseService:
         )
 
     def _aggregate_with_conversion(self, base_filter: list, user_id: str) -> MonthlyStats:
-        """Fetch all transactions, convert to user's preferred currency and aggregate."""
-        rates = get_rates_from_db(self.db)
+        """Aggregate with currency conversion done in SQL via exchange_rates join."""
         user = self.db.query(User).filter(User.id == user_id).first()
         preferred = user.preferred_currency if user else "NZD"
 
-        transactions = (
-            self.db.query(Transaction)
-            .options(joinedload(Transaction.category_rel))
+        # Subquery for the target currency rate
+        target_rate = (
+            self.db.query(ExchangeRate.rate_to_usd)
+            .filter(ExchangeRate.currency_code == preferred)
+            .scalar_subquery()
+        )
+
+        # Conversion formula: amount / from_rate * to_rate
+        # ExchangeRate stores rate_to_usd (e.g., NZD=1.6, USD=1.0)
+        # So: amount_in_preferred = amount / from_rate * target_rate
+        converted_amount = Transaction.amount / ExchangeRate.rate_to_usd * target_rate
+
+        # Summary aggregation
+        summary = (
+            self.db.query(
+                func.coalesce(
+                    func.sum(case((Category.type == "expense", converted_amount), else_=0)), 0
+                ).label("total_spent"),
+                func.coalesce(
+                    func.sum(case((Category.type == "income", converted_amount), else_=0)), 0
+                ).label("total_income"),
+                func.count(case((Category.type == "expense", 1))).label("expense_count"),
+                func.count(Transaction.id).label("transaction_count"),
+            )
+            .join(Category, Transaction.category_id == Category.id)
+            .join(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
             .filter(*base_filter)
+            .first()
+        )
+
+        # Category breakdown
+        breakdown = (
+            self.db.query(
+                Transaction.category_id,
+                Category.name.label("category_name"),
+                Category.type.label("category_type"),
+                Category.color_light,
+                Category.color_dark,
+                func.sum(converted_amount).label("total"),
+                func.count(Transaction.id).label("count"),
+            )
+            .join(Category, Transaction.category_id == Category.id)
+            .join(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
+            .filter(*base_filter)
+            .group_by(
+                Transaction.category_id,
+                Category.name,
+                Category.type,
+                Category.color_light,
+                Category.color_dark,
+            )
+            .order_by(func.sum(converted_amount).desc())
             .all()
         )
 
-        total_spent = 0.0
-        total_income = 0.0
-        expense_count = 0
-        cat_totals: dict[str, dict] = {}
-
-        for tx in transactions:
-            amt = convert(tx.amount, tx.currency, preferred, rates)
-            cat = tx.category_rel
-            if not cat:
-                continue
-            cat_key = str(tx.category_id)
-
-            if cat_key not in cat_totals:
-                cat_totals[cat_key] = {
-                    "name": cat.name,
-                    "type": cat.type,
-                    "color_light": cat.color_light,
-                    "color_dark": cat.color_dark,
-                    "total": 0.0,
-                    "count": 0,
-                }
-            cat_totals[cat_key]["total"] += amt
-            cat_totals[cat_key]["count"] += 1
-
-            if cat.type == "income":
-                total_income += amt
-            else:
-                total_spent += amt
-                expense_count += 1
-
-        category_breakdown = sorted(
-            [
-                CategoryTotal(
-                    category_id=cat_id,
-                    category=vals["name"],
-                    category_type=vals["type"],
-                    category_color_light=vals["color_light"],
-                    category_color_dark=vals["color_dark"],
-                    total=vals["total"],
-                    count=vals["count"],
-                )
-                for cat_id, vals in cat_totals.items()
-            ],
-            key=lambda c: c.total,
-            reverse=True,
-        )
+        category_breakdown = [
+            CategoryTotal(
+                category_id=str(row.category_id),
+                category=row.category_name,
+                category_type=row.category_type,
+                category_color_light=row.color_light,
+                category_color_dark=row.color_dark,
+                total=row.total,
+                count=row.count,
+            )
+            for row in breakdown
+        ]
 
         return MonthlyStats(
-            total_spent=total_spent,
-            total_income=total_income,
-            transaction_count=len(transactions),
-            expense_count=expense_count,
+            total_spent=summary.total_spent if summary else 0,
+            total_income=summary.total_income if summary else 0,
+            transaction_count=summary.transaction_count if summary else 0,
+            expense_count=summary.expense_count if summary else 0,
             category_breakdown=category_breakdown,
             currency=preferred,
             is_converted=True,
         )
 
     def get_account_balances(self, user_id: str) -> list[AccountBalance]:
-        """Calculate balance for each of the user's accounts."""
-        accounts = (
-            self.db.query(Account)
+        """Calculate balance for each of the user's accounts using a single SQL query."""
+        # Single query: aggregate all transaction amounts per account with correct sign
+        # - income category or transfer 'to' → positive
+        # - expense category or transfer 'from' → negative
+        balance_subq = (
+            self.db.query(
+                Transaction.account_id,
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                Transaction.is_transfer == True,  # noqa: E712
+                                case(
+                                    (Transaction.transfer_direction == "to", Transaction.amount),
+                                    else_=-Transaction.amount,
+                                ),
+                            ),
+                            (Category.type == "income", Transaction.amount),
+                            else_=-Transaction.amount,
+                        )
+                    ),
+                    0,
+                ).label("balance"),
+            )
+            .outerjoin(Category, Transaction.category_id == Category.id)
+            .filter(Transaction.user_id == user_id)
+            .group_by(Transaction.account_id)
+            .subquery()
+        )
+
+        results = (
+            self.db.query(
+                Account.id,
+                Account.name,
+                Account.type,
+                func.coalesce(balance_subq.c.balance, 0).label("balance"),
+            )
+            .outerjoin(balance_subq, Account.id == balance_subq.c.account_id)
             .filter(Account.user_id == user_id)
             .order_by(Account.display_order)
             .all()
         )
 
-        balances = []
-        for account in accounts:
-            # Sum all transactions for this account with sign:
-            # - income type or transfer 'to' = positive
-            # - expense type or transfer 'from' = negative
-            txs = (
-                self.db.query(Transaction)
-                .outerjoin(Category, Transaction.category_id == Category.id)
-                .filter(Transaction.account_id == account.id)
-                .all()
+        return [
+            AccountBalance(
+                account_id=str(row.id),
+                account_name=row.name,
+                account_type=row.type,
+                balance=row.balance,
             )
-
-            balance = 0.0
-            for tx in txs:
-                if tx.is_transfer:
-                    if tx.transfer_direction == "to":
-                        balance += tx.amount
-                    else:
-                        balance -= tx.amount
-                elif tx.category_rel and tx.category_rel.type == "income":
-                    balance += tx.amount
-                else:
-                    balance -= tx.amount
-
-            balances.append(
-                AccountBalance(
-                    account_id=str(account.id),
-                    account_name=account.name,
-                    account_type=account.type,
-                    balance=balance,
-                )
-            )
-
-        return balances
+            for row in results
+        ]
 
     async def get_expense_by_id(self, user_id: str, expense_id: str) -> ExpenseSchema:
         """Get single expense with ownership check"""

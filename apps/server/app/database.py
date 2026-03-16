@@ -6,7 +6,12 @@ from app.config import settings
 _kwargs = {"echo": False, "pool_pre_ping": True}
 
 if not settings.DATABASE_URL.startswith("sqlite"):
-    _kwargs.update(pool_size=5, max_overflow=10)
+    _kwargs.update(
+        pool_size=15,
+        max_overflow=25,
+        pool_recycle=1800,
+        pool_timeout=30,
+    )
 
 engine = create_engine(settings.DATABASE_URL, **_kwargs)
 SessionLocal = sessionmaker(bind=engine)
