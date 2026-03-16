@@ -21,20 +21,17 @@ jobs:
           filters: |
             server:
               - 'apps/server/**'
-              - 'infra/**'
-              - '!infra/terraform/**'
+              - 'infra/*'
               - 'scripts/**'
               - '.github/workflows/ci.yml'
             client:
               - 'apps/client/**'
-              - 'infra/**'
-              - '!infra/terraform/**'
+              - 'infra/*'
               - 'scripts/**'
               - '.github/workflows/ci.yml'
             tg-bot:
               - 'apps/tg-bot/**'
-              - 'infra/**'
-              - '!infra/terraform/**'
+              - 'infra/*'
               - 'scripts/**'
               - '.github/workflows/ci.yml'
 
