@@ -618,7 +618,7 @@ export default function Dashboard() {
                 savingsRate >= 0 ? "text-positive-text" : "text-negative-text/70"
               }`}
             >
-              {formatCurrency(netBalance, monthlyStats.currency, true)} net
+              {formatCurrency(netBalance, monthlyStats.currency, true, 0)} net
             </p>
           </div>
 
@@ -717,7 +717,7 @@ export default function Dashboard() {
             <div className="mt-3 flex items-end justify-between gap-4 sm:flex-col sm:items-start sm:gap-0">
               <div>
                 <div className="flex items-center gap-2 text-xl font-bold text-content-primary tabular-nums sm:text-2xl">
-                  {formatCurrency(netBalance, monthlyStats.currency, true)}
+                  {formatCurrency(netBalance, monthlyStats.currency, true, 0)}
                   <span
                     className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ${
                       netBalance >= 0
