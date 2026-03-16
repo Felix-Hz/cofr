@@ -29,7 +29,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  changes:
+    name: detect changes
     if: >-
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
@@ -40,101 +41,223 @@ jobs:
         github.event.pull_request.head.repo.full_name == github.repository
       )
     runs-on: ubuntu-latest
-    environment: production
-    env:
-      APP_IMAGE_TAG: ${{ github.event.inputs.image_tag || github.event.pull_request.head.sha || github.sha }}
+    outputs:
+      server: ${{ steps.resolve.outputs.server }}
+      client: ${{ steps.resolve.outputs.client }}
+      tg-bot: ${{ steps.resolve.outputs.tg-bot }}
+      any-app: ${{ steps.resolve.outputs.any-app }}
+      deploy-only: ${{ steps.resolve.outputs.deploy-only }}
+      image-tag: ${{ steps.resolve.outputs.image-tag }}
+      registry-namespace: ${{ steps.resolve.outputs.registry-namespace }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
 
-      - name: Derive registry namespace
-        id: registry
+      - name: Detect path changes
+        if: github.event_name != 'workflow_dispatch'
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'apps/server/**'
+              - 'infra/**'
+              - '!infra/terraform/**'
+              - 'scripts/**'
+              - '.github/workflows/deploy.yml'
+            client:
+              - 'apps/client/**'
+              - 'infra/**'
+              - '!infra/terraform/**'
+              - 'scripts/**'
+              - '.github/workflows/deploy.yml'
+            tg-bot:
+              - 'apps/tg-bot/**'
+              - 'infra/**'
+              - '!infra/terraform/**'
+              - 'scripts/**'
+              - '.github/workflows/deploy.yml'
+
+      - name: Resolve outputs
+        id: resolve
         run: |
           owner_lc=$(printf '%s' "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
-          echo "namespace=ghcr.io/${owner_lc}" >> "$GITHUB_OUTPUT"
+          echo "registry-namespace=ghcr.io/${owner_lc}" >> "$GITHUB_OUTPUT"
 
-      - name: Validate manual deploy inputs
-        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true' }}
-        run: |
-          if [ -z "${APP_IMAGE_TAG}" ]; then
-            echo "image_tag is required when deploy_only is true"
-            exit 1
+          image_tag="${{ github.event.inputs.image_tag || github.event.pull_request.head.sha || github.sha }}"
+          echo "image-tag=${image_tag}" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            deploy_only="${{ github.event.inputs.deploy_only }}"
+            echo "deploy-only=${deploy_only}" >> "$GITHUB_OUTPUT"
+
+            if [ "${deploy_only}" = "true" ]; then
+              if [ -z "${{ github.event.inputs.image_tag }}" ]; then
+                echo "::error::image_tag is required when deploy_only is true"
+                exit 1
+              fi
+              echo "server=false" >> "$GITHUB_OUTPUT"
+              echo "client=false" >> "$GITHUB_OUTPUT"
+              echo "tg-bot=false" >> "$GITHUB_OUTPUT"
+              echo "any-app=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "server=true" >> "$GITHUB_OUTPUT"
+              echo "client=true" >> "$GITHUB_OUTPUT"
+              echo "tg-bot=true" >> "$GITHUB_OUTPUT"
+              echo "any-app=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "deploy-only=false" >> "$GITHUB_OUTPUT"
+            echo "server=${{ steps.filter.outputs.server }}" >> "$GITHUB_OUTPUT"
+            echo "client=${{ steps.filter.outputs.client }}" >> "$GITHUB_OUTPUT"
+            echo "tg-bot=${{ steps.filter.outputs.tg-bot }}" >> "$GITHUB_OUTPUT"
+
+            if [ "${{ steps.filter.outputs.server }}" = "true" ] || \
+               [ "${{ steps.filter.outputs.client }}" = "true" ] || \
+               [ "${{ steps.filter.outputs.tg-bot }}" = "true" ]; then
+              echo "any-app=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "any-app=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
+  verify-server:
+    name: verify / server
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/server
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - uses: astral-sh/setup-uv@v6
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
+      - run: uv sync --frozen --group dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest
+
+  verify-client:
+    name: verify / client
+    needs: changes
+    if: needs.changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/client
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - uses: oven-sh/setup-bun@v2
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
         with:
           bun-version: "1.3.10"
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run build
+
+  verify-tg-bot:
+    name: verify / tg-bot
+    needs: changes
+    if: needs.changes.outputs.tg-bot == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/tg-bot
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - uses: actions/setup-go@v5
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
         with:
           go-version-file: apps/tg-bot/go.mod
+      - run: go build ./...
 
-      - name: Verify server
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
-        working-directory: apps/server
-        run: |
-          uv sync --frozen --group dev
-          uv run ruff check .
-          uv run ruff format --check .
-          uv run pytest
-
-      - name: Verify client
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
-        working-directory: apps/client
-        run: |
-          bun install --frozen-lockfile
-          bun run typecheck
-          bun run build
-
-      - name: Verify tg-bot
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
-        working-directory: apps/tg-bot
-        run: go build ./...
-
+  build-server:
+    name: build / server
+    needs: [changes, verify-server]
+    if: always() && !failure() && !cancelled() && needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
       - uses: docker/setup-buildx-action@v3
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
-
       - uses: docker/login-action@v3
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push server
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
         with:
           context: ./apps/server
           push: true
           tags: |
-            ${{ steps.registry.outputs.namespace }}/cofr-server:${{ env.APP_IMAGE_TAG }}
-            ${{ steps.registry.outputs.namespace }}/cofr-server:main
+            ${{ needs.changes.outputs.registry-namespace }}/cofr-server:${{ needs.changes.outputs.image-tag }}
+            ${{ needs.changes.outputs.registry-namespace }}/cofr-server:main
 
-      - name: Build and push client
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
-        uses: docker/build-push-action@v6
+  build-client:
+    name: build / client
+    needs: [changes, verify-client]
+    if: always() && !failure() && !cancelled() && needs.changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
         with:
           context: ./apps/client
           push: true
           tags: |
-            ${{ steps.registry.outputs.namespace }}/cofr-client:${{ env.APP_IMAGE_TAG }}
-            ${{ steps.registry.outputs.namespace }}/cofr-client:main
+            ${{ needs.changes.outputs.registry-namespace }}/cofr-client:${{ needs.changes.outputs.image-tag }}
+            ${{ needs.changes.outputs.registry-namespace }}/cofr-client:main
 
-      - name: Build and push tg-bot
-        if: ${{ !(github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_only == 'true') }}
-        uses: docker/build-push-action@v6
+  build-tg-bot:
+    name: build / tg-bot
+    needs: [changes, verify-tg-bot]
+    if: always() && !failure() && !cancelled() && needs.changes.outputs.tg-bot == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
         with:
           context: ./apps/tg-bot
           push: true
           tags: |
-            ${{ steps.registry.outputs.namespace }}/cofr-tg-bot:${{ env.APP_IMAGE_TAG }}
-            ${{ steps.registry.outputs.namespace }}/cofr-tg-bot:main
+            ${{ needs.changes.outputs.registry-namespace }}/cofr-tg-bot:${{ needs.changes.outputs.image-tag }}
+            ${{ needs.changes.outputs.registry-namespace }}/cofr-tg-bot:main
+
+  deploy:
+    name: deploy
+    needs: [changes, build-server, build-client, build-tg-bot]
+    if: >-
+      always() && !failure() && !cancelled() &&
+      (needs.changes.outputs.any-app == 'true')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
       - name: Add deploy key
         run: |
@@ -175,13 +298,22 @@ jobs:
             "cd /opt/cofr && \
              export GHCR_USERNAME='${{ github.repository_owner }}' && \
              export GHCR_TOKEN='${{ secrets.GITHUB_TOKEN }}' && \
-             export GHCR_NAMESPACE='${{ steps.registry.outputs.namespace }}' && \
-             export DEPLOY_IMAGE_TAG='${{ env.APP_IMAGE_TAG }}' && \
+             export GHCR_NAMESPACE='${{ needs.changes.outputs.registry-namespace }}' && \
+             export DEPLOY_IMAGE_TAG='${{ needs.changes.outputs.image-tag }}' && \
              ./scripts/setup_prod.sh"
+
+  release:
+    name: release
+    needs: [changes, deploy]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Resolve release bump from merged PR
         id: release_meta
-        if: ${{ github.event_name == 'push' }}
         uses: actions/github-script@v7
         with:
           script: |
@@ -213,7 +345,7 @@ jobs:
 
       - name: Compute next release version
         id: release_version
-        if: ${{ github.event_name == 'push' && steps.release_meta.outputs.bump != '' }}
+        if: steps.release_meta.outputs.bump != ''
         run: |
           latest_tag=$(git tag --list 'v*' | sort -V | tail -n1)
           if [ -z "$latest_tag" ]; then
@@ -245,16 +377,17 @@ jobs:
           echo "next=${next_version}" >> "$GITHUB_OUTPUT"
 
       - name: Tag release images
-        if: ${{ github.event_name == 'push' && steps.release_meta.outputs.bump != '' }}
+        if: steps.release_meta.outputs.bump != ''
         run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
           for image in cofr-server cofr-client cofr-tg-bot; do
             docker buildx imagetools create \
-              -t "${{ steps.registry.outputs.namespace }}/${image}:${{ steps.release_version.outputs.next }}" \
-              "${{ steps.registry.outputs.namespace }}/${image}:${{ env.APP_IMAGE_TAG }}"
+              -t "${{ needs.changes.outputs.registry-namespace }}/${image}:${{ steps.release_version.outputs.next }}" \
+              "${{ needs.changes.outputs.registry-namespace }}/${image}:main"
           done
 
       - name: Create GitHub release
-        if: ${{ github.event_name == 'push' && steps.release_meta.outputs.bump != '' }}
+        if: steps.release_meta.outputs.bump != ''
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_version.outputs.next }}
