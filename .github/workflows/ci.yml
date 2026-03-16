@@ -4,8 +4,44 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    name: detect changes
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      client: ${{ steps.filter.outputs.client }}
+      tg-bot: ${{ steps.filter.outputs.tg-bot }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'apps/server/**'
+              - 'infra/**'
+              - '!infra/terraform/**'
+              - 'scripts/**'
+              - '.github/workflows/ci.yml'
+            client:
+              - 'apps/client/**'
+              - 'infra/**'
+              - '!infra/terraform/**'
+              - 'scripts/**'
+              - '.github/workflows/ci.yml'
+            tg-bot:
+              - 'apps/tg-bot/**'
+              - 'infra/**'
+              - '!infra/terraform/**'
+              - 'scripts/**'
+              - '.github/workflows/ci.yml'
+
   server:
     name: lint-test-build / server
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -20,6 +56,8 @@ jobs:
 
   client:
     name: lint-test-build / client
+    needs: changes
+    if: needs.changes.outputs.client == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,6 +73,8 @@ jobs:
 
   tg-bot:
     name: lint-test-build / tg-bot
+    needs: changes
+    if: needs.changes.outputs.tg-bot == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -46,26 +86,50 @@ jobs:
           go-version-file: apps/tg-bot/go.mod
       - run: go build ./...
 
-  docker-build:
-    name: image-build / ${{ matrix.name }}
+  docker-build-server:
+    name: image-build / server
+    needs: server
+    if: always() && !failure() && !cancelled() && needs.server.result != 'cancelled'
     runs-on: ubuntu-latest
-    needs:
-      - server
-      - client
-      - tg-bot
-    strategy:
-      matrix:
-        include:
-          - name: server
-            context: ./apps/server
-          - name: client
-            context: ./apps/client
-          - name: tg-bot
-            context: ./apps/tg-bot
     steps:
       - uses: actions/checkout@v4
+        if: needs.server.result == 'success'
       - uses: docker/setup-buildx-action@v3
+        if: needs.server.result == 'success'
       - uses: docker/build-push-action@v6
+        if: needs.server.result == 'success'
         with:
-          context: ${{ matrix.context }}
+          context: ./apps/server
+          push: false
+
+  docker-build-client:
+    name: image-build / client
+    needs: client
+    if: always() && !failure() && !cancelled() && needs.client.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        if: needs.client.result == 'success'
+      - uses: docker/setup-buildx-action@v3
+        if: needs.client.result == 'success'
+      - uses: docker/build-push-action@v6
+        if: needs.client.result == 'success'
+        with:
+          context: ./apps/client
+          push: false
+
+  docker-build-tg-bot:
+    name: image-build / tg-bot
+    needs: tg-bot
+    if: always() && !failure() && !cancelled() && needs.tg-bot.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        if: needs.tg-bot.result == 'success'
+      - uses: docker/setup-buildx-action@v3
+        if: needs.tg-bot.result == 'success'
+      - uses: docker/build-push-action@v6
+        if: needs.tg-bot.result == 'success'
+        with:
+          context: ./apps/tg-bot
           push: false
