@@ -13,6 +13,7 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
+    "types": ["vitest/globals", "vite/client"],
     "isolatedModules": true,
     "baseUrl": ".",
     "paths": {
