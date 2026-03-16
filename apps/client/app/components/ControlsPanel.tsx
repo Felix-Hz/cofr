@@ -125,7 +125,7 @@ export default function ControlsPanel({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           className="
-            w-full max-h-[85dvh] overflow-y-auto
+            w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden
             sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:w-80 sm:max-h-[80vh] sm:overflow-y-auto
             bg-surface-primary border border-edge-default rounded-t-2xl sm:rounded-xl
             shadow-xl p-5 pb-8 sm:pb-5
@@ -143,7 +143,7 @@ export default function ControlsPanel({
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-2">
                 Period
               </label>
-              <div className="grid grid-cols-3 sm:grid-cols-2 gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 {PRESETS.map((p) => (
                   <button
                     key={p.value}

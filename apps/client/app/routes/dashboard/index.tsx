@@ -733,7 +733,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="flex flex-col gap-1.5 sm:gap-2.5 sm:mt-4 sm:w-full">
-                <div className="flex items-center gap-2 rounded-lg bg-surface-primary/65 px-3 py-1.5 sm:py-2 backdrop-blur-sm sm:justify-between">
+                <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-primary/65 px-3 py-1.5 sm:py-2 backdrop-blur-sm">
                   <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
                     In
                   </span>
@@ -741,7 +741,7 @@ export default function Dashboard() {
                     {formatCurrency(monthlyStats.total_income, monthlyStats.currency, true, 0)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 rounded-lg bg-surface-primary/65 px-3 py-1.5 sm:py-2 backdrop-blur-sm sm:justify-between">
+                <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-primary/65 px-3 py-1.5 sm:py-2 backdrop-blur-sm">
                   <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
                     Out
                   </span>
@@ -1049,7 +1049,7 @@ export default function Dashboard() {
                             </span>
                           )}
                           {isTransfer && (
-                            <span className="text-[9px] font-semibold leading-none px-1 py-0.5 rounded bg-accent-soft-bg text-accent-soft-text">
+                            <span className="hidden sm:inline-flex text-[9px] font-semibold leading-none px-1 py-0.5 rounded bg-accent-soft-bg text-accent-soft-text">
                               TR
                             </span>
                           )}
