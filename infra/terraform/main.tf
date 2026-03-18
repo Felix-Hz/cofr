@@ -76,6 +76,20 @@ module "iam" {
   source         = "./modules/iam"
   ses_identity   = module.ses.domain_identity_arn
   sns_topic_arns = [module.sns.bounce_topic_arn, module.sns.complaint_topic_arn]
+  s3_bucket_arn  = module.s3_data.bucket_arn
+}
+
+# ── AWS S3 Application Data ──
+
+module "s3_data" {
+  source      = "./modules/s3"
+  bucket_name = "cofr-data"
+}
+
+# ── Terraform Remote State ──
+
+module "tfstate" {
+  source = "./modules/tfstate"
 }
 
 resource "digitalocean_firewall" "cofr" {
