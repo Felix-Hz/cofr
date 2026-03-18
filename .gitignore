@@ -44,6 +44,7 @@ infra/terraform/tfplan.txt
 CLAUDE.md
 .serena 
 .claude
+.mcp.json
 
 # IDE
 .idea/

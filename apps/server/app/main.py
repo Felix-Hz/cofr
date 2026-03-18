@@ -17,6 +17,7 @@ from app.routers import (
     local_auth,
     oauth,
     transfers,
+    webhooks,
 )
 
 
@@ -83,3 +84,4 @@ app.include_router(accounts.router)
 app.include_router(transfers.router)
 app.include_router(exchange_rates.router)
 app.include_router(local_auth.router)
+app.include_router(webhooks.router)

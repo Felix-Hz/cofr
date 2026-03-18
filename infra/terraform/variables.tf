@@ -103,3 +103,29 @@ variable "reserved_ip" {
   type        = string
   default     = ""
 }
+
+# ── AWS (SES Email) ──
+
+variable "aws_access_key" {
+  description = "AWS access key for the SES provider."
+  type        = string
+  sensitive   = true
+}
+
+variable "aws_secret_key" {
+  description = "AWS secret key for the SES provider."
+  type        = string
+  sensitive   = true
+}
+
+variable "aws_region" {
+  description = "AWS region for SES."
+  type        = string
+  default     = "ap-southeast-2"
+}
+
+variable "ses_domain" {
+  description = "Domain to verify with SES for sending email."
+  type        = string
+  default     = "cofr.cash"
+}

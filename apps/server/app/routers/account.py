@@ -60,6 +60,7 @@ class TelegramLinkInitResponse(BaseModel):
 class ProfileResponse(BaseModel):
     preferred_currency: str
     session_timeout_minutes: int | None
+    email_verified: bool
 
 
 class CurrencyUpdateRequest(BaseModel):
@@ -114,6 +115,7 @@ async def get_profile(
     return ProfileResponse(
         preferred_currency=user.preferred_currency,
         session_timeout_minutes=user.session_timeout_minutes,
+        email_verified=user.email_verified,
     )
 
 
@@ -132,6 +134,7 @@ async def update_preferred_currency(
     return ProfileResponse(
         preferred_currency=user.preferred_currency,
         session_timeout_minutes=user.session_timeout_minutes,
+        email_verified=user.email_verified,
     )
 
 

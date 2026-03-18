@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # Email — Amazon SES
+    AWS_SES_ACCESS_KEY_ID: str = ""
+    AWS_SES_SECRET_ACCESS_KEY: str = ""
+    AWS_SES_REGION: str = "ap-southeast-2"
+    EMAIL_FROM_ADDRESS: str = "hello@cofr.cash"
+    EMAIL_FROM_NAME: str = "Cofr"
+    SNS_WEBHOOK_SECRET: str = ""
+
     # URLs
     API_URL: str = "http://localhost:5784"
     FRONTEND_URL: str = "http://localhost:5173"

@@ -24,3 +24,9 @@ admin_ssh_public_keys = [
 admin_cidrs = [
   "203.0.113.10/32",
 ]
+
+# ── AWS (SES Email) ──
+aws_access_key = "AKIAIOSFODNN7EXAMPLE"
+aws_secret_key = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+aws_region     = "ap-southeast-2"
+ses_domain     = "cofr.cash"
