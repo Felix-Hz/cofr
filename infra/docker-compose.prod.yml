@@ -3,21 +3,21 @@
 
 services:
   server:
-    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-server:${APP_IMAGE_TAG:-main}
+    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-server:${SERVER_IMAGE_TAG:-${APP_IMAGE_TAG:-main}}
     pull_policy: always
     env_file:
       - ../apps/server/.env
       - ../apps/server/.prod.env
 
   tg-bot:
-    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-tg-bot:${APP_IMAGE_TAG:-main}
+    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-tg-bot:${TGBOT_IMAGE_TAG:-${APP_IMAGE_TAG:-main}}
     pull_policy: always
     env_file:
       - ../apps/tg-bot/.env
       - ../apps/tg-bot/.prod.env
 
   client:
-    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-client:${APP_IMAGE_TAG:-main}
+    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-client:${CLIENT_IMAGE_TAG:-${APP_IMAGE_TAG:-main}}
     pull_policy: always
 
   caddy:
