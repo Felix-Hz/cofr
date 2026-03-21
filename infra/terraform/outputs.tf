@@ -28,25 +28,14 @@ output "reserved_ip" {
   value       = var.reserved_ip != "" ? var.reserved_ip : null
 }
 
-# ── AWS SES Outputs ──
+# ── AWS S3 ──
 
-output "ses_verification_token" {
-  description = "TXT record value for SES domain verification."
-  value       = module.ses.verification_token
+output "s3_data_bucket" {
+  description = "S3 data bucket name."
+  value       = module.s3_data.bucket_name
 }
 
-output "ses_dkim_tokens" {
-  description = "DKIM CNAME tokens — create 3 CNAMEs in Cloudflare DNS."
-  value       = module.ses.dkim_tokens
-}
-
-output "ses_iam_access_key_id" {
-  description = "AWS access key ID for the SES sender."
-  value       = module.iam.access_key_id
-}
-
-output "ses_iam_secret_access_key" {
-  description = "AWS secret access key for the SES sender."
-  value       = module.iam.secret_access_key
-  sensitive   = true
+output "s3_data_bucket_domain" {
+  description = "S3 data bucket regional domain for SDK access."
+  value       = module.s3_data.bucket_regional_domain_name
 }
