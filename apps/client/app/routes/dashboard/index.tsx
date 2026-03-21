@@ -136,7 +136,8 @@ function AddButton({
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate();
+  const rawNavigate = useNavigate();
+  const navigate = (to: string) => rawNavigate(to, { preventScrollReset: true, replace: true });
   const revalidator = useRevalidator();
   const {
     expenses,
