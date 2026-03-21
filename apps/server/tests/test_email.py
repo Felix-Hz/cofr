@@ -19,7 +19,7 @@ from app.email.tokens import generate_verification_token, validate_verification_
 def test_verification_template_contains_link():
     html = render_template("verification", verify_url="https://cofr.cash/verify?token=abc123")
     assert "https://cofr.cash/verify?token=abc123" in html
-    assert "Verify Email" in html
+    assert "Verify email" in html
     assert "24 hours" in html
 
 
