@@ -102,10 +102,10 @@ export function ErrorBoundary() {
           )}
           <Link
             to="/dashboard"
-            className={`h-9 px-4 inline-flex items-center text-[13px] font-medium rounded-lg transition-opacity ${
+            className={`h-9 px-4 inline-flex items-center text-[13px] font-medium rounded-lg ${
               is404
-                ? "bg-content-primary text-surface-primary hover:opacity-90"
-                : "border border-edge-strong text-content-primary hover:bg-surface-elevated"
+                ? "bg-emerald text-white hover:bg-emerald-hover transition-colors"
+                : "border border-edge-strong text-content-primary hover:bg-surface-elevated transition-colors"
             }`}
           >
             Dashboard
