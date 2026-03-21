@@ -10,6 +10,7 @@ from app.db.schemas import (
     AccountCreateRequest,
     AccountSchema,
     AccountUpdateRequest,
+    MoveTransactionsRequest,
 )
 from app.services.account_service import ensure_system_accounts
 from app.services.expense_service import ExpenseService
@@ -121,12 +122,44 @@ async def delete_account(
     if tx_count > 0:
         raise HTTPException(
             status_code=400,
-            detail="Cannot delete account with transactions. Move or delete them first.",
+            detail=f"Cannot delete account with {tx_count} transaction{'s' if tx_count != 1 else ''}. Move or delete them first.",
         )
 
     db.delete(account)
     db.commit()
     return {"success": True, "message": "Account deleted"}
+
+
+@router.post("/{account_id}/move-transactions")
+async def move_transactions(
+    account_id: str,
+    data: MoveTransactionsRequest,
+    user_id: str = Depends(get_user_id),
+    db: Session = Depends(get_db),
+):
+    """Move all transactions from one account to another."""
+    if account_id == data.target_account_id:
+        raise HTTPException(status_code=400, detail="Source and target accounts must be different")
+
+    source = db.query(Account).filter(Account.id == account_id, Account.user_id == user_id).first()
+    if not source:
+        raise HTTPException(status_code=404, detail="Source account not found")
+
+    target = (
+        db.query(Account)
+        .filter(Account.id == data.target_account_id, Account.user_id == user_id)
+        .first()
+    )
+    if not target:
+        raise HTTPException(status_code=404, detail="Target account not found")
+
+    moved_count = (
+        db.query(Transaction)
+        .filter(Transaction.account_id == account_id, Transaction.user_id == user_id)
+        .update({Transaction.account_id: data.target_account_id})
+    )
+    db.commit()
+    return {"success": True, "moved_count": moved_count}
 
 
 @router.get("/balances", response_model=list[AccountBalance])

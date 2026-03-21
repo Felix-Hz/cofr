@@ -141,6 +141,17 @@ export async function deleteAccount(id: string): Promise<{ success: boolean; mes
   return response.json();
 }
 
+export async function moveTransactions(
+  accountId: string,
+  targetAccountId: string,
+): Promise<{ success: boolean; moved_count: number }> {
+  const response = await fetchWithAuth(`/accounts/${accountId}/move-transactions`, {
+    method: "POST",
+    body: JSON.stringify({ target_account_id: targetAccountId }),
+  });
+  return response.json();
+}
+
 export async function getAccountBalances(currency?: string): Promise<AccountBalance[]> {
   const params = new URLSearchParams();
   if (currency) params.set("currency", currency);

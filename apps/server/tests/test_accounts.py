@@ -83,6 +83,69 @@ def test_delete_account_with_transactions_rejected(client, auth_headers, system_
     assert resp.status_code == 400
 
 
+def test_move_transactions_success(client, auth_headers, system_categories):
+    headers, _ = auth_headers
+    # Create source account with transactions
+    src_resp = client.post(
+        "/accounts/", json={"name": "Source", "type": "checking"}, headers=headers
+    )
+    src_id = src_resp.json()["id"]
+    cat_id = str(system_categories["food"].id)
+
+    client.post(
+        "/expenses/",
+        json={"amount": 10, "category_id": cat_id, "currency": "NZD", "account_id": src_id},
+        headers=headers,
+    )
+    client.post(
+        "/expenses/",
+        json={"amount": 20, "category_id": cat_id, "currency": "NZD", "account_id": src_id},
+        headers=headers,
+    )
+
+    # Get a target account
+    accts = _get_accounts(client, headers)
+    target_id = next(a["id"] for a in accts if a["name"] == "Checking")
+
+    resp = client.post(
+        f"/accounts/{src_id}/move-transactions",
+        json={"target_account_id": target_id},
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["moved_count"] == 2
+
+    # Source should now be deletable
+    del_resp = client.delete(f"/accounts/{src_id}", headers=headers)
+    assert del_resp.status_code == 200
+
+
+def test_move_transactions_same_account(client, auth_headers):
+    headers, _ = auth_headers
+    accts = _get_accounts(client, headers)
+    acct_id = accts[0]["id"]
+
+    resp = client.post(
+        f"/accounts/{acct_id}/move-transactions",
+        json={"target_account_id": acct_id},
+        headers=headers,
+    )
+    assert resp.status_code == 400
+
+
+def test_move_transactions_target_not_found(client, auth_headers):
+    headers, _ = auth_headers
+    accts = _get_accounts(client, headers)
+    acct_id = accts[0]["id"]
+
+    resp = client.post(
+        f"/accounts/{acct_id}/move-transactions",
+        json={"target_account_id": "00000000-0000-0000-0000-000000000000"},
+        headers=headers,
+    )
+    assert resp.status_code == 404
+
+
 def test_account_balances_income_expense(client, auth_headers, system_categories):
     headers, _ = auth_headers
     accts = _get_accounts(client, headers)

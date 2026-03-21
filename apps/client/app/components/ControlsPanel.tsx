@@ -206,7 +206,7 @@ export default function ControlsPanel({
 
             {/* Custom range inputs */}
             {preset === "custom" && (
-              <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="min-w-0">
                   <label
                     htmlFor="ctrl-start"

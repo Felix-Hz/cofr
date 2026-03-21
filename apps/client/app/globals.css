@@ -119,6 +119,19 @@ button,
   cursor: pointer;
 }
 
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
+}
+
+input[type="date"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}
+
 html,
 body {
   overflow-x: hidden;

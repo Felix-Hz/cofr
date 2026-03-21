@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { redirect } from "react-router";
+import AccountDeleteModal from "~/components/AccountDeleteModal";
 import CategoryFormModal from "~/components/CategoryFormModal";
 import DeleteAccountModal from "~/components/DeleteAccountModal";
+import DeleteConfirmModal from "~/components/DeleteConfirmModal";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
 import { useAccounts } from "~/lib/accounts";
@@ -15,6 +17,7 @@ import {
   getLinkedProviders,
   getPreferences,
   initTelegramLink,
+  moveTransactions,
   toggleCategory,
   unlinkProvider,
   updateAccount,
@@ -281,7 +284,9 @@ export default function Settings() {
   const [acctLoading, setAcctLoading] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editAccountName, setEditAccountName] = useState("");
-  const [deletingAcctId, setDeletingAcctId] = useState<string | null>(null);
+  const [acctDeleteTarget, setAcctDeleteTarget] = useState<Account | null>(null);
+  const [catDeleteTarget, setCatDeleteTarget] = useState<Category | null>(null);
+  const [catDeleteError, setCatDeleteError] = useState<string | null>(null);
   const [balanceAccountId, setBalanceAccountId] = useState<string | null>(null);
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceCurrency, setBalanceCurrency] = useState("NZD");
@@ -346,13 +351,16 @@ export default function Settings() {
     }
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    setDeletingCatId(id);
+  const handleDeleteCategory = async () => {
+    if (!catDeleteTarget) return;
+    setDeletingCatId(catDeleteTarget.id);
+    setCatDeleteError(null);
     try {
-      await deleteCategory(id);
+      await deleteCategory(catDeleteTarget.id);
       await refreshCategories();
+      setCatDeleteTarget(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete category");
+      setCatDeleteError(err instanceof Error ? err.message : "Failed to delete category");
     } finally {
       setDeletingCatId(null);
     }
@@ -449,16 +457,15 @@ export default function Settings() {
     }
   };
 
-  const handleDeleteAccount = async (id: string) => {
-    setDeletingAcctId(id);
-    try {
-      await deleteAccount(id);
-      await refreshAccounts();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete account");
-    } finally {
-      setDeletingAcctId(null);
-    }
+  const handleDeleteAccountConfirm = async (id: string) => {
+    await deleteAccount(id);
+    await refreshAccounts();
+  };
+
+  const handleMoveAndDelete = async (accountId: string, targetAccountId: string) => {
+    await moveTransactions(accountId, targetAccountId);
+    await deleteAccount(accountId);
+    await refreshAccounts();
   };
 
   const fetchProviders = async () => {
@@ -1060,11 +1067,10 @@ export default function Settings() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDeleteAccount(acct.id)}
-                          disabled={deletingAcctId === acct.id}
-                          className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded disabled:opacity-50"
+                          onClick={() => setAcctDeleteTarget(acct)}
+                          className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded"
                         >
-                          {deletingAcctId === acct.id ? "..." : "Delete"}
+                          Delete
                         </button>
                       </>
                     )}
@@ -1311,11 +1317,10 @@ export default function Settings() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDeleteCategory(cat.id)}
-                    disabled={deletingCatId === cat.id}
-                    className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded disabled:opacity-50"
+                    onClick={() => setCatDeleteTarget(cat)}
+                    className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded"
                   >
-                    {deletingCatId === cat.id ? "..." : "Delete"}
+                    Delete
                   </button>
                 </div>
               </div>
@@ -1582,6 +1587,28 @@ export default function Settings() {
         category={editingCategory}
         isLoading={catLoading}
         categories={categories}
+      />
+
+      <AccountDeleteModal
+        isOpen={!!acctDeleteTarget}
+        onClose={() => setAcctDeleteTarget(null)}
+        account={acctDeleteTarget}
+        accounts={accounts}
+        onDelete={handleDeleteAccountConfirm}
+        onMoveAndDelete={handleMoveAndDelete}
+      />
+
+      <DeleteConfirmModal
+        isOpen={!!catDeleteTarget}
+        onClose={() => {
+          setCatDeleteTarget(null);
+          setCatDeleteError(null);
+        }}
+        onConfirm={handleDeleteCategory}
+        title={`Delete ${catDeleteTarget?.name ?? "category"}?`}
+        message="Transactions using this category will be reassigned to Miscellaneous. This action cannot be undone."
+        isLoading={deletingCatId === catDeleteTarget?.id}
+        error={catDeleteError}
       />
     </div>
   );
