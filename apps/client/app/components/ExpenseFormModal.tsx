@@ -225,29 +225,44 @@ export default function ExpenseFormModal({
                 </div>
               </div>
 
-              {/* Category — hidden in fund mode */}
-              {mode === "expense" && (
-                <div>
-                  <label
-                    htmlFor="category"
-                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
-                  >
-                    Category
+              {/* Category (expense) / Opening Balance (fund) — fixed-height slot */}
+              <div className="min-h-[3rem] sm:min-h-[3.5rem]">
+                {mode === "expense" ? (
+                  <div>
+                    <label
+                      htmlFor="category"
+                      className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                    >
+                      Category
+                    </label>
+                    <select
+                      id="category"
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    >
+                      {filteredCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={isOpeningBalance}
+                      onChange={(e) => setIsOpeningBalance(e.target.checked)}
+                      className="w-4 h-4 rounded border-edge-strong text-emerald focus:ring-emerald accent-emerald"
+                    />
+                    <span className="text-sm text-content-secondary">
+                      Opening balance
+                      <span className="text-content-tertiary"> — excluded from stats</span>
+                    </span>
                   </label>
-                  <select
-                    id="category"
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                  >
-                    {filteredCategories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Description */}
               <div>
@@ -284,22 +299,6 @@ export default function ExpenseFormModal({
                   className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                 />
               </div>
-
-              {/* Opening Balance */}
-              {mode === "fund" && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isOpeningBalance}
-                    onChange={(e) => setIsOpeningBalance(e.target.checked)}
-                    className="w-4 h-4 rounded border-edge-strong text-emerald focus:ring-emerald accent-emerald"
-                  />
-                  <span className="text-sm text-content-secondary">
-                    Opening balance
-                    <span className="text-content-tertiary"> — excluded from stats</span>
-                  </span>
-                </label>
-              )}
             </div>
 
             {/* Actions */}

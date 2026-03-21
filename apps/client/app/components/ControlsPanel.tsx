@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
 
 export type Preset = "thisMonth" | "last7Days" | "lastYear" | "custom";
 
@@ -58,6 +59,8 @@ export default function ControlsPanel({
 }: ControlsPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const isDragging = useRef(false);
 
   // Local state for amount inputs (navigate only on blur)
   const [localMin, setLocalMin] = useState(minAmount);
@@ -67,20 +70,48 @@ export default function ControlsPanel({
   useEffect(() => setLocalMin(minAmount), [minAmount]);
   useEffect(() => setLocalMax(maxAmount), [maxAmount]);
 
-  // Swipe down to close on mobile
+  // Reset drag state when panel closes
+  useEffect(() => {
+    if (!isOpen) setDragOffset(0);
+  }, [isOpen]);
+
+  // Swipe down to close on mobile — follows finger
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const el = panelRef.current;
+    // Only start drag if panel is scrolled to top
+    if (el && el.scrollTop > 0) return;
     touchStartY.current = e.touches[0].clientY;
+    isDragging.current = false;
   }, []);
 
-  const handleTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
+  const handleTouchEnd = useCallback(() => {
+    if (touchStartY.current === null) return;
+    if (dragOffset > 100) {
+      onClose();
+    }
+    setDragOffset(0);
+    touchStartY.current = null;
+    isDragging.current = false;
+  }, [dragOffset, onClose]);
+
+  // Non-passive touchmove so we can preventDefault during drag (suppresses scroll bounce)
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el || !isOpen) return;
+    const onTouchMove = (e: TouchEvent) => {
       if (touchStartY.current === null) return;
-      const delta = e.changedTouches[0].clientY - touchStartY.current;
-      if (delta > 80) onClose();
-      touchStartY.current = null;
-    },
-    [onClose],
-  );
+      const delta = e.touches[0].clientY - touchStartY.current;
+      if (delta > 0) {
+        e.preventDefault();
+        isDragging.current = true;
+        setDragOffset(delta);
+      } else {
+        setDragOffset(0);
+      }
+    };
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => el.removeEventListener("touchmove", onTouchMove);
+  }, [isOpen]);
 
   // Close on click outside
   useEffect(() => {
@@ -110,12 +141,20 @@ export default function ControlsPanel({
     return () => document.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
+  // Lock body scroll on mobile only (desktop uses dropdown, not bottom sheet)
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+  useBodyScrollLock(isOpen && isMobile);
+
   if (!isOpen) return null;
 
   return (
     <>
       {/* Mobile backdrop */}
-      <div className="fixed inset-0 bg-black/40 z-40 sm:hidden" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/40 z-40 sm:hidden transition-opacity"
+        style={{ opacity: dragOffset > 0 ? Math.max(0, 1 - dragOffset / 200) : 1 }}
+        onClick={onClose}
+      />
 
       {/* Wrapper — full-viewport flex on mobile, vanishes on desktop */}
       <div className="fixed inset-0 z-50 flex items-end sm:contents">
@@ -125,12 +164,16 @@ export default function ControlsPanel({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           className="
-            w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden
+            w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden overscroll-contain
             sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:w-80 sm:max-h-[80vh] sm:overflow-y-auto
             bg-surface-primary border border-edge-default rounded-t-2xl sm:rounded-xl
             shadow-xl p-5 pb-8 sm:pb-5
           "
-          style={{ animation: "slideUp 0.2s ease-out" }}
+          style={{
+            animation: dragOffset === 0 ? "slideUp 0.2s ease-out" : "none",
+            transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+            transition: isDragging.current ? "none" : "transform 0.2s ease-out",
+          }}
         >
           {/* Drag handle — mobile */}
           <div className="flex justify-center sm:hidden -mx-5 -mt-5 pt-3 pb-1">
