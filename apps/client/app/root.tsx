@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   isRouteErrorResponse,
   Link,
@@ -6,11 +7,21 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useRouteError,
 } from "react-router";
+import type { Route } from "./+types/root";
 import "./globals.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  // Re-apply theme after hydration — React may strip the .dark class that theme.js set
+  useEffect(() => {
+    const stored = localStorage.getItem("cofr-theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.classList.toggle(
+      "dark",
+      stored === "dark" || (!stored && prefersDark),
+    );
+  }, []);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -43,8 +54,7 @@ export default function Root() {
   return <Outlet />;
 }
 
-export function ErrorBoundary() {
-  const error = useRouteError();
+export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const isRoute = isRouteErrorResponse(error);
 
   let status = 500;
@@ -69,6 +79,7 @@ export function ErrorBoundary() {
   }
 
   const is404 = status === 404;
+  const isLoggedIn = typeof window !== "undefined" && !!localStorage.getItem("cofr_token");
 
   return (
     <div className="min-h-screen bg-surface-primary flex flex-col items-center justify-center px-6">
@@ -101,14 +112,14 @@ export function ErrorBoundary() {
             </button>
           )}
           <Link
-            to="/dashboard"
+            to={isLoggedIn ? "/dashboard" : "/login"}
             className={`h-9 px-4 inline-flex items-center text-[13px] font-medium rounded-lg ${
               is404
                 ? "bg-emerald text-white hover:bg-emerald-hover transition-colors"
                 : "border border-edge-strong text-content-primary hover:bg-surface-elevated transition-colors"
             }`}
           >
-            Dashboard
+            {isLoggedIn ? "Dashboard" : "Log in"}
           </Link>
           <button
             type="button"
