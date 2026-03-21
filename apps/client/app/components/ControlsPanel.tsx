@@ -206,8 +206,8 @@ export default function ControlsPanel({
 
             {/* Custom range inputs */}
             {preset === "custom" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
+              <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+                <div className="min-w-0">
                   <label
                     htmlFor="ctrl-start"
                     className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
@@ -219,10 +219,10 @@ export default function ControlsPanel({
                     type="date"
                     value={customStart}
                     onChange={(e) => onCustomStartChange(e.target.value)}
-                    className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                    className="w-full min-w-0 h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label
                     htmlFor="ctrl-end"
                     className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
@@ -234,58 +234,56 @@ export default function ControlsPanel({
                     type="date"
                     value={customEnd}
                     onChange={(e) => onCustomEndChange(e.target.value)}
-                    className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                    className="w-full min-w-0 h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
                   />
                 </div>
               </div>
             )}
 
-            {/* Currency */}
-            <div>
-              <label
-                htmlFor="ctrl-currency"
-                className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
-              >
-                Currency
-              </label>
-              <select
-                id="ctrl-currency"
-                value={currency}
-                onChange={(e) => onCurrencyChange(e.target.value)}
-                className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs font-medium bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
-              >
-                <option value="">All Currencies</option>
-                {currencies.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <hr className="border-edge-default" />
-
-            {/* Category */}
-            <div>
-              <label
-                htmlFor="ctrl-category"
-                className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
-              >
-                Category
-              </label>
-              <select
-                id="ctrl-category"
-                value={category}
-                onChange={(e) => onCategoryChange(e.target.value)}
-                className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs font-medium bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
-              >
-                <option value="">All Categories</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+            {/* Currency & Category */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="ctrl-currency"
+                  className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
+                >
+                  Currency
+                </label>
+                <select
+                  id="ctrl-currency"
+                  value={currency}
+                  onChange={(e) => onCurrencyChange(e.target.value)}
+                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs font-medium bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                >
+                  <option value="">All</option>
+                  {currencies.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="ctrl-category"
+                  className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
+                >
+                  Category
+                </label>
+                <select
+                  id="ctrl-category"
+                  value={category}
+                  onChange={(e) => onCategoryChange(e.target.value)}
+                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs font-medium bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                >
+                  <option value="">All</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Amount range */}
@@ -384,33 +382,49 @@ export function getPresetLabel(preset: Preset, startDate: string, endDate: strin
     "November",
     "December",
   ];
+  const MONTHS_SHORT = MONTHS_FULL.map((m) => m.slice(0, 3));
+  const currentYear = new Date().getFullYear();
+  const shortYear = (y: number) => `'${String(y).slice(2)}`;
 
-  if (preset === "custom" && startDate && endDate) {
-    const s = new Date(startDate + "T00:00:00");
-    const e = new Date(endDate + "T00:00:00");
-    const fmt = (d: Date) => `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3)}`;
-    if (s.getFullYear() !== e.getFullYear()) {
-      return `${fmt(s)} ${s.getFullYear()} – ${fmt(e)} ${e.getFullYear()}`;
-    }
-    return `${fmt(s)} – ${fmt(e)} ${e.getFullYear()}`;
+  if (!startDate) return "Select period";
+
+  const s = new Date(startDate + "T00:00:00");
+
+  if (preset === "thisMonth") {
+    return `${MONTHS_FULL[s.getMonth()]} ${s.getFullYear()}`;
   }
 
-  if (startDate) {
-    const s = new Date(startDate + "T00:00:00");
-    switch (preset) {
-      case "thisMonth":
-        return `${MONTHS_FULL[s.getMonth()]} ${s.getFullYear()}`;
-      case "last7Days":
-      case "lastYear": {
-        const e = new Date(endDate + "T00:00:00");
-        const fmt = (d: Date) =>
-          `${d.getDate()} ${MONTHS_FULL[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`;
-        return `${fmt(s)} – ${fmt(e)}`;
-      }
-    }
+  if (!endDate) return "Select period";
+
+  const e = new Date(endDate + "T00:00:00");
+  const sYear = s.getFullYear();
+  const eYear = e.getFullYear();
+  const sMonth = s.getMonth();
+  const eMonth = e.getMonth();
+  const sameYear = sYear === eYear;
+  const isCurrentYear = sameYear && sYear === currentYear;
+
+  // lastYear: "Mar 25–26"
+  if (preset === "lastYear") {
+    return `${MONTHS_SHORT[sMonth]} ${String(sYear).slice(2)}–${String(eYear).slice(2)}`;
   }
 
-  return "Select period";
+  // last7Days + custom: smart compression
+  const sameMonth = sameYear && sMonth === eMonth;
+  const dayMonth = (d: Date) => `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
+
+  if (sameMonth) {
+    // "14–21 Mar" or "14–21 Mar '25"
+    const suffix = isCurrentYear ? "" : ` ${shortYear(sYear)}`;
+    return `${s.getDate()}–${e.getDate()} ${MONTHS_SHORT[sMonth]}${suffix}`;
+  }
+  if (sameYear) {
+    // "28 Feb – 7 Mar" or "28 Feb – 7 Mar '25"
+    const suffix = isCurrentYear ? "" : ` ${shortYear(sYear)}`;
+    return `${dayMonth(s)} – ${dayMonth(e)}${suffix}`;
+  }
+  // Cross year: drop days, month + 'YY both sides — "Jan '25 – Mar '26"
+  return `${MONTHS_SHORT[sMonth]} ${shortYear(sYear)} – ${MONTHS_SHORT[eMonth]} ${shortYear(eYear)}`;
 }
 
 /** Navigate a preset forward/backward by one period */
