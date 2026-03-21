@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
 import { getExchangeRates } from "~/lib/api";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 
@@ -40,6 +41,8 @@ export default function ExchangeRatesModal({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   // Convert USD-based rates to preferred currency-based rates
@@ -66,8 +69,8 @@ export default function ExchangeRatesModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
+    <div className="fixed inset-0 z-50">
+      <div className="flex h-full items-center justify-center p-4 touch-none">
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
 
         <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-sm p-6">
