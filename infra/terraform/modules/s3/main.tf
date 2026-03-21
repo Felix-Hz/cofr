@@ -36,11 +36,33 @@ resource "aws_s3_bucket_public_access_block" "this" {
 resource "aws_s3_bucket_lifecycle_configuration" "this" {
   bucket = aws_s3_bucket.this.id
 
+  # Exports: infrequent after 7 days, auto-delete after 90
   rule {
-    id     = "transition-to-ia"
+    id     = "exports-lifecycle"
     status = "Enabled"
 
-    filter {}
+    filter {
+      prefix = "exports/"
+    }
+
+    transition {
+      days          = 7
+      storage_class = "STANDARD_IA"
+    }
+
+    expiration {
+      days = 90
+    }
+  }
+
+  # Receipts: infrequent after 30 days
+  rule {
+    id     = "receipts-lifecycle"
+    status = "Enabled"
+
+    filter {
+      prefix = "receipts/"
+    }
 
     transition {
       days          = 30

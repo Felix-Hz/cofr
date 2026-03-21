@@ -5,17 +5,17 @@ on:
     paths:
       - "infra/terraform/**"
       - ".github/workflows/infra.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/infra.yml"
   workflow_dispatch:
-    inputs:
-      apply:
-        description: "Apply Terraform after planning"
-        type: boolean
-        required: false
-        default: false
 
 jobs:
-  terraform:
-    name: infra-validate
+  plan:
+    name: infra-plan
     runs-on: ubuntu-latest
     outputs:
       has_changes: ${{ steps.plan.outputs.has_changes || 'false' }}
@@ -50,7 +50,6 @@ jobs:
       - run: terraform init
       - run: terraform validate
       - id: plan
-        if: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           set +e
           terraform plan -input=false -no-color -detailed-exitcode -out=tfplan
@@ -66,15 +65,16 @@ jobs:
           fi
           terraform show -no-color tfplan > tfplan.txt
       - uses: actions/upload-artifact@v4
-        if: ${{ github.event_name == 'workflow_dispatch' }}
         with:
           name: terraform-plan
           path: infra/terraform/tfplan.txt
 
   apply:
     name: infra-apply
-    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true' && needs.terraform.outputs.has_changes == 'true' }}
-    needs: terraform
+    if: >-
+      github.event_name != 'pull_request' &&
+      needs.plan.outputs.has_changes == 'true'
+    needs: plan
     runs-on: ubuntu-latest
     environment: production
     defaults:
