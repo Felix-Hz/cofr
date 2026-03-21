@@ -59,6 +59,12 @@ resource "digitalocean_project_resources" "cofr" {
   resources = [digitalocean_droplet.cofr.urn]
 }
 
+# ── AWS S3 Data Bucket ──
+
+module "s3_data" {
+  source      = "./modules/s3"
+  bucket_name = "cofr-data"
+}
 
 resource "digitalocean_firewall" "cofr" {
   name = "${var.droplet_name}-firewall"

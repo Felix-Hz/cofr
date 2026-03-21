@@ -27,3 +27,15 @@ output "reserved_ip" {
   description = "Reserved IP assigned to the droplet."
   value       = var.reserved_ip != "" ? var.reserved_ip : null
 }
+
+# ── AWS S3 ──
+
+output "s3_data_bucket" {
+  description = "S3 data bucket name."
+  value       = module.s3_data.bucket_name
+}
+
+output "s3_data_bucket_domain" {
+  description = "S3 data bucket regional domain for SDK access."
+  value       = module.s3_data.bucket_regional_domain_name
+}

@@ -20,3 +20,10 @@ repos:
         entry: gofmt -w
         language: system
         files: ^apps/tg-bot/.*\.go$
+
+      - id: terraform-fmt
+        name: terraform fmt (infra)
+        entry: terraform fmt -recursive
+        language: system
+        files: ^infra/terraform/.*\.tf$
+        pass_filenames: false
