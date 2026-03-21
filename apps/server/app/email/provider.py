@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Protocol
@@ -19,38 +18,27 @@ class EmailProvider(Protocol):
     async def send(self, message: EmailMessage) -> bool: ...
 
 
-class SESProvider:
-    def __init__(self, access_key_id: str, secret_access_key: str, region: str):
-        self._access_key_id = access_key_id
-        self._secret_access_key = secret_access_key
-        self._region = region
+class ResendProvider:
+    def __init__(self, api_key: str):
+        import resend
 
-    def _get_client(self):
-        import boto3
-
-        return boto3.client(
-            "ses",
-            aws_access_key_id=self._access_key_id,
-            aws_secret_access_key=self._secret_access_key,
-            region_name=self._region,
-        )
+        resend.api_key = api_key
+        self._resend = resend
 
     async def send(self, message: EmailMessage) -> bool:
         try:
-            client = self._get_client()
-            response = await asyncio.to_thread(
-                client.send_email,
-                Source=f"{message.from_name} <{message.from_address}>",
-                Destination={"ToAddresses": [message.to]},
-                Message={
-                    "Subject": {"Data": message.subject, "Charset": "UTF-8"},
-                    "Body": {"Html": {"Data": message.html_body, "Charset": "UTF-8"}},
-                },
+            response = self._resend.Emails.send(
+                {
+                    "from": f"{message.from_name} <{message.from_address}>",
+                    "to": [message.to],
+                    "subject": message.subject,
+                    "html": message.html_body,
+                }
             )
-            logger.info("SES email sent to %s, message_id=%s", message.to, response["MessageId"])
+            logger.info("Resend email sent to %s, id=%s", message.to, response["id"])
             return True
         except Exception:
-            logger.exception("Failed to send email via SES to %s", message.to)
+            logger.exception("Failed to send email via Resend to %s", message.to)
             return False
 
 

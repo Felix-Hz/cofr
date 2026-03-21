@@ -19,7 +19,7 @@ from app.email.tokens import generate_verification_token, validate_verification_
 def test_verification_template_contains_link():
     html = render_template("verification", verify_url="https://cofr.cash/verify?token=abc123")
     assert "https://cofr.cash/verify?token=abc123" in html
-    assert "Verify Email" in html
+    assert "Verify email" in html
     assert "24 hours" in html
 
 
@@ -98,7 +98,7 @@ def test_rate_limiter_window_expiry():
 # ── Provider factory ──
 
 
-def test_empty_ses_key_returns_console_provider():
+def test_empty_resend_key_returns_console_provider():
     provider = get_email_provider()
     assert isinstance(provider, ConsoleProvider)
 

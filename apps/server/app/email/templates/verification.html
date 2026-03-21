@@ -3,14 +3,13 @@
 {% block title %}Verify your email — Cofr{% endblock %}
 
 {% block content %}
-<p>Hi there,</p>
-<p>Please verify your email address by clicking the button below:</p>
-<p style="text-align: center;">
-  <a href="{{ verify_url }}" class="cta">Verify Email</a>
-</p>
-<p>This link expires in 24 hours. If you didn't create a Cofr account, you can safely ignore this email.</p>
-<p style="font-size: 13px; color: #71717a;">
-  If the button doesn't work, copy and paste this URL into your browser:<br>
+<p>Verify your email address to get started with Cofr.</p>
+<div class="cta-row">
+  <a href="{{ verify_url }}" class="cta">Verify email</a>
+</div>
+<p class="muted">This link expires in 24 hours. If you didn't create this account, ignore this email.</p>
+<p class="muted">
+  Or paste this URL into your browser:<br>
   <span style="word-break: break-all;">{{ verify_url }}</span>
 </p>
 {% endblock %}
