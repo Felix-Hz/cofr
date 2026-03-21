@@ -280,9 +280,15 @@ jobs:
       - name: Deploy on VPS
         run: |
           TAG="${{ needs.changes.outputs.image-tag }}"
-          if [ "${{ needs.changes.outputs.server }}" = "true" ]; then SERVER_TAG="$TAG"; else SERVER_TAG="main"; fi
-          if [ "${{ needs.changes.outputs.client }}" = "true" ]; then CLIENT_TAG="$TAG"; else CLIENT_TAG="main"; fi
-          if [ "${{ needs.changes.outputs.tg-bot }}" = "true" ]; then TGBOT_TAG="$TAG"; else TGBOT_TAG="main"; fi
+          if [ "${{ needs.changes.outputs.deploy-only }}" = "true" ]; then
+            SERVER_TAG="$TAG"
+            CLIENT_TAG="$TAG"
+            TGBOT_TAG="$TAG"
+          else
+            if [ "${{ needs.changes.outputs.server }}" = "true" ]; then SERVER_TAG="$TAG"; else SERVER_TAG="main"; fi
+            if [ "${{ needs.changes.outputs.client }}" = "true" ]; then CLIENT_TAG="$TAG"; else CLIENT_TAG="main"; fi
+            if [ "${{ needs.changes.outputs.tg-bot }}" = "true" ]; then TGBOT_TAG="$TAG"; else TGBOT_TAG="main"; fi
+          fi
 
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "cd /opt/cofr && \
