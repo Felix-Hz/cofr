@@ -20,6 +20,9 @@ fi
 
 APP_IMAGE_TAG="${DEPLOY_IMAGE_TAG:-${APP_IMAGE_TAG:-main}}"
 export APP_IMAGE_TAG
+export SERVER_IMAGE_TAG="${SERVER_IMAGE_TAG:-$APP_IMAGE_TAG}"
+export CLIENT_IMAGE_TAG="${CLIENT_IMAGE_TAG:-$APP_IMAGE_TAG}"
+export TGBOT_IMAGE_TAG="${TGBOT_IMAGE_TAG:-$APP_IMAGE_TAG}"
 
 # ── Require all env files ───────────────────────────────────
 MISSING=0
@@ -107,7 +110,10 @@ fi
 
 # ── Start services ──────────────────────────────────────────
 echo ""
-echo "Deploying production services with image tag: $APP_IMAGE_TAG"
+echo "Deploying production services:"
+echo "  server:  $SERVER_IMAGE_TAG"
+echo "  client:  $CLIENT_IMAGE_TAG"
+echo "  tg-bot:  $TGBOT_IMAGE_TAG"
 COMPOSE="docker compose -p cofr-prod -f infra/docker-compose.yml -f infra/docker-compose.prod.yml"
 $COMPOSE pull
 $COMPOSE up -d --remove-orphans
@@ -137,7 +143,7 @@ echo "Site:            https://cofr.cash"
 echo "API:             https://cofr.cash/api"
 echo "API Health:      https://cofr.cash/health"
 echo "Telegram Bot:    Running"
-echo "Image Tag:       $APP_IMAGE_TAG"
+echo "Image Tags:      server=$SERVER_IMAGE_TAG client=$CLIENT_IMAGE_TAG tg-bot=$TGBOT_IMAGE_TAG"
 echo ""
 echo "View logs:       $COMPOSE logs -f"
 echo "Stop:            $COMPOSE down"
