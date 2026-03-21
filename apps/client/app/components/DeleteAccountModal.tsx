@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import PasswordInput from "~/components/PasswordInput";
+import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
 import { deleteUserAccount } from "~/lib/api";
 import { removeToken } from "~/lib/auth";
 
@@ -25,6 +26,8 @@ export default function DeleteAccountModal({
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 
@@ -58,8 +61,8 @@ export default function DeleteAccountModal({
   const isConfirmValid = confirmationText === "DELETE" && (!hasLocalAuth || password.length > 0);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
+    <div className="fixed inset-0 z-50">
+      <div className="flex h-full items-center justify-center p-4 touch-none">
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={handleClose} />
 
         <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md">

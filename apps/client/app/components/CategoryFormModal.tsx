@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
 import type { Category, CategoryCreate, CategoryUpdate } from "~/lib/schemas";
 import CategoryColorPicker, { COLOR_PRESETS } from "./CategoryColorPicker";
 
@@ -74,13 +75,15 @@ export default function CategoryFormModal({
     }
   };
 
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   const canSubmit = !isLoading && name.trim() && !nameConflict && !aliasConflict;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
+    <div className="fixed inset-0 z-50">
+      <div className="flex h-full items-center justify-center p-4 touch-none">
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
         <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-6">
           <h3 className="text-lg font-semibold mb-4">

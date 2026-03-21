@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
 import { useAccounts } from "~/lib/accounts";
 import { getAccountBalances } from "~/lib/api";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
@@ -77,9 +78,7 @@ export default function TransferFormModal({
       setDate(
         `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`,
       );
-      // We need to figure out the 'to' account from the description pattern or linked tx
-      // The description shows "AccountA -> AccountB", parse it if possible
-      // For now, we'll need the linked tx's account_name. We store the to account from the description.
+      // Edit mode: 'to' account is not recoverable from the transfer row; user must re-select
       setToAccountId("");
     } else {
       setFromAccountId(defaultFromAccountId);
@@ -112,28 +111,30 @@ export default function TransferFormModal({
     await onSubmit(data);
   };
 
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
+    <div className="fixed inset-0 z-50">
+      <div className="flex h-full items-center justify-center p-4 touch-none">
         {/* Backdrop */}
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
 
         {/* Modal */}
-        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 max-h-[85vh] flex flex-col">
-          <h3 className="text-lg font-semibold text-content-primary mb-4 shrink-0">
+        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 max-h-[85vh] flex flex-col overflow-hidden">
+          <h3 className="hidden sm:block text-lg font-semibold text-content-primary mb-4 shrink-0">
             {isEditMode ? "Edit Transfer" : "New Transfer"}
           </h3>
 
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-            <div className="overflow-y-auto flex-1 min-h-0 space-y-3 sm:space-y-4 px-0.5">
+            <div className="overflow-y-auto overflow-x-hidden overscroll-contain touch-auto flex-1 min-h-0 space-y-2 sm:space-y-4 px-0.5">
               {/* From / To accounts */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
-                <div className="flex-1">
+              <div className="flex items-end gap-2">
+                <div className="flex-1 min-w-0">
                   <label
                     htmlFor="from-account"
-                    className="block text-xs font-medium text-content-secondary mb-1"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
                   >
                     From
                   </label>
@@ -141,11 +142,11 @@ export default function TransferFormModal({
                     id="from-account"
                     value={fromAccountId}
                     onChange={(e) => setFromAccountId(e.target.value)}
-                    className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                     required
                   >
                     <option value="" disabled>
-                      Select account
+                      Select
                     </option>
                     {accounts.map((acct) => (
                       <option key={acct.id} value={acct.id}>
@@ -156,8 +157,13 @@ export default function TransferFormModal({
                 </div>
 
                 {/* Arrow icon */}
-                <div className="hidden sm:flex w-8 h-8 items-center justify-center rounded-full bg-accent-soft-bg text-accent-soft-text shrink-0 self-center mt-4">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex w-7 h-7 sm:w-8 sm:h-8 items-center justify-center rounded-full bg-accent-soft-bg text-accent-soft-text shrink-0 mb-0.5">
+                  <svg
+                    className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -167,10 +173,10 @@ export default function TransferFormModal({
                   </svg>
                 </div>
 
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <label
                     htmlFor="to-account"
-                    className="block text-xs font-medium text-content-secondary mb-1"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
                   >
                     To
                   </label>
@@ -178,11 +184,11 @@ export default function TransferFormModal({
                     id="to-account"
                     value={toAccountId}
                     onChange={(e) => setToAccountId(e.target.value)}
-                    className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                     required
                   >
                     <option value="" disabled>
-                      Select account
+                      Select
                     </option>
                     {accounts.map((acct) => (
                       <option key={acct.id} value={acct.id}>
@@ -204,75 +210,72 @@ export default function TransferFormModal({
                 </p>
               )}
 
-              {/* Amount */}
-              <div>
-                <label
-                  htmlFor="transfer-amount"
-                  className="block text-sm font-medium text-content-secondary mb-1"
-                >
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  id="transfer-amount"
-                  step="0.01"
-                  min="0"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                  required
-                />
+              {/* Amount + Currency */}
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label
+                    htmlFor="transfer-amount"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                  >
+                    Amount
+                  </label>
+                  <input
+                    type="number"
+                    id="transfer-amount"
+                    step="0.01"
+                    min="0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    required
+                  />
+                </div>
+                <div className="w-24 sm:w-28">
+                  <label
+                    htmlFor="transfer-currency"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                  >
+                    Currency
+                  </label>
+                  <select
+                    id="transfer-currency"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  >
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Description */}
               <div>
                 <label
                   htmlFor="transfer-description"
-                  className="block text-sm font-medium text-content-secondary mb-1"
+                  className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
                 >
                   Description
                 </label>
-                <textarea
+                <input
+                  type="text"
                   id="transfer-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={360}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald resize-none"
+                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                   placeholder="Optional"
                 />
-                <p className="text-xs text-content-tertiary text-right mt-1">
-                  {description.length}/360
-                </p>
-              </div>
-
-              {/* Currency */}
-              <div>
-                <label
-                  htmlFor="transfer-currency"
-                  className="block text-sm font-medium text-content-secondary mb-1"
-                >
-                  Currency
-                </label>
-                <select
-                  id="transfer-currency"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                >
-                  {SUPPORTED_CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {/* Date */}
               <div>
                 <label
                   htmlFor="transfer-date"
-                  className="block text-sm font-medium text-content-secondary mb-1"
+                  className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
                 >
                   Date
                 </label>
@@ -281,7 +284,7 @@ export default function TransferFormModal({
                   id="transfer-date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                 />
               </div>
             </div>

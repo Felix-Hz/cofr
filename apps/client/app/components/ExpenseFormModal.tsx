@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
 import { useAccounts } from "~/lib/accounts";
 import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
@@ -108,17 +109,19 @@ export default function ExpenseFormModal({
     await onSubmit(data);
   };
 
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
+    <div className="fixed inset-0 z-50">
+      <div className="flex h-full items-center justify-center p-4 touch-none">
         {/* Backdrop */}
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
 
         {/* Modal */}
-        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 max-h-[85vh] flex flex-col">
-          <h3 className="text-lg font-semibold mb-3 shrink-0">
+        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 max-h-[85vh] flex flex-col overflow-hidden">
+          <h3 className="hidden sm:block text-lg font-semibold mb-3 shrink-0">
             {isEditMode
               ? mode === "fund"
                 ? "Edit Funding"
@@ -129,13 +132,13 @@ export default function ExpenseFormModal({
           </h3>
 
           {/* Expense / Fund toggle */}
-          <div className="flex rounded-lg bg-surface-secondary p-0.5 mb-4 shrink-0">
+          <div className="flex rounded-lg bg-surface-elevated p-0.5 mb-3 sm:mb-4 shrink-0">
             <button
               type="button"
               onClick={() => handleModeSwitch("expense")}
               className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 mode === "expense"
-                  ? "bg-surface-primary text-content-primary shadow-sm"
+                  ? "bg-emerald text-white shadow-sm"
                   : "text-content-tertiary hover:text-content-secondary"
               }`}
             >
@@ -155,13 +158,13 @@ export default function ExpenseFormModal({
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-            <div className="overflow-y-auto flex-1 min-h-0 space-y-3 sm:space-y-4 px-0.5">
+            <div className="overflow-y-auto overflow-x-hidden overscroll-contain touch-auto flex-1 min-h-0 space-y-2 sm:space-y-4 px-0.5">
               {/* Account */}
               {accounts.length > 0 && (
                 <div>
                   <label
                     htmlFor="account"
-                    className="block text-sm font-medium text-content-secondary mb-1"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
                   >
                     {mode === "fund" ? "Into Account" : "From Account"}
                   </label>
@@ -169,7 +172,7 @@ export default function ExpenseFormModal({
                     id="account"
                     value={accountId}
                     onChange={(e) => setAccountId(e.target.value)}
-                    className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                   >
                     {accounts.map((acct) => (
                       <option key={acct.id} value={acct.id}>
@@ -180,99 +183,111 @@ export default function ExpenseFormModal({
                 </div>
               )}
 
-              {/* Amount */}
-              <div>
-                <label
-                  htmlFor="amount"
-                  className="block text-sm font-medium text-content-secondary mb-1"
-                >
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  id="amount"
-                  step="0.01"
-                  min="0"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                  required
-                />
-              </div>
-
-              {/* Category — hidden in fund mode */}
-              {mode === "expense" && (
-                <div>
+              {/* Amount + Currency */}
+              <div className="flex gap-2">
+                <div className="flex-1">
                   <label
-                    htmlFor="category"
-                    className="block text-sm font-medium text-content-secondary mb-1"
+                    htmlFor="amount"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
                   >
-                    Category
+                    Amount
+                  </label>
+                  <input
+                    type="number"
+                    id="amount"
+                    step="0.01"
+                    min="0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    required
+                  />
+                </div>
+                <div className="w-24 sm:w-28">
+                  <label
+                    htmlFor="currency"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                  >
+                    Currency
                   </label>
                   <select
-                    id="category"
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    id="currency"
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                   >
-                    {filteredCategories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
                       </option>
                     ))}
                   </select>
                 </div>
-              )}
+              </div>
+
+              {/* Category (expense) / Opening Balance (fund) — fixed-height slot */}
+              <div className="min-h-[3rem] sm:min-h-[3.5rem]">
+                {mode === "expense" ? (
+                  <div>
+                    <label
+                      htmlFor="category"
+                      className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                    >
+                      Category
+                    </label>
+                    <select
+                      id="category"
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    >
+                      {filteredCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={isOpeningBalance}
+                      onChange={(e) => setIsOpeningBalance(e.target.checked)}
+                      className="w-4 h-4 rounded border-edge-strong text-emerald focus:ring-emerald accent-emerald"
+                    />
+                    <span className="text-sm text-content-secondary">
+                      Opening balance
+                      <span className="text-content-tertiary"> — excluded from stats</span>
+                    </span>
+                  </label>
+                )}
+              </div>
 
               {/* Description */}
               <div>
                 <label
                   htmlFor="description"
-                  className="block text-sm font-medium text-content-secondary mb-1"
+                  className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
                 >
                   Description
                 </label>
-                <textarea
+                <input
+                  type="text"
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={360}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald resize-none"
+                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                   placeholder="Optional"
                 />
-                <p className="text-xs text-content-tertiary text-right mt-1">
-                  {description.length}/360
-                </p>
-              </div>
-
-              {/* Currency */}
-              <div>
-                <label
-                  htmlFor="currency"
-                  className="block text-sm font-medium text-content-secondary mb-1"
-                >
-                  Currency
-                </label>
-                <select
-                  id="currency"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                >
-                  {SUPPORTED_CURRENCIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               {/* Date */}
               <div>
                 <label
                   htmlFor="date"
-                  className="block text-sm font-medium text-content-secondary mb-1"
+                  className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
                 >
                   Date
                 </label>
@@ -281,25 +296,9 @@ export default function ExpenseFormModal({
                   id="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                 />
               </div>
-
-              {/* Opening Balance */}
-              {mode === "fund" && (
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isOpeningBalance}
-                    onChange={(e) => setIsOpeningBalance(e.target.checked)}
-                    className="w-4 h-4 rounded border-edge-strong text-emerald focus:ring-emerald accent-emerald"
-                  />
-                  <span className="text-sm text-content-secondary">
-                    Opening balance
-                    <span className="text-content-tertiary"> — excluded from stats</span>
-                  </span>
-                </label>
-              )}
             </div>
 
             {/* Actions */}

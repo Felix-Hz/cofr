@@ -1,3 +1,5 @@
+import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
+
 interface DeleteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -15,11 +17,13 @@ export default function DeleteConfirmModal({
   message = "Are you sure you want to delete this transaction? This action cannot be undone.",
   isLoading = false,
 }: DeleteConfirmModalProps) {
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-full items-center justify-center p-4">
+    <div className="fixed inset-0 z-50">
+      <div className="flex h-full items-center justify-center p-4 touch-none">
         {/* Backdrop */}
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
 
