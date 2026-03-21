@@ -113,6 +113,7 @@ export const MonthlyStatsSchema = z.object({
   currency: z.string().length(3),
   is_converted: z.boolean().default(false),
   account_balances: z.array(AccountBalanceSchema).default([]),
+  savings_net_change: z.number().default(0),
 });
 
 export const ExpenseCreateSchema = z.object({

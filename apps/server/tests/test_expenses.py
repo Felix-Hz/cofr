@@ -247,3 +247,89 @@ def test_range_stats_excludes_transfers(client, auth_headers, system_categories)
     )
     body = resp.json()
     assert body["total_spent"] == 40  # transfer excluded
+
+
+# ── Savings Net Change ──
+
+
+def test_savings_net_change_zero_no_savings_transactions(client, auth_headers, system_categories):
+    """savings_net_change is 0 when no transactions touch savings/investment accounts."""
+    headers, _ = auth_headers
+    food_id = str(system_categories["food"].id)
+    ts = "2024-06-15T12:00:00"
+    _create_expense(client, headers, food_id, amount=50, created_at=ts)
+
+    resp = client.get(
+        "/expenses/stats/range?start_date=2024-06-01T00:00:00&end_date=2024-06-30T23:59:59&currency=NZD",
+        headers=headers,
+    )
+    body = resp.json()
+    assert body["savings_net_change"] == 0
+
+
+def test_savings_net_change_transfer_to_savings(client, auth_headers, system_categories):
+    """Transfer from checking to savings shows up as positive savings_net_change."""
+    headers, _ = auth_headers
+    ts = "2024-06-15T12:00:00"
+
+    accts = client.get("/accounts/", headers=headers).json()
+    checking_id = next(a["id"] for a in accts if a["name"] == "Checking")
+    savings_id = next(a["id"] for a in accts if a["name"] == "Savings")
+
+    client.post(
+        "/transfers/",
+        json={
+            "amount": 300,
+            "from_account_id": checking_id,
+            "to_account_id": savings_id,
+            "currency": "NZD",
+            "created_at": ts,
+        },
+        headers=headers,
+    )
+
+    resp = client.get(
+        "/expenses/stats/range?start_date=2024-06-01T00:00:00&end_date=2024-06-30T23:59:59&currency=NZD",
+        headers=headers,
+    )
+    body = resp.json()
+    # +300 to savings, -300 from checking (not savings type) = net +300
+    assert body["savings_net_change"] == 300
+
+
+def test_savings_net_change_income_to_savings(client, auth_headers, system_categories):
+    """Income deposited directly into a savings account counts as savings."""
+    headers, _ = auth_headers
+    salary_id = str(system_categories["salary"].id)
+    ts = "2024-06-15T12:00:00"
+
+    accts = client.get("/accounts/", headers=headers).json()
+    savings_id = next(a["id"] for a in accts if a["name"] == "Savings")
+
+    _create_expense(client, headers, salary_id, amount=500, account_id=savings_id, created_at=ts)
+
+    resp = client.get(
+        "/expenses/stats/range?start_date=2024-06-01T00:00:00&end_date=2024-06-30T23:59:59&currency=NZD",
+        headers=headers,
+    )
+    body = resp.json()
+    assert body["savings_net_change"] == 500
+
+
+def test_savings_net_change_expense_from_savings(client, auth_headers, system_categories):
+    """Expense from a savings account reduces savings_net_change."""
+    headers, _ = auth_headers
+    food_id = str(system_categories["food"].id)
+    ts = "2024-06-15T12:00:00"
+
+    accts = client.get("/accounts/", headers=headers).json()
+    savings_id = next(a["id"] for a in accts if a["name"] == "Savings")
+
+    _create_expense(client, headers, food_id, amount=100, account_id=savings_id, created_at=ts)
+
+    resp = client.get(
+        "/expenses/stats/range?start_date=2024-06-01T00:00:00&end_date=2024-06-30T23:59:59&currency=NZD",
+        headers=headers,
+    )
+    body = resp.json()
+    assert body["savings_net_change"] == -100

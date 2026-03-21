@@ -136,7 +136,8 @@ function AddButton({
 }
 
 export default function Dashboard() {
-  const navigate = useNavigate();
+  const rawNavigate = useNavigate();
+  const navigate = (to: string) => rawNavigate(to, { preventScrollReset: true, replace: true });
   const revalidator = useRevalidator();
   const {
     expenses,
@@ -183,8 +184,10 @@ export default function Dashboard() {
   const dailyAverage = monthlyStats.total_spent / periodDays;
   const savingsRate =
     monthlyStats.total_income > 0
-      ? ((monthlyStats.total_income - monthlyStats.total_spent) / monthlyStats.total_income) * 100
+      ? (monthlyStats.savings_net_change / monthlyStats.total_income) * 100
       : 0;
+  const netBalancePct =
+    monthlyStats.total_income > 0 ? (netBalance / monthlyStats.total_income) * 100 : 0;
 
   // Account balances
   const accountBalances = monthlyStats.account_balances || [];
@@ -620,7 +623,8 @@ export default function Dashboard() {
                 savingsRate >= 0 ? "text-positive-text" : "text-negative-text/70"
               }`}
             >
-              {formatCurrency(netBalance, monthlyStats.currency, true, 0)} net
+              {formatCurrency(monthlyStats.savings_net_change, monthlyStats.currency, true, 0)}{" "}
+              saved
             </p>
           </div>
 
@@ -721,13 +725,14 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2 text-xl font-bold text-content-primary tabular-nums sm:text-2xl">
                   {formatCurrency(netBalance, monthlyStats.currency, true, 0)}
                   <span
-                    className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm ${
-                      netBalance >= 0
+                    className={`inline-flex shrink-0 items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      netBalancePct >= 0
                         ? "bg-positive-bg text-positive-text-strong"
                         : "bg-negative-bg text-negative-text"
                     }`}
                   >
-                    {netBalance >= 0 ? "+" : "-"}
+                    {netBalancePct >= 0 ? "+" : ""}
+                    {Math.round(netBalancePct)}%
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-content-tertiary">

@@ -112,6 +112,9 @@ class ExpenseService:
             stats = self._aggregate_with_conversion(base_filter, user_id)
 
         stats.account_balances = self.get_account_balances(user_id)
+        stats.savings_net_change = self._get_savings_net_change_monthly(
+            user_id, month, year, currency
+        )
         return stats
 
     async def get_range_stats(
@@ -133,7 +136,110 @@ class ExpenseService:
             stats = self._aggregate_with_conversion(base_filter, user_id)
 
         stats.account_balances = self.get_account_balances(user_id)
+        stats.savings_net_change = self._get_savings_net_change_range(
+            user_id, start_date, end_date, currency
+        )
         return stats
+
+    def _savings_net_change_query(self, savings_filter: list) -> float:
+        """Calculate net flow into savings/investment accounts (single-currency)."""
+        result = (
+            self.db.query(
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                Transaction.is_transfer == True,  # noqa: E712
+                                case(
+                                    (Transaction.transfer_direction == "to", Transaction.amount),
+                                    else_=-Transaction.amount,
+                                ),
+                            ),
+                            (Category.type == "income", Transaction.amount),
+                            else_=-Transaction.amount,
+                        )
+                    ),
+                    0,
+                )
+            )
+            .outerjoin(Category, Transaction.category_id == Category.id)
+            .join(Account, Transaction.account_id == Account.id)
+            .filter(*savings_filter)
+            .scalar()
+        )
+        return float(result or 0)
+
+    def _savings_net_change_converted(self, savings_filter: list, user_id: str) -> float:
+        """Calculate net flow into savings/investment accounts with currency conversion."""
+        user = self.db.query(User).filter(User.id == user_id).first()
+        preferred = user.preferred_currency if user else "NZD"
+
+        target_rate = (
+            self.db.query(ExchangeRate.rate_to_usd)
+            .filter(ExchangeRate.currency_code == preferred)
+            .scalar_subquery()
+        )
+
+        converted_amount = Transaction.amount / ExchangeRate.rate_to_usd * target_rate
+
+        result = (
+            self.db.query(
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (
+                                Transaction.is_transfer == True,  # noqa: E712
+                                case(
+                                    (Transaction.transfer_direction == "to", converted_amount),
+                                    else_=-converted_amount,
+                                ),
+                            ),
+                            (Category.type == "income", converted_amount),
+                            else_=-converted_amount,
+                        )
+                    ),
+                    0,
+                )
+            )
+            .outerjoin(Category, Transaction.category_id == Category.id)
+            .join(Account, Transaction.account_id == Account.id)
+            .join(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
+            .filter(*savings_filter)
+            .scalar()
+        )
+        return float(result or 0)
+
+    def _get_savings_net_change_range(
+        self, user_id: str, start_date: datetime, end_date: datetime, currency: str | None = None
+    ) -> float:
+        """Net flow into savings/investment accounts for a date range."""
+        savings_filter = [
+            Transaction.user_id == user_id,
+            Transaction.timestamp >= start_date,
+            Transaction.timestamp <= end_date,
+            Transaction.is_opening_balance == sa_false(),
+            Account.type.in_(["savings", "investment"]),
+        ]
+        if currency:
+            savings_filter.append(Transaction.currency == currency)
+            return self._savings_net_change_query(savings_filter)
+        return self._savings_net_change_converted(savings_filter, user_id)
+
+    def _get_savings_net_change_monthly(
+        self, user_id: str, month: int, year: int, currency: str | None = None
+    ) -> float:
+        """Net flow into savings/investment accounts for a specific month."""
+        savings_filter = [
+            Transaction.user_id == user_id,
+            func.extract("month", Transaction.timestamp) == month,
+            func.extract("year", Transaction.timestamp) == year,
+            Transaction.is_opening_balance == sa_false(),
+            Account.type.in_(["savings", "investment"]),
+        ]
+        if currency:
+            savings_filter.append(Transaction.currency == currency)
+            return self._savings_net_change_query(savings_filter)
+        return self._savings_net_change_converted(savings_filter, user_id)
 
     def _aggregate_sql(self, base_filter: list, currency: str) -> MonthlyStats:
         """Aggregate stats using SQL (single-currency path)."""
@@ -289,7 +395,27 @@ class ExpenseService:
         )
 
     def get_account_balances(self, user_id: str) -> list[AccountBalance]:
-        """Calculate balance for each of the user's accounts using a single SQL query."""
+        """Calculate balance for each of the user's accounts, converting to preferred currency."""
+        user = self.db.query(User).filter(User.id == user_id).first()
+        preferred = user.preferred_currency if user else "NZD"
+
+        # Target currency rate for conversion
+        target_rate = (
+            self.db.query(ExchangeRate.rate_to_usd)
+            .filter(ExchangeRate.currency_code == preferred)
+            .scalar_subquery()
+        )
+
+        # Convert each transaction amount: amount / from_rate * target_rate
+        # Falls back to raw amount when exchange rates are unavailable
+        converted_amount = case(
+            (
+                ExchangeRate.rate_to_usd.isnot(None),
+                Transaction.amount / ExchangeRate.rate_to_usd * target_rate,
+            ),
+            else_=Transaction.amount,
+        )
+
         # Single query: aggregate all transaction amounts per account with correct sign
         # - income category or transfer 'to' → positive
         # - expense category or transfer 'from' → negative
@@ -302,18 +428,19 @@ class ExpenseService:
                             (
                                 Transaction.is_transfer == True,  # noqa: E712
                                 case(
-                                    (Transaction.transfer_direction == "to", Transaction.amount),
-                                    else_=-Transaction.amount,
+                                    (Transaction.transfer_direction == "to", converted_amount),
+                                    else_=-converted_amount,
                                 ),
                             ),
-                            (Category.type == "income", Transaction.amount),
-                            else_=-Transaction.amount,
+                            (Category.type == "income", converted_amount),
+                            else_=-converted_amount,
                         )
                     ),
                     0,
                 ).label("balance"),
             )
             .outerjoin(Category, Transaction.category_id == Category.id)
+            .outerjoin(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
             .filter(Transaction.user_id == user_id)
             .group_by(Transaction.account_id)
             .subquery()

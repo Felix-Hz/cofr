@@ -26,7 +26,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        />
         <title>Cofr</title>
         <meta name="theme-color" content="#0B1220" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)" />

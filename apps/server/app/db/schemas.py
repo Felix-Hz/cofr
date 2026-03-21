@@ -59,6 +59,10 @@ class AccountUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=60)
 
 
+class MoveTransactionsRequest(BaseModel):
+    target_account_id: str
+
+
 class AccountBalance(BaseModel):
     account_id: str
     account_name: str
@@ -116,6 +120,7 @@ class MonthlyStats(BaseModel):
     currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
     is_converted: bool = False
     account_balances: list[AccountBalance] = []
+    savings_net_change: float = 0.0
 
 
 class ExpenseCreateRequest(BaseModel):

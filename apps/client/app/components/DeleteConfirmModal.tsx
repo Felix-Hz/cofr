@@ -7,6 +7,7 @@ interface DeleteConfirmModalProps {
   title?: string;
   message?: string;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 export default function DeleteConfirmModal({
@@ -16,6 +17,7 @@ export default function DeleteConfirmModal({
   title = "Delete Transaction",
   message = "Are you sure you want to delete this transaction? This action cannot be undone.",
   isLoading = false,
+  error = null,
 }: DeleteConfirmModalProps) {
   useBodyScrollLock(isOpen);
 
@@ -31,6 +33,12 @@ export default function DeleteConfirmModal({
         <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-sm p-6">
           <h3 className="text-lg font-semibold text-content-primary mb-2">{title}</h3>
           <p className="text-sm text-content-secondary mb-6">{message}</p>
+
+          {error && (
+            <div className="mb-4 rounded-lg bg-negative-bg border border-negative-text/20 px-3 py-2 text-sm text-negative-text">
+              {error}
+            </div>
+          )}
 
           <div className="flex justify-end gap-3">
             <button
