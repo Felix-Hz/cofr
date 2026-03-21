@@ -1,12 +1,23 @@
+import asyncio
+import logging
+
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session
 
+from app.auth.dependencies import get_user_id
 from app.auth.jwt import create_access_token
+from app.config import settings
 from app.database import get_db
 from app.db.models import AuthProvider, User
+from app.email.rate_limit import email_rate_limiter
+from app.email.service import send_verification_email, send_welcome_email
+from app.email.tokens import BadSignature, SignatureExpired, validate_verification_token
 from app.services.account_service import ensure_system_accounts
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth/local", tags=["Local Auth"])
 
@@ -88,6 +99,9 @@ async def register(body: RegisterRequest, db: Session = Depends(get_db)):
     ensure_system_accounts(db, user)
     db.commit()
 
+    # Fire-and-forget verification email
+    asyncio.create_task(send_verification_email(db, email_normalized, str(user.id)))
+
     token = create_access_token(user_id=str(user.id), username=body.name or email_normalized)
     return AuthResponse(token=token)
 
@@ -127,3 +141,68 @@ async def login(body: LoginRequest, db: Session = Depends(get_db)):
         username=auth_provider.display_name or email_normalized,
     )
     return AuthResponse(token=token)
+
+
+@router.get("/verify-email")
+async def verify_email(token: str, db: Session = Depends(get_db)):
+    """Verify email address from the link sent in the verification email."""
+    try:
+        payload = validate_verification_token(token)
+    except SignatureExpired:
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?verified=expired", status_code=302
+        )
+    except BadSignature:
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?verified=invalid", status_code=302
+        )
+
+    user_id = payload["user_id"]
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?verified=invalid", status_code=302
+        )
+
+    if not user.email_verified:
+        user.email_verified = True
+        db.commit()
+        # Fire-and-forget welcome email
+        asyncio.create_task(send_welcome_email(payload["email"], user.first_name))
+
+    return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?verified=true", status_code=302)
+
+
+@router.post("/resend-verification", status_code=status.HTTP_200_OK)
+async def resend_verification(
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_user_id),
+):
+    """Resend verification email (authenticated, rate-limited)."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already verified"
+        )
+
+    # Get email from auth provider
+    auth_provider = (
+        db.query(AuthProvider)
+        .filter(AuthProvider.user_id == user_id, AuthProvider.provider == "local")
+        .first()
+    )
+    if not auth_provider or not auth_provider.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No email address associated with this account",
+        )
+
+    email = auth_provider.email
+    if not email_rate_limiter.check(email, max_count=5, window_seconds=3600):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many verification emails. Please try again later.",
+        )
+
+    asyncio.create_task(send_verification_email(db, email, user_id))
+    return {"message": "Verification email sent"}

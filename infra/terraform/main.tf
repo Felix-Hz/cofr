@@ -59,6 +59,7 @@ resource "digitalocean_project_resources" "cofr" {
   resources = [digitalocean_droplet.cofr.urn]
 }
 
+
 resource "digitalocean_firewall" "cofr" {
   name = "${var.droplet_name}-firewall"
 

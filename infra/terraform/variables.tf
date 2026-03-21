@@ -103,3 +103,23 @@ variable "reserved_ip" {
   type        = string
   default     = ""
 }
+
+# ── AWS (S3 state backend) ──
+
+variable "aws_access_key" {
+  description = "AWS access key for Terraform state backend (S3)."
+  type        = string
+  sensitive   = true
+}
+
+variable "aws_secret_key" {
+  description = "AWS secret key for Terraform state backend (S3)."
+  type        = string
+  sensitive   = true
+}
+
+variable "aws_region" {
+  description = "AWS region for S3 state backend."
+  type        = string
+  default     = "ap-southeast-2"
+}

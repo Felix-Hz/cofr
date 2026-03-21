@@ -195,3 +195,68 @@ def test_soft_deleted_user_blocked_401(client, db_session):
 
     resp = client.get("/expenses/", headers=headers)
     assert resp.status_code == 401
+
+
+# ── Email verification ──
+
+
+def test_register_sets_email_verified_false(client, db_session):
+    token = register_user(client, email="verify@example.com")
+    payload = pyjwt.decode(token, os.environ["JWT_SECRET"], algorithms=["HS256"])
+    user = db_session.query(User).filter(User.id == payload["user_id"]).first()
+    assert user.email_verified is False
+
+
+def test_verify_email_valid_token(client, db_session):
+    from app.email.tokens import generate_verification_token
+
+    token = register_user(client, email="vtoken@example.com")
+    payload = pyjwt.decode(token, os.environ["JWT_SECRET"], algorithms=["HS256"])
+    user_id = payload["user_id"]
+
+    verify_tok = generate_verification_token(user_id, "vtoken@example.com")
+    resp = client.get(f"/auth/local/verify-email?token={verify_tok}", follow_redirects=False)
+    assert resp.status_code == 302
+    assert "verified=true" in resp.headers["location"]
+
+    user = db_session.query(User).filter(User.id == user_id).first()
+    assert user.email_verified is True
+
+
+def test_verify_email_invalid_token_redirects(client):
+    resp = client.get("/auth/local/verify-email?token=garbage", follow_redirects=False)
+    assert resp.status_code == 302
+    assert "verified=invalid" in resp.headers["location"]
+
+
+def test_resend_verification_success(client, db_session):
+    token = register_user(client, email="resend@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    resp = client.post("/auth/local/resend-verification", headers=headers)
+    assert resp.status_code == 200
+
+
+def test_resend_verification_already_verified_400(client, db_session):
+    token = register_user(client, email="already@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = pyjwt.decode(token, os.environ["JWT_SECRET"], algorithms=["HS256"])
+    user = db_session.query(User).filter(User.id == payload["user_id"]).first()
+    user.email_verified = True
+    db_session.commit()
+
+    resp = client.post("/auth/local/resend-verification", headers=headers)
+    assert resp.status_code == 400
+
+
+def test_resend_verification_rate_limited(client, db_session):
+    from app.email.rate_limit import email_rate_limiter
+
+    token = register_user(client, email="ratelim@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Exhaust rate limit
+    for _ in range(5):
+        email_rate_limiter.check("ratelim@example.com", max_count=5, window_seconds=3600)
+
+    resp = client.post("/auth/local/resend-verification", headers=headers)
+    assert resp.status_code == 429

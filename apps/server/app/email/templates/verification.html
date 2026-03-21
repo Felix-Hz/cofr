@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Verify your email — Cofr{% endblock %}
+
+{% block content %}
+<p>Verify your email address to get started with Cofr.</p>
+<div class="cta-row">
+  <a href="{{ verify_url }}" class="cta">Verify email</a>
+</div>
+<p class="muted">This link expires in 24 hours. If you didn't create this account, ignore this email.</p>
+<p class="muted">
+  Or paste this URL into your browser:<br>
+  <span style="word-break: break-all;">{{ verify_url }}</span>
+</p>
+{% endblock %}

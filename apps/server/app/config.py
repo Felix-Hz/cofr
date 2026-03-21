@@ -16,11 +16,17 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # Email — Resend
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM_ADDRESS: str = "hello@cofr.cash"
+    EMAIL_FROM_NAME: str = "Cofr"
+    RESEND_WEBHOOK_SECRET: str = ""
+
     # URLs
     API_URL: str = "http://localhost:5784"
     FRONTEND_URL: str = "http://localhost:5173"
 
-    model_config = {"env_file": ".env", "case_sensitive": True}
+    model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
 
 
 @lru_cache

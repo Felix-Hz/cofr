@@ -138,6 +138,10 @@ class ExpenseUpdateRequest(BaseModel):
     account_id: str | None = None
 
 
+class UserProfileResponse(BaseModel):
+    email_verified: bool
+
+
 class ExpenseDeleteResponse(BaseModel):
     success: bool
     message: str
