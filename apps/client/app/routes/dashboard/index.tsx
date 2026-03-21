@@ -440,7 +440,9 @@ export default function Dashboard() {
           )}
 
           <div className="min-w-0">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-content-heading truncate">
+            <h2
+              className={`font-bold tracking-tight text-content-heading truncate sm:text-2xl ${periodLabel.length > (showArrows ? 16 : 22) ? "text-base" : "text-xl"}`}
+            >
               {periodLabel}
             </h2>
             <p className="text-sm text-content-tertiary mt-0.5 hidden sm:block">

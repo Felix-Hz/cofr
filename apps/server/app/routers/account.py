@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_user_id
 from app.config import settings
 from app.database import get_db
-from app.db.models import Account, AuthProvider, Transaction, User
+from app.db.models import Account, AuthProvider, Category, Transaction, User, UserCategoryPreference
 
 router = APIRouter(prefix="/account", tags=["Account"])
 
@@ -319,6 +319,8 @@ async def delete_account(
     db.flush()
     db.query(Transaction).filter(Transaction.user_id == user_id).delete()
     db.query(Account).filter(Account.user_id == user_id).delete()
+    db.query(UserCategoryPreference).filter(UserCategoryPreference.user_id == user_id).delete()
+    db.query(Category).filter(Category.user_id == user_id).delete()
     db.query(AuthProvider).filter(AuthProvider.user_id == user_id).delete()
     db.delete(user)
     db.commit()

@@ -184,7 +184,7 @@ export default function ExpenseFormModal({
               )}
 
               {/* Amount + Currency */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-end">
                 <div className="flex-1">
                   <label
                     htmlFor="amount"

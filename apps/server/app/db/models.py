@@ -85,7 +85,7 @@ class Category(Base):
     color_dark: Mapped[str] = mapped_column(String(7))
     icon: Mapped[str | None] = mapped_column(String(30), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    is_system: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False)
     display_order: Mapped[int] = mapped_column(Integer, default=0)
     type: Mapped[str] = mapped_column(String(10), default="expense")
     alias: Mapped[str | None] = mapped_column(String(10), nullable=True)
