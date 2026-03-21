@@ -29,6 +29,7 @@ import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 import { isPasswordValid } from "~/lib/password";
 import type { Account, Category, CategoryCreate, CategoryUpdate } from "~/lib/schemas";
+import { useTheme } from "~/lib/theme";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
 
@@ -241,6 +242,8 @@ export async function clientLoader() {
 }
 
 export default function Settings() {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const [providers, setProviders] = useState<LinkedProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1237,7 +1240,7 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <span
                     className="inline-block w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: cat.color_light }}
+                    style={{ backgroundColor: isDark ? cat.color_dark : cat.color_light }}
                   />
                   <div>
                     <span className="text-sm font-medium text-content-primary">{cat.name}</span>
@@ -1281,7 +1284,7 @@ export default function Settings() {
                 <div className="flex items-center gap-3">
                   <span
                     className="inline-block w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: cat.color_light }}
+                    style={{ backgroundColor: isDark ? cat.color_dark : cat.color_light }}
                   />
                   <div>
                     <span className="text-sm font-medium text-content-primary">{cat.name}</span>

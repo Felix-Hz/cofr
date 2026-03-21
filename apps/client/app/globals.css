@@ -135,6 +135,8 @@ input[type="datetime-local"] {
 html,
 body {
   overflow-x: hidden;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -142,6 +144,14 @@ body {
   background-color: var(--surface-page);
   color: var(--content-secondary);
   font-feature-settings: "tnum" 1;
+}
+
+button,
+a,
+[role="button"],
+label {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 h1,
