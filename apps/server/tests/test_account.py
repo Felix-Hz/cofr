@@ -4,8 +4,8 @@ import os
 
 import jwt as pyjwt
 
-from app.db.models import Account, AuthProvider, Transaction, User
-from tests.conftest import VALID_PASSWORD, register_user
+from app.db.models import Account, AuthProvider, Category, Transaction, User, UserCategoryPreference
+from tests.conftest import VALID_PASSWORD, make_category, register_user
 
 # ── Password change ──
 
@@ -93,6 +93,9 @@ def test_hard_delete_removes_all_data(client, db_session, system_categories):
         headers=headers,
     )
 
+    # Create a custom category for this user
+    make_category(db_session, user_id, name="Delete Me", slug="delete-me")
+
     resp = client.request(
         "DELETE",
         "/account",
@@ -106,6 +109,13 @@ def test_hard_delete_removes_all_data(client, db_session, system_categories):
     assert db_session.query(AuthProvider).filter(AuthProvider.user_id == user_id).count() == 0
     assert db_session.query(Account).filter(Account.user_id == user_id).count() == 0
     assert db_session.query(Transaction).filter(Transaction.user_id == user_id).count() == 0
+    assert db_session.query(Category).filter(Category.user_id == user_id).count() == 0
+    assert (
+        db_session.query(UserCategoryPreference)
+        .filter(UserCategoryPreference.user_id == user_id)
+        .count()
+        == 0
+    )
 
 
 def test_delete_wrong_confirmation_text(client, auth_headers):
