@@ -98,7 +98,7 @@ def test_rate_limiter_window_expiry():
 # ── Provider factory ──
 
 
-def test_empty_ses_key_returns_console_provider():
+def test_empty_resend_key_returns_console_provider():
     provider = get_email_provider()
     assert isinstance(provider, ConsoleProvider)
 

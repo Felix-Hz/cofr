@@ -28,7 +28,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Uuid(), primary_key=True, server_default=sa.text("gen_random_uuid()")),
         sa.Column("email_hash", sa.String(), nullable=False, index=True),
         sa.Column("event_type", sa.String(), nullable=False),
-        sa.Column("ses_message_id", sa.String(), nullable=True),
+        sa.Column("provider_message_id", sa.String(), nullable=True),
         sa.Column("raw_payload", sa.Text(), nullable=True),
         sa.Column(
             "created_at",

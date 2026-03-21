@@ -59,24 +59,6 @@ resource "digitalocean_project_resources" "cofr" {
   resources = [digitalocean_droplet.cofr.urn]
 }
 
-# ── AWS SES Email Infrastructure ──
-
-module "ses" {
-  source     = "./modules/ses"
-  domain     = var.ses_domain
-  aws_region = var.aws_region
-}
-
-module "sns" {
-  source       = "./modules/sns"
-  ses_identity = module.ses.domain_identity_arn
-}
-
-module "iam" {
-  source         = "./modules/iam"
-  ses_identity   = module.ses.domain_identity_arn
-  sns_topic_arns = [module.sns.bounce_topic_arn, module.sns.complaint_topic_arn]
-}
 
 resource "digitalocean_firewall" "cofr" {
   name = "${var.droplet_name}-firewall"

@@ -104,28 +104,22 @@ variable "reserved_ip" {
   default     = ""
 }
 
-# ── AWS (SES Email) ──
+# ── AWS (S3 state backend) ──
 
 variable "aws_access_key" {
-  description = "AWS access key for the SES provider."
+  description = "AWS access key for Terraform state backend (S3)."
   type        = string
   sensitive   = true
 }
 
 variable "aws_secret_key" {
-  description = "AWS secret key for the SES provider."
+  description = "AWS secret key for Terraform state backend (S3)."
   type        = string
   sensitive   = true
 }
 
 variable "aws_region" {
-  description = "AWS region for SES."
+  description = "AWS region for S3 state backend."
   type        = string
   default     = "ap-southeast-2"
-}
-
-variable "ses_domain" {
-  description = "Domain to verify with SES for sending email."
-  type        = string
-  default     = "cofr.cash"
 }
