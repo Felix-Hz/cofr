@@ -12,6 +12,7 @@ import (
 type Config struct {
 	DatabaseURL   string
 	TelegramToken string
+	SentryDSN     string
 }
 
 func LoadConfig() (*Config, error) {
@@ -26,6 +27,7 @@ func LoadConfig() (*Config, error) {
 	config := &Config{
 		DatabaseURL:   os.Getenv("DATABASE_URL"),
 		TelegramToken: os.Getenv("TELEGRAM_BOT_TOKEN"),
+		SentryDSN:     os.Getenv("SENTRY_DSN"),
 	}
 
 	missing := make([]string, 0)

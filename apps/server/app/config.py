@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     EMAIL_FROM_NAME: str = "Cofr"
     RESEND_WEBHOOK_SECRET: str = ""
 
+    # Sentry (empty = disabled)
+    SENTRY_DSN: str = ""
+
     # URLs
     API_URL: str = "http://localhost:5784"
     FRONTEND_URL: str = "http://localhost:5173"
