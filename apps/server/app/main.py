@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -19,6 +20,22 @@ from app.routers import (
     transfers,
     webhooks,
 )
+
+
+def _traces_sampler(sampling_context: dict) -> float:
+    if sampling_context.get("asgi_scope", {}).get("path") == "/health":
+        return 0.0
+    return 0.02
+
+
+if settings.ENV == "production" and settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment="production",
+        sample_rate=1.0,
+        traces_sampler=_traces_sampler,
+        send_default_pii=False,
+    )
 
 
 @asynccontextmanager
@@ -64,6 +81,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["baggage", "sentry-trace"],
 )
 
 # Add request logging for debugging

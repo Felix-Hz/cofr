@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react";
 import { useEffect } from "react";
 import {
   isRouteErrorResponse,
@@ -58,6 +59,10 @@ export default function Root() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  if (!isRouteErrorResponse(error) && error instanceof Error) {
+    Sentry.captureException(error);
+  }
+
   const isRoute = isRouteErrorResponse(error);
 
   let status = 500;

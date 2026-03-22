@@ -207,6 +207,10 @@ jobs:
           tags: |
             ${{ needs.changes.outputs.registry-namespace }}/cofr-client:${{ needs.changes.outputs.image-tag }}
             ${{ needs.changes.outputs.registry-namespace }}/cofr-client:main
+          build-args: |
+            VITE_SENTRY_DSN=${{ secrets.SENTRY_DSN_CLIENT }}
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+            SENTRY_ORG=${{ secrets.SENTRY_ORG }}
 
   build-tg-bot:
     name: build / tg-bot

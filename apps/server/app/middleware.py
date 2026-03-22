@@ -1,20 +1,22 @@
-"""Logging middleware for debugging"""
+"""Request logging middleware"""
 
+import logging
 import time
 
 from fastapi import Request
+
+logger = logging.getLogger(__name__)
 
 
 async def log_requests(request: Request, call_next):
     """Log all requests with timing"""
     start_time = time.time()
 
-    print("\n" + "=" * 60)
-    print(f"→ {request.method} {request.url.path}")
+    logger.info("→ %s %s", request.method, request.url.path)
 
-    if request.method == "POST" or request.method == "OPTIONS":
+    if request.method in ("POST", "OPTIONS"):
         body = await request.body()
-        print(f"  Body: {body}")
+        logger.debug("  Body: %s", body)
 
         # Reconstruct request so FastAPI can parse it
         async def receive():
@@ -22,14 +24,13 @@ async def log_requests(request: Request, call_next):
 
         request._receive = receive
 
-    print(f"  Query: {dict(request.query_params)}")
-    print(f"  Origin: {request.headers.get('origin', 'N/A')}")
-    print(f"  Headers: {dict(request.headers)}")
+    logger.debug("  Query: %s", dict(request.query_params))
 
     response = await call_next(request)
 
     duration = time.time() - start_time
-    print(f"← Response Code: {response.status_code} ({duration:.3f}s)")
-    print("=" * 60 + "\n")
+    logger.info(
+        "← %s %s %d (%.3fs)", request.method, request.url.path, response.status_code, duration
+    )
 
     return response
