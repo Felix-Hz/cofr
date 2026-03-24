@@ -210,6 +210,21 @@ h6 {
   animation: slideDown 0.2s ease-out;
 }
 
+/* Toast entry from bottom */
+@keyframes toastUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-toast-up {
+  animation: toastUp 0.2s ease-out;
+}
+
 /* Remove Chromium/Brave focus ring on Recharts chart taps */
 .recharts-wrapper,
 .recharts-wrapper *,
