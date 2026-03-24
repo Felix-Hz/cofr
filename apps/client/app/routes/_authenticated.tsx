@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, redirect, useLoaderData } from "react-router";
+import OfflineBanner from "~/components/OfflineBanner";
 import ThemeToggle from "~/components/ThemeToggle";
 import { useSessionTimeout } from "~/hooks/useSessionTimeout";
 import { AccountsProvider } from "~/lib/accounts";
@@ -69,6 +70,7 @@ export default function AuthenticatedLayout() {
 
   return (
     <div className="min-h-screen bg-surface-page">
+      <OfflineBanner />
       {/* Header */}
       <header className="bg-surface-primary border-b border-edge-default">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -91,7 +93,7 @@ export default function AuthenticatedLayout() {
                 {menuOpen && (
                   <div className="absolute right-0 mt-0.5 w-48 bg-surface-primary rounded-md shadow-lg border border-edge-default z-50">
                     <div className="py-1">
-                      <div className="px-4 py-2 text-sm text-content-secondary border-b border-edge-default">
+                      <div className="px-4 py-2 text-sm text-content-secondary border-b border-edge-default truncate">
                         {user?.username || "User"}
                       </div>
                       <Link

@@ -9,6 +9,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import UpdateBanner from "~/components/UpdateBanner";
 import type { Route } from "./+types/root";
 import "./globals.css";
 
@@ -31,10 +32,38 @@ export function Layout({ children }: { children: React.ReactNode }) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
         />
-        <title>Cofr</title>
+        <title>Cofr - Personal Finance, Clear and Simple</title>
+        <meta
+          name="description"
+          content="Track spending, manage accounts, and understand your money with clarity."
+        />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://cofr.cash" />
+        <meta property="og:title" content="Cofr - Personal Finance, Clear and Simple" />
+        <meta
+          property="og:description"
+          content="Track spending, manage accounts, and understand your money with clarity."
+        />
+        <meta property="og:image" content="https://cofr.cash/og-image.png" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Cofr - Personal Finance, Clear and Simple" />
+        <meta
+          name="twitter:description"
+          content="Track spending, manage accounts, and understand your money with clarity."
+        />
+        <meta name="twitter:image" content="https://cofr.cash/og-image.png" />
+
         <meta name="theme-color" content="#0B1220" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Cofr" />
+
         <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -47,6 +76,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <UpdateBanner />
         <ScrollRestoration />
         <Scripts />
       </body>
