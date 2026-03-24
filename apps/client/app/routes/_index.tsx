@@ -9,7 +9,8 @@ export function meta() {
     { title: "cofr - Finance, with clarity" },
     {
       name: "description",
-      content: "cofr — Track spending and understand your money with clarity.",
+      content:
+        "cofr — Private-by-default expense tracking for real accounts, real currencies, and people tired of guessing.",
     },
     { property: "og:type", content: "website" },
     { property: "og:url", content: "https://cofr.cash" },
@@ -161,9 +162,12 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="min-h-[calc(100vh-64px)] flex flex-col items-center justify-center pt-16 px-6 relative overflow-hidden">
-      {/* Decorative glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-emerald/8 blur-[120px] animate-glow-pulse pointer-events-none" />
+    <section className="min-h-[calc(100svh-64px)] flex flex-col items-center justify-center px-6 pt-28 pb-10 md:pt-36 md:pb-16 relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="landing-hero-ambient absolute inset-x-0 top-0 h-[72%]" />
+        <div className="absolute top-[12%] left-1/2 -translate-x-1/2 w-[720px] h-[420px] rounded-full bg-emerald/10 blur-[140px] animate-glow-pulse" />
+        <div className="absolute top-[18%] right-[8%] w-40 h-40 rounded-full bg-white/45 dark:bg-emerald/8 blur-3xl" />
+      </div>
 
       <div className="max-w-3xl mx-auto text-center relative z-10">
         <motion.p
@@ -172,7 +176,7 @@ function Hero() {
           transition={transition(0)}
           className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-6"
         >
-          Personal finance, simplified
+          Private by design. Sharp by default.
         </motion.p>
 
         <motion.h1
@@ -180,11 +184,11 @@ function Hero() {
           animate="visible"
           variants={fadeUp}
           transition={transition(0.1)}
-          className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-content-heading leading-[1.08]"
+          className="text-[2.9rem] sm:text-6xl md:text-[4.6rem] font-bold tracking-tight text-content-heading leading-[0.98]"
         >
-          Understand your money
-          <br />
-          with clarity.
+          Stop guessing
+          <br className="hidden sm:block" />
+          where your money went.
         </motion.h1>
 
         <motion.p
@@ -192,9 +196,10 @@ function Hero() {
           animate="visible"
           variants={fadeUp}
           transition={transition(0.2)}
-          className="mt-6 text-base sm:text-lg md:text-xl text-content-secondary max-w-xl mx-auto leading-relaxed"
+          className="mt-7 text-base sm:text-lg md:text-[1.35rem] text-content-secondary max-w-2xl mx-auto leading-relaxed"
         >
-          Track expenses, manage multiple currencies, and stay in control.
+          cofr tracks spending across real accounts and multiple currencies without the usual
+          finance-theatre fluff. Just a clean ledger, a sharper picture, and privacy baked in.
         </motion.p>
 
         <motion.div
@@ -202,19 +207,19 @@ function Hero() {
           animate="visible"
           variants={fadeUp}
           transition={transition(0.3)}
-          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3"
+          className="mt-11 flex flex-col sm:flex-row items-center justify-center gap-3"
         >
           <Link
             to="/login?mode=signup"
             className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
           >
-            Get Started
+            Start clean
           </Link>
           <a
             href="#features"
             className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-content-secondary border border-edge-strong rounded-xl hover:bg-surface-hover transition-colors"
           >
-            Learn more
+            See the workflow
           </a>
         </motion.div>
       </div>
@@ -224,7 +229,7 @@ function Hero() {
         initial={{ opacity: 0, y: 40, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
-        className="w-full max-w-4xl mx-auto mt-16 mb-8 mockup-perspective"
+        className="w-full max-w-4xl mx-auto mt-20 md:mt-24 mb-4 mockup-perspective"
       >
         <DashboardMockup />
       </motion.div>
@@ -367,8 +372,8 @@ function Features() {
           />
         </svg>
       ),
-      title: "Every currency, one view",
-      body: "Track spending in NZD, EUR, USD, GBP, and more. See totals converted to your preferred currency automatically.",
+      title: "One ledger. Every currency headache handled.",
+      body: "NZD, EUR, USD, GBP and more. cofr keeps the original detail, then translates the big picture into the currency you actually think in.",
     },
     {
       icon: (
@@ -386,8 +391,8 @@ function Features() {
           />
         </svg>
       ),
-      title: "Categories that make sense",
-      body: "Organise spending with built-in and custom categories. See where your money goes at a glance.",
+      title: "Categories with a backbone",
+      body: "Built-ins get you moving fast. Custom categories keep the messy bits honest. The result is less 'misc', more signal.",
     },
     {
       icon: (
@@ -405,8 +410,8 @@ function Features() {
           />
         </svg>
       ),
-      title: "Accounts that mirror reality",
-      body: "Checking, savings, investment. Transfer between them and see balances update instantly.",
+      title: "Accounts that behave like accounts",
+      body: "Checking, savings, investment, transfers, balances. Not a gamified wallet. A proper financial map you can read in seconds.",
     },
   ];
 
@@ -414,10 +419,17 @@ function Features() {
     <section id="features" className="py-24 md:py-32 px-6">
       <div className="max-w-5xl mx-auto">
         <AnimateOnScroll className="text-center mb-16">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-4">
+            The useful part
+          </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading">
-            Built for how you actually
-            <br className="hidden sm:block" /> manage money
+            Built for people who want
+            <br className="hidden sm:block" /> the numbers to behave.
           </h2>
+          <p className="mt-5 max-w-2xl mx-auto text-[15px] leading-relaxed text-content-secondary">
+            cofr is opinionated where it should be and quiet where it matters. You get a faster read
+            on spending, balances, and patterns without turning your finances into a side hobby.
+          </p>
         </AnimateOnScroll>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -476,7 +488,7 @@ function ShieldGraphic() {
       {/* Outer glow */}
       <div className="absolute inset-0 rounded-[40%_40%_50%_50%] bg-emerald/8 blur-2xl" />
       {/* Shield shape */}
-      <div className="relative w-36 h-44 rounded-[40%_40%_50%_50%] border-2 border-accent/30 bg-gradient-to-b from-accent/10 to-transparent flex items-center justify-center">
+      <div className="relative w-36 h-44 rounded-[40%_40%_50%_50%] border-2 border-accent/30 bg-linear-to-b from-accent/10 to-transparent flex items-center justify-center">
         <div className="w-20 h-24 rounded-[40%_40%_50%_50%] border border-accent/20 bg-accent/5 flex items-center justify-center">
           <svg
             className="w-8 h-8 text-accent"
@@ -499,16 +511,20 @@ function ShieldGraphic() {
 
 function HowItWorks() {
   const steps = [
-    { num: "1", title: "Sign up in seconds", desc: "Email and password. That's it." },
+    {
+      num: "1",
+      title: "Open your account",
+      desc: "Email, password, done. No onboarding circus.",
+    },
     {
       num: "2",
-      title: "Add your accounts",
-      desc: "Set up checking, savings, and investment accounts to match your real finances.",
+      title: "Mirror real life",
+      desc: "Set up the accounts and categories you actually use, not the fantasy version finance apps keep inventing.",
     },
     {
       num: "3",
-      title: "Start tracking",
-      desc: "Log transactions from the dashboard. See where your money goes.",
+      title: "See the leaks",
+      desc: "Track transactions, watch balances settle, and spot the habits that quietly tax your month.",
     },
   ];
 
@@ -516,8 +532,11 @@ function HowItWorks() {
     <section className="py-24 md:py-32 px-6">
       <div className="max-w-2xl mx-auto">
         <AnimateOnScroll className="text-center mb-16">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-4">
+            Quick to useful
+          </p>
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading">
-            Up and running in minutes
+            Five minutes to a much less mysterious bank balance
           </h2>
         </AnimateOnScroll>
 
@@ -545,20 +564,21 @@ function FinalCTA() {
   return (
     <section className="py-24 md:py-32 px-6 relative">
       {/* Gradient divider */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-edge-strong to-transparent" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-linear-to-r from-transparent via-edge-strong to-transparent" />
 
       <AnimateOnScroll className="text-center">
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading mb-4">
-          Start tracking today
+          Give your money a better narrator
         </h2>
         <p className="text-base text-content-secondary mb-10">
-          Free to use. Set up in under a minute.
+          Free to start, fast to trust, and blissfully uninterested in turning budgeting into a
+          personality.
         </p>
         <Link
           to="/login?mode=signup"
           className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
         >
-          Get Started
+          Open cofr
         </Link>
       </AnimateOnScroll>
     </section>
@@ -591,7 +611,9 @@ function Footer() {
 
 export default function Index() {
   return (
-    <div className="min-h-screen bg-surface-page">
+    <div className="landing-page min-h-screen bg-surface-page relative overflow-hidden">
+      <div className="landing-grid-top absolute inset-x-0 top-0 h-224 pointer-events-none" />
+      <div className="landing-grid-bottom absolute inset-x-0 top-272 bottom-0 pointer-events-none" />
       <Nav />
       <Hero />
       <Features />
