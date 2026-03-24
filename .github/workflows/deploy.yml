@@ -307,7 +307,7 @@ jobs:
   release:
     name: release
     needs: [changes, deploy]
-    if: github.event_name == 'push'
+    if: always() && !failure() && !cancelled() && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
