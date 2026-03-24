@@ -9,7 +9,12 @@ Bun.serve({
       let cacheControl = "public, max-age=3600";
       if (path.startsWith("/assets/")) {
         cacheControl = "public, max-age=31536000, immutable";
-      } else if (path === "/sw.js" || path === "/manifest.webmanifest") {
+      } else if (
+        path === "/sw.js" ||
+        path === "/manifest.webmanifest" ||
+        path === "/robots.txt" ||
+        path === "/sitemap.xml"
+      ) {
         cacheControl = "no-cache";
       }
       return new Response(file, {

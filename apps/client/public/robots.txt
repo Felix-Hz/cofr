@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /auth-callback
+Disallow: /logout
+Disallow: /api/
+
+Sitemap: https://cofr.cash/sitemap.xml

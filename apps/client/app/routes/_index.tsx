@@ -1,10 +1,607 @@
-import { redirect } from "react-router";
+import { motion, useInView } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { Link, redirect } from "react-router";
+import ThemeToggle from "~/components/ThemeToggle";
 import { isAuthenticated } from "~/lib/auth";
 
-export async function clientLoader() {
-  throw redirect(isAuthenticated() ? "/dashboard" : "/login");
+export function meta() {
+  return [
+    { title: "cofr - Finance, with clarity" },
+    {
+      name: "description",
+      content: "cofr — Track spending and understand your money with clarity.",
+    },
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://cofr.cash" },
+    {
+      property: "og:title",
+      content: "cofr - Personal finance tracking with clarity",
+    },
+    {
+      property: "og:description",
+      content: "cofr — Track spending and understand your money with clarity.",
+    },
+    { property: "og:image", content: "https://cofr.cash/og-image.png" },
+    { name: "twitter:card", content: "summary_large_image" },
+    {
+      name: "twitter:title",
+      content: "cofr - Personal finance tracking with clarity",
+    },
+    {
+      name: "twitter:description",
+      content: "cofr — Track spending and understand your money with clarity.",
+    },
+    { name: "twitter:image", content: "https://cofr.cash/og-image.png" },
+    { name: "robots", content: "index, follow" },
+    { tagName: "link", rel: "canonical", href: "https://cofr.cash" },
+  ];
 }
 
-export default function Index() {
+export async function clientLoader() {
+  if (isAuthenticated()) {
+    throw redirect("/dashboard");
+  }
   return null;
+}
+
+// --- JSON-LD ---
+
+const JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "cofr",
+  url: "https://cofr.cash",
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web",
+  description:
+    "Personal finance tracking with multi-currency support, and privacy-first encryption.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+});
+
+function JsonLd() {
+  const ref = useRef<HTMLScriptElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.textContent = JSON_LD;
+    }
+  }, []);
+
+  return <script ref={ref} type="application/ld+json" />;
+}
+
+// --- Animation helpers ---
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const transition = (delay = 0) => ({
+  duration: 0.7,
+  ease: [0.16, 1, 0.3, 1] as const,
+  delay,
+});
+
+function AnimateOnScroll({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: "-60px" });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={fadeUp}
+      transition={transition(delay)}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// --- Section Components ---
+
+function Nav() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-surface-page/95 backdrop-blur-md border-b border-edge-default"
+          : "bg-transparent"
+      }`}
+    >
+      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2.5">
+          <img src="/logo.png" alt="cofr" className="h-7 w-7 logo-auto" />
+          <span className="text-[15px] font-semibold text-content-heading tracking-tight">
+            cofr
+          </span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Link
+            to="/login"
+            className="hidden sm:inline-flex h-9 px-4 items-center text-[13px] font-medium text-content-secondary hover:text-content-primary transition-colors"
+          >
+            Log in
+          </Link>
+          <Link
+            to="/login?mode=signup"
+            className="h-9 px-5 inline-flex items-center text-[13px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-lg transition-colors"
+          >
+            Get Started
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function Hero() {
+  return (
+    <section className="min-h-[calc(100vh-64px)] flex flex-col items-center justify-center pt-16 px-6 relative overflow-hidden">
+      {/* Decorative glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-emerald/8 blur-[120px] animate-glow-pulse pointer-events-none" />
+
+      <div className="max-w-3xl mx-auto text-center relative z-10">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={transition(0)}
+          className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-6"
+        >
+          Personal finance, simplified
+        </motion.p>
+
+        <motion.h1
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          transition={transition(0.1)}
+          className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-content-heading leading-[1.08]"
+        >
+          Understand your money
+          <br />
+          with clarity.
+        </motion.h1>
+
+        <motion.p
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          transition={transition(0.2)}
+          className="mt-6 text-base sm:text-lg md:text-xl text-content-secondary max-w-xl mx-auto leading-relaxed"
+        >
+          Track expenses, manage multiple currencies, and stay in control.
+        </motion.p>
+
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          transition={transition(0.3)}
+          className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3"
+        >
+          <Link
+            to="/login?mode=signup"
+            className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
+          >
+            Get Started
+          </Link>
+          <a
+            href="#features"
+            className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-content-secondary border border-edge-strong rounded-xl hover:bg-surface-hover transition-colors"
+          >
+            Learn more
+          </a>
+        </motion.div>
+      </div>
+
+      {/* Dashboard Mockup */}
+      <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
+        className="w-full max-w-4xl mx-auto mt-16 mb-8 mockup-perspective"
+      >
+        <DashboardMockup />
+      </motion.div>
+    </section>
+  );
+}
+
+function DashboardMockup() {
+  return (
+    <div className="mockup-tilt select-none pointer-events-none">
+      <div className="bg-surface-primary border border-edge-default rounded-2xl shadow-2xl shadow-navy/5 overflow-hidden">
+        {/* Top bar */}
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-edge-default">
+          <div className="flex gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-edge-strong" />
+            <div className="w-2.5 h-2.5 rounded-full bg-edge-strong" />
+            <div className="w-2.5 h-2.5 rounded-full bg-edge-strong" />
+          </div>
+          <div className="flex-1 flex justify-center">
+            <div className="h-5 w-40 bg-surface-elevated rounded-md" />
+          </div>
+          <div className="w-[54px]" />
+        </div>
+
+        {/* Stats row */}
+        <div className="p-5 pb-0">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <StatCard label="Income" value="$4,230" positive />
+            <StatCard label="Spent" value="$2,847" />
+            <StatCard label="Net" value="+$1,383" positive />
+            <StatCard label="Accounts" value="3" />
+          </div>
+        </div>
+
+        {/* Account strip */}
+        <div className="px-5 pt-4">
+          <div className="flex gap-2 overflow-hidden">
+            <AccountPill name="Checking" amount="$3,420" />
+            <AccountPill name="Savings" amount="$12,800" />
+            <AccountPill name="Investment" amount="$8,500" />
+          </div>
+        </div>
+
+        {/* Transaction table */}
+        <div className="p-5">
+          <div className="border border-edge-default rounded-xl overflow-hidden">
+            <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] gap-x-4 px-4 py-2 bg-surface-elevated text-[11px] font-medium text-content-muted uppercase tracking-wider">
+              <span>Description</span>
+              <span className="hidden sm:block">Category</span>
+              <span className="text-right">Amount</span>
+            </div>
+            <TransactionRow desc="Grocery Store" cat="Food" amount="-$84.20" />
+            <TransactionRow desc="Monthly Salary" cat="Income" amount="+$4,230.00" positive />
+            <TransactionRow desc="Electric Bill" cat="Utilities" amount="-$127.50" />
+            <TransactionRow desc="Coffee Shop" cat="Food" amount="-$6.40" last />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  positive,
+}: {
+  label: string;
+  value: string;
+  positive?: boolean;
+}) {
+  return (
+    <div className="bg-surface-elevated rounded-xl p-3.5">
+      <p className="text-[11px] font-medium text-content-muted uppercase tracking-wider">{label}</p>
+      <p
+        className={`text-lg font-semibold mt-1 ${positive ? "text-accent" : "text-content-heading"}`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function AccountPill({ name, amount }: { name: string; amount: string }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 bg-surface-elevated rounded-xl whitespace-nowrap">
+      <span className="text-[12px] font-medium text-content-secondary">{name}</span>
+      <span className="text-[12px] font-semibold text-content-heading">{amount}</span>
+    </div>
+  );
+}
+
+function TransactionRow({
+  desc,
+  cat,
+  amount,
+  positive,
+  last,
+}: {
+  desc: string;
+  cat: string;
+  amount: string;
+  positive?: boolean;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className={`grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] gap-x-4 px-4 py-3 ${
+        !last ? "border-b border-edge-default" : ""
+      } ${positive ? "bg-positive-bg/50" : ""}`}
+    >
+      <span className="text-[13px] text-content-primary truncate">{desc}</span>
+      <span className="hidden sm:block text-[13px] text-content-tertiary">{cat}</span>
+      <span
+        className={`text-[13px] font-medium text-right ${
+          positive ? "text-positive-text-strong" : "text-content-primary"
+        }`}
+      >
+        {amount}
+      </span>
+    </div>
+  );
+}
+
+function Features() {
+  const features = [
+    {
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+          />
+        </svg>
+      ),
+      title: "Every currency, one view",
+      body: "Track spending in NZD, EUR, USD, GBP, and more. See totals converted to your preferred currency automatically.",
+    },
+    {
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6zm0 9.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25zm9.75-9.75A2.25 2.25 0 0 1 15.75 3.75H18a2.25 2.25 0 0 1 2.25 2.25v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6zm0 9.75a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 15.75V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25z"
+          />
+        </svg>
+      ),
+      title: "Categories that make sense",
+      body: "Organise spending with built-in and custom categories. See where your money goes at a glance.",
+    },
+    {
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+          />
+        </svg>
+      ),
+      title: "Accounts that mirror reality",
+      body: "Checking, savings, investment. Transfer between them and see balances update instantly.",
+    },
+  ];
+
+  return (
+    <section id="features" className="py-24 md:py-32 px-6">
+      <div className="max-w-5xl mx-auto">
+        <AnimateOnScroll className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading">
+            Built for how you actually
+            <br className="hidden sm:block" /> manage money
+          </h2>
+        </AnimateOnScroll>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {features.map((f, i) => (
+            <AnimateOnScroll key={f.title} delay={i * 0.1}>
+              <div className="bg-surface-primary border border-edge-default rounded-2xl p-8 hover:-translate-y-1 transition-transform duration-300 h-full">
+                <div className="w-10 h-10 rounded-xl bg-accent-soft-bg flex items-center justify-center text-accent mb-5">
+                  {f.icon}
+                </div>
+                <h3 className="text-[17px] font-semibold text-content-heading mb-2">{f.title}</h3>
+                <p className="text-[14px] leading-relaxed text-content-secondary">{f.body}</p>
+              </div>
+            </AnimateOnScroll>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Trust() {
+  return (
+    <section className="py-24 md:py-32 px-6 bg-surface-elevated">
+      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+        <AnimateOnScroll>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-4">
+            Privacy by design
+          </p>
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading mb-6">
+            Your data stays yours
+          </h2>
+          <p className="text-[15px] leading-relaxed text-content-secondary mb-4">
+            Every piece of personal information is encrypted at rest. Names, emails, financial
+            details - all protected with industry-standard encryption before they reach the
+            database.
+          </p>
+          <p className="text-[15px] leading-relaxed text-content-secondary">
+            No analytics trackers harvesting your data. No third-party access. Your financial
+            information exists for one purpose: helping you understand your money.
+          </p>
+        </AnimateOnScroll>
+
+        <AnimateOnScroll delay={0.15}>
+          <div className="flex items-center justify-center">
+            <ShieldGraphic />
+          </div>
+        </AnimateOnScroll>
+      </div>
+    </section>
+  );
+}
+
+function ShieldGraphic() {
+  return (
+    <div className="relative w-48 h-56 flex items-center justify-center">
+      {/* Outer glow */}
+      <div className="absolute inset-0 rounded-[40%_40%_50%_50%] bg-emerald/8 blur-2xl" />
+      {/* Shield shape */}
+      <div className="relative w-36 h-44 rounded-[40%_40%_50%_50%] border-2 border-accent/30 bg-gradient-to-b from-accent/10 to-transparent flex items-center justify-center">
+        <div className="w-20 h-24 rounded-[40%_40%_50%_50%] border border-accent/20 bg-accent/5 flex items-center justify-center">
+          <svg
+            className="w-8 h-8 text-accent"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25z"
+            />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HowItWorks() {
+  const steps = [
+    { num: "1", title: "Sign up in seconds", desc: "Email and password. That's it." },
+    {
+      num: "2",
+      title: "Add your accounts",
+      desc: "Set up checking, savings, and investment accounts to match your real finances.",
+    },
+    {
+      num: "3",
+      title: "Start tracking",
+      desc: "Log transactions from the dashboard. See where your money goes.",
+    },
+  ];
+
+  return (
+    <section className="py-24 md:py-32 px-6">
+      <div className="max-w-2xl mx-auto">
+        <AnimateOnScroll className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading">
+            Up and running in minutes
+          </h2>
+        </AnimateOnScroll>
+
+        <div className="space-y-12">
+          {steps.map((s, i) => (
+            <AnimateOnScroll key={s.num} delay={i * 0.1}>
+              <div className="flex gap-6 items-start">
+                <span className="text-3xl font-bold text-accent leading-none mt-0.5 shrink-0 w-8">
+                  {s.num}
+                </span>
+                <div>
+                  <h3 className="text-[17px] font-semibold text-content-heading mb-1">{s.title}</h3>
+                  <p className="text-[14px] leading-relaxed text-content-secondary">{s.desc}</p>
+                </div>
+              </div>
+            </AnimateOnScroll>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FinalCTA() {
+  return (
+    <section className="py-24 md:py-32 px-6 relative">
+      {/* Gradient divider */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-gradient-to-r from-transparent via-edge-strong to-transparent" />
+
+      <AnimateOnScroll className="text-center">
+        <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading mb-4">
+          Start tracking today
+        </h2>
+        <p className="text-base text-content-secondary mb-10">
+          Free to use. Set up in under a minute.
+        </p>
+        <Link
+          to="/login?mode=signup"
+          className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
+        >
+          Get Started
+        </Link>
+      </AnimateOnScroll>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="py-12 px-6 border-t border-edge-default">
+      <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="flex items-center gap-2.5">
+          <img src="/logo.png" alt="cofr" className="h-5 w-5 logo-auto" />
+          <span className="text-sm text-content-tertiary">
+            cofr &copy; {new Date().getFullYear()}
+          </span>
+        </div>
+        <div className="flex items-center gap-6 text-sm text-content-tertiary">
+          <Link to="/login" className="hover:text-content-primary transition-colors">
+            Log in
+          </Link>
+          {/* <span className="cursor-default">Privacy</span> */}
+          {/* <span className="cursor-default">Terms</span> */}
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// --- Main Page ---
+
+export default function Index() {
+  return (
+    <div className="min-h-screen bg-surface-page">
+      <Nav />
+      <Hero />
+      <Features />
+      <Trust />
+      <HowItWorks />
+      <FinalCTA />
+      <Footer />
+
+      {/* JSON-LD Structured Data */}
+      <JsonLd />
+    </div>
+  );
 }
