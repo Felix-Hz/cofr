@@ -18,8 +18,9 @@ export function meta() {
     { title: "cofr — personal finance" },
     {
       name: "description",
-      content: "Track spending and understand your money with clarity.",
+      content: "cofr — Track spending and understand your money with clarity.",
     },
+    { name: "robots", content: "index, follow" },
     { property: "og:type", content: "website" },
     { property: "og:url", content: "https://cofr.cash" },
     { property: "og:title", content: "cofr — personal finance" },

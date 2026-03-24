@@ -1,4 +1,3 @@
-import Tooltip from "~/components/Tooltip";
 import { useTheme } from "~/lib/theme";
 
 function SunIcon() {
@@ -36,15 +35,13 @@ export default function ThemeToggle() {
   const isDark = resolvedTheme === "dark";
 
   return (
-    <Tooltip content={isDark ? "Light mode" : "Dark mode"}>
-      <button
-        type="button"
-        onClick={toggle}
-        className="h-10 w-10 rounded-full flex items-center justify-center text-content-tertiary hover:text-content-primary hover:bg-surface-hover transition-colors"
-        aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      >
-        {isDark ? <SunIcon /> : <MoonIcon />}
-      </button>
-    </Tooltip>
+    <button
+      type="button"
+      onClick={toggle}
+      className="h-10 w-10 rounded-full flex items-center justify-center text-content-tertiary hover:text-content-primary hover:bg-surface-hover transition-colors"
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {isDark ? <SunIcon /> : <MoonIcon />}
+    </button>
   );
 }
