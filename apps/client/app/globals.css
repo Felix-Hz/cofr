@@ -434,6 +434,12 @@ h6 {
   transform-origin: center top;
 }
 
+@media (max-width: 639px) {
+  .mockup-tilt {
+    transform: rotateX(2deg);
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,

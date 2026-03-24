@@ -133,7 +133,7 @@ function Nav() {
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
           <img src="/logo.png" alt="cofr" className="h-7 w-7 logo-auto" />
           <span className="text-[15px] font-semibold text-content-heading tracking-tight">
@@ -150,7 +150,7 @@ function Nav() {
           </Link>
           <Link
             to="/login?mode=signup"
-            className="h-9 px-5 inline-flex items-center text-[13px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-lg transition-colors"
+            className="h-9 px-4 sm:px-5 inline-flex items-center text-[13px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-lg transition-colors"
           >
             Get Started
           </Link>
@@ -162,11 +162,11 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="min-h-[calc(100svh-64px)] flex flex-col items-center justify-center px-6 pt-28 pb-10 md:pt-36 md:pb-16 relative overflow-hidden">
+    <section className="min-h-[calc(100svh-64px)] flex flex-col items-center justify-center px-5 sm:px-6 pt-28 pb-10 sm:pt-28 md:pt-36 sm:pb-10 md:pb-16 relative overflow-hidden">
       <div className="absolute inset-0 pointer-events-none">
         <div className="landing-hero-ambient absolute inset-x-0 top-0 h-[72%]" />
-        <div className="absolute top-[12%] left-1/2 -translate-x-1/2 w-[720px] h-[420px] rounded-full bg-emerald/10 blur-[140px] animate-glow-pulse" />
-        <div className="absolute top-[18%] right-[8%] w-40 h-40 rounded-full bg-white/45 dark:bg-emerald/8 blur-3xl" />
+        <div className="absolute top-[11%] left-1/2 -translate-x-1/2 w-[24rem] h-[18rem] sm:w-[32rem] sm:h-[22rem] md:w-[720px] md:h-[420px] rounded-full bg-emerald/10 blur-[110px] sm:blur-[140px] animate-glow-pulse" />
+        <div className="absolute top-[18%] right-[6%] w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full bg-white/45 dark:bg-emerald/8 blur-3xl" />
       </div>
 
       <div className="max-w-3xl mx-auto text-center relative z-10">
@@ -184,7 +184,7 @@ function Hero() {
           animate="visible"
           variants={fadeUp}
           transition={transition(0.1)}
-          className="text-[2.9rem] sm:text-6xl md:text-[4.6rem] font-bold tracking-tight text-content-heading leading-[0.98]"
+          className="text-[2.6rem] sm:text-6xl md:text-[4.6rem] font-bold tracking-tight text-content-heading leading-[1.02]"
         >
           Stop guessing
           <br className="hidden sm:block" />
@@ -196,7 +196,7 @@ function Hero() {
           animate="visible"
           variants={fadeUp}
           transition={transition(0.2)}
-          className="mt-7 text-base sm:text-lg md:text-[1.35rem] text-content-secondary max-w-2xl mx-auto leading-relaxed"
+          className="mt-7 sm:mt-7 text-[1rem] sm:text-lg md:text-[1.35rem] text-content-secondary max-w-lg sm:max-w-2xl mx-auto leading-relaxed"
         >
           cofr tracks spending across real accounts and multiple currencies without the usual
           finance-theatre fluff. Just a clean ledger, a sharper picture, and privacy baked in.
@@ -207,17 +207,17 @@ function Hero() {
           animate="visible"
           variants={fadeUp}
           transition={transition(0.3)}
-          className="mt-11 flex flex-col sm:flex-row items-center justify-center gap-3"
+          className="mt-10 sm:mt-11 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto"
         >
           <Link
             to="/login?mode=signup"
-            className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
+            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
           >
             Start clean
           </Link>
           <a
             href="#features"
-            className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-content-secondary border border-edge-strong rounded-xl hover:bg-surface-hover transition-colors"
+            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-medium text-content-secondary border border-edge-strong rounded-xl hover:bg-surface-hover transition-colors"
           >
             See the workflow
           </a>
@@ -229,7 +229,7 @@ function Hero() {
         initial={{ opacity: 0, y: 40, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
-        className="w-full max-w-4xl mx-auto mt-20 md:mt-24 mb-4 mockup-perspective"
+        className="w-full max-w-[23.5rem] sm:max-w-4xl mx-auto mt-18 sm:mt-20 md:mt-24 mb-4 mockup-perspective"
       >
         <DashboardMockup />
       </motion.div>
@@ -242,20 +242,20 @@ function DashboardMockup() {
     <div className="mockup-tilt select-none pointer-events-none">
       <div className="bg-surface-primary border border-edge-default rounded-2xl shadow-2xl shadow-navy/5 overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-edge-default">
+        <div className="flex items-center gap-2 px-4 sm:px-5 py-3 border-b border-edge-default">
           <div className="flex gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-edge-strong" />
             <div className="w-2.5 h-2.5 rounded-full bg-edge-strong" />
             <div className="w-2.5 h-2.5 rounded-full bg-edge-strong" />
           </div>
           <div className="flex-1 flex justify-center">
-            <div className="h-5 w-40 bg-surface-elevated rounded-md" />
+            <div className="h-5 w-28 sm:w-40 bg-surface-elevated rounded-md" />
           </div>
-          <div className="w-[54px]" />
+          <div className="w-8 sm:w-[54px]" />
         </div>
 
         {/* Stats row */}
-        <div className="p-5 pb-0">
+        <div className="p-4 sm:p-5 pb-0">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard label="Income" value="$4,230" positive />
             <StatCard label="Spent" value="$2,847" />
@@ -265,7 +265,7 @@ function DashboardMockup() {
         </div>
 
         {/* Account strip */}
-        <div className="px-5 pt-4">
+        <div className="px-4 sm:px-5 pt-4">
           <div className="flex gap-2 overflow-hidden">
             <AccountPill name="Checking" amount="$3,420" />
             <AccountPill name="Savings" amount="$12,800" />
@@ -274,7 +274,7 @@ function DashboardMockup() {
         </div>
 
         {/* Transaction table */}
-        <div className="p-5">
+        <div className="p-4 sm:p-5">
           <div className="border border-edge-default rounded-xl overflow-hidden">
             <div className="grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] gap-x-4 px-4 py-2 bg-surface-elevated text-[11px] font-medium text-content-muted uppercase tracking-wider">
               <span>Description</span>
@@ -302,10 +302,10 @@ function StatCard({
   positive?: boolean;
 }) {
   return (
-    <div className="bg-surface-elevated rounded-xl p-3.5">
+    <div className="bg-surface-elevated rounded-xl p-3 sm:p-3.5">
       <p className="text-[11px] font-medium text-content-muted uppercase tracking-wider">{label}</p>
       <p
-        className={`text-lg font-semibold mt-1 ${positive ? "text-accent" : "text-content-heading"}`}
+        className={`text-[0.95rem] sm:text-lg font-semibold mt-1 ${positive ? "text-accent" : "text-content-heading"}`}
       >
         {value}
       </p>
@@ -315,7 +315,7 @@ function StatCard({
 
 function AccountPill({ name, amount }: { name: string; amount: string }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 bg-surface-elevated rounded-xl whitespace-nowrap">
+    <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 bg-surface-elevated rounded-xl whitespace-nowrap">
       <span className="text-[12px] font-medium text-content-secondary">{name}</span>
       <span className="text-[12px] font-semibold text-content-heading">{amount}</span>
     </div>
@@ -337,14 +337,14 @@ function TransactionRow({
 }) {
   return (
     <div
-      className={`grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] gap-x-4 px-4 py-3 ${
+      className={`grid grid-cols-[1fr_auto] sm:grid-cols-[1fr_1fr_auto] gap-x-3 sm:gap-x-4 px-3 sm:px-4 py-3 ${
         !last ? "border-b border-edge-default" : ""
       } ${positive ? "bg-positive-bg/50" : ""}`}
     >
-      <span className="text-[13px] text-content-primary truncate">{desc}</span>
+      <span className="text-[12px] sm:text-[13px] text-content-primary truncate">{desc}</span>
       <span className="hidden sm:block text-[13px] text-content-tertiary">{cat}</span>
       <span
-        className={`text-[13px] font-medium text-right ${
+        className={`text-[12px] sm:text-[13px] font-medium text-right ${
           positive ? "text-positive-text-strong" : "text-content-primary"
         }`}
       >
@@ -416,17 +416,17 @@ function Features() {
   ];
 
   return (
-    <section id="features" className="py-24 md:py-32 px-6">
+    <section id="features" className="py-20 sm:py-24 md:py-32 px-5 sm:px-6">
       <div className="max-w-5xl mx-auto">
-        <AnimateOnScroll className="text-center mb-16">
+        <AnimateOnScroll className="text-center mb-14 sm:mb-16">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-4">
             The useful part
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading">
+          <h2 className="text-[2rem] sm:text-3xl md:text-4xl font-bold tracking-tight text-content-heading">
             Built for people who want
             <br className="hidden sm:block" /> the numbers to behave.
           </h2>
-          <p className="mt-5 max-w-2xl mx-auto text-[15px] leading-relaxed text-content-secondary">
+          <p className="mt-4 sm:mt-5 max-w-xl sm:max-w-2xl mx-auto text-[14px] sm:text-[15px] leading-relaxed text-content-secondary">
             cofr is opinionated where it should be and quiet where it matters. You get a faster read
             on spending, balances, and patterns without turning your finances into a side hobby.
           </p>
@@ -435,7 +435,7 @@ function Features() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((f, i) => (
             <AnimateOnScroll key={f.title} delay={i * 0.1}>
-              <div className="bg-surface-primary border border-edge-default rounded-2xl p-8 hover:-translate-y-1 transition-transform duration-300 h-full">
+              <div className="bg-surface-primary border border-edge-default rounded-2xl p-6 sm:p-8 hover:-translate-y-1 transition-transform duration-300 h-full">
                 <div className="w-10 h-10 rounded-xl bg-accent-soft-bg flex items-center justify-center text-accent mb-5">
                   {f.icon}
                 </div>
@@ -452,7 +452,7 @@ function Features() {
 
 function Trust() {
   return (
-    <section className="py-24 md:py-32 px-6 bg-surface-elevated">
+    <section className="py-20 sm:py-24 md:py-32 px-5 sm:px-6 bg-surface-elevated">
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
         <AnimateOnScroll>
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-4">
@@ -529,22 +529,22 @@ function HowItWorks() {
   ];
 
   return (
-    <section className="py-24 md:py-32 px-6">
+    <section className="py-20 sm:py-24 md:py-32 px-5 sm:px-6">
       <div className="max-w-2xl mx-auto">
-        <AnimateOnScroll className="text-center mb-16">
+        <AnimateOnScroll className="text-center mb-14 sm:mb-16">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-4">
             Quick to useful
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading">
+          <h2 className="text-[2rem] sm:text-3xl md:text-4xl font-bold tracking-tight text-content-heading">
             Five minutes to a much less mysterious bank balance
           </h2>
         </AnimateOnScroll>
 
-        <div className="space-y-12">
+        <div className="space-y-10 sm:space-y-12">
           {steps.map((s, i) => (
             <AnimateOnScroll key={s.num} delay={i * 0.1}>
-              <div className="flex gap-6 items-start">
-                <span className="text-3xl font-bold text-accent leading-none mt-0.5 shrink-0 w-8">
+              <div className="flex gap-4 sm:gap-6 items-start">
+                <span className="text-[1.75rem] sm:text-3xl font-bold text-accent leading-none mt-0.5 shrink-0 w-7 sm:w-8">
                   {s.num}
                 </span>
                 <div>
@@ -562,21 +562,21 @@ function HowItWorks() {
 
 function FinalCTA() {
   return (
-    <section className="py-24 md:py-32 px-6 relative">
+    <section className="py-20 sm:py-24 md:py-32 px-5 sm:px-6 relative">
       {/* Gradient divider */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-px bg-linear-to-r from-transparent via-edge-strong to-transparent" />
 
       <AnimateOnScroll className="text-center">
-        <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-content-heading mb-4">
+        <h2 className="text-[2rem] sm:text-3xl md:text-4xl font-bold tracking-tight text-content-heading mb-4">
           Give your money a better narrator
         </h2>
-        <p className="text-base text-content-secondary mb-10">
+        <p className="text-[15px] sm:text-base text-content-secondary mb-8 sm:mb-10 max-w-lg mx-auto">
           Free to start, fast to trust, and blissfully uninterested in turning budgeting into a
           personality.
         </p>
         <Link
           to="/login?mode=signup"
-          className="h-12 px-8 inline-flex items-center text-[15px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
+          className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
         >
           Open cofr
         </Link>
@@ -587,7 +587,7 @@ function FinalCTA() {
 
 function Footer() {
   return (
-    <footer className="py-12 px-6 border-t border-edge-default">
+    <footer className="py-10 sm:py-12 px-5 sm:px-6 border-t border-edge-default">
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-2.5">
           <img src="/logo.png" alt="cofr" className="h-5 w-5 logo-auto" />
@@ -612,8 +612,8 @@ function Footer() {
 export default function Index() {
   return (
     <div className="landing-page min-h-screen bg-surface-page relative overflow-hidden">
-      <div className="landing-grid-top absolute inset-x-0 top-0 h-224 pointer-events-none" />
-      <div className="landing-grid-bottom absolute inset-x-0 top-272 bottom-0 pointer-events-none" />
+      <div className="landing-grid-top absolute inset-x-0 top-0 h-[72rem] sm:h-[56rem] pointer-events-none" />
+      <div className="landing-grid-bottom absolute inset-x-0 top-[94rem] sm:top-[68rem] bottom-0 pointer-events-none" />
       <Nav />
       <Hero />
       <Features />
