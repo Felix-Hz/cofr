@@ -49,7 +49,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gradient-page">
-      <title>Cofr | {mode === "signin" ? "Login" : "Sign Up"}</title>
+      <title>cofr — {mode === "signin" ? "login" : "sign up"}</title>
       <div className="max-w-lg w-full space-y-8 p-8">
         <div className="text-center">
           <img src="/logo.png" alt="cofr" className="h-16 w-16 mx-auto mb-4 logo-auto" />

@@ -13,6 +13,31 @@ import UpdateBanner from "~/components/UpdateBanner";
 import type { Route } from "./+types/root";
 import "./globals.css";
 
+export function meta() {
+  return [
+    { title: "cofr — personal finance" },
+    {
+      name: "description",
+      content: "Track spending and understand your money with clarity.",
+    },
+    { property: "og:type", content: "website" },
+    { property: "og:url", content: "https://cofr.cash" },
+    { property: "og:title", content: "cofr — personal finance" },
+    {
+      property: "og:description",
+      content: "Track spending and understand your money with clarity.",
+    },
+    { property: "og:image", content: "https://cofr.cash/og-image.png" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: "cofr — personal finance" },
+    {
+      name: "twitter:description",
+      content: "Track spending and understand your money with clarity.",
+    },
+    { name: "twitter:image", content: "https://cofr.cash/og-image.png" },
+  ];
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   // Re-apply theme after hydration — React may strip the .dark class that theme.js set
   useEffect(() => {
@@ -32,34 +57,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
         />
-        <title>Cofr - Personal Finance, Clear and Simple</title>
-        <meta
-          name="description"
-          content="Track spending, manage accounts, and understand your money with clarity."
-        />
-
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://cofr.cash" />
-        <meta property="og:title" content="Cofr - Personal Finance, Clear and Simple" />
-        <meta
-          property="og:description"
-          content="Track spending, manage accounts, and understand your money with clarity."
-        />
-        <meta property="og:image" content="https://cofr.cash/og-image.png" />
-
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Cofr - Personal Finance, Clear and Simple" />
-        <meta
-          name="twitter:description"
-          content="Track spending, manage accounts, and understand your money with clarity."
-        />
-        <meta name="twitter:image" content="https://cofr.cash/og-image.png" />
-
         <meta name="theme-color" content="#0B1220" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Cofr" />
+        <meta name="apple-mobile-web-app-title" content="cofr" />
 
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -123,7 +125,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     <div className="min-h-screen bg-surface-primary flex flex-col items-center justify-center px-6">
       <div className="flex flex-col items-center max-w-sm w-full">
         <Link to="/" className="mb-16">
-          <img src="/logo.png" alt="Cofr" className="logo-auto h-7" />
+          <img src="/logo.png" alt="cofr" className="logo-auto h-7" />
         </Link>
 
         <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-content-tertiary mb-4">

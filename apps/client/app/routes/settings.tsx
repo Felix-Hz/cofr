@@ -607,7 +607,7 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <title>Cofr | Settings</title>
+      <title>cofr — settings</title>
       <h2 ref={titleRef} className="text-2xl font-bold text-content-primary mb-4">
         Settings
       </h2>

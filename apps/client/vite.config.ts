@@ -16,9 +16,9 @@ export default defineConfig({
       registerType: "prompt",
       injectRegister: false,
       manifest: {
-        name: "Cofr",
-        short_name: "Cofr",
-        description: "Track spending, manage accounts, and understand your money with clarity.",
+        name: "cofr",
+        short_name: "cofr",
+        description: "Track spending and understand your money with clarity.",
         theme_color: "#0B1220",
         background_color: "#0B1220",
         display: "standalone",

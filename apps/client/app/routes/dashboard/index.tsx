@@ -417,7 +417,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-16">
-      <title>Cofr | Dashboard</title>
+      <title>cofr — dashboard</title>
 
       {/* ─── Header ─── */}
       <div className="flex items-center justify-between gap-3">
