@@ -174,7 +174,7 @@ class TestExports:
         self, mock_cofr, client, auth_headers, system_categories
     ):
         headers, _ = auth_headers
-        mock_cofr.export_csv.return_value = b"zip-bytes"
+        mock_cofr.export_csv_full_dump.return_value = b"zip-bytes"
 
         from tests.conftest import TestSession
 

@@ -82,6 +82,12 @@ def _build_export_filename(name: str, fmt: str, scope: str) -> str:
     return f"{_sanitize_filename_stem(name)}.{_export_extension(fmt, scope)}"
 
 
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 # ── History endpoints (must be before /{job_id} to avoid path conflicts) ──
 
 
@@ -144,7 +150,7 @@ async def download_export_record(
     if not record:
         raise HTTPException(status_code=404, detail="Export not found")
 
-    if record.expires_at <= datetime.now(UTC):
+    if _as_utc(record.expires_at) <= datetime.now(UTC):
         raise HTTPException(status_code=410, detail="Export has expired")
 
     if not s3_mod.is_s3_available():
