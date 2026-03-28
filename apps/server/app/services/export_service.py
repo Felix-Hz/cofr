@@ -310,7 +310,7 @@ class ExportService:
 
     def _serialize_pdf(self, data: dict, scope: str, currency: str) -> bytes:
         meta = {
-            "title": f"Cofr - {scope.replace('_', ' ').title()}",
+            "title": scope.replace("_", " ").title(),
             "currency": currency,
             "scope": scope,
         }
