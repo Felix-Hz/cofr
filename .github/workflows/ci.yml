@@ -13,6 +13,7 @@ jobs:
       server: ${{ steps.filter.outputs.server }}
       client: ${{ steps.filter.outputs.client }}
       tg-bot: ${{ steps.filter.outputs.tg-bot }}
+      scribe: ${{ steps.filter.outputs.scribe }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -21,6 +22,7 @@ jobs:
           filters: |
             server:
               - 'apps/server/**'
+              - 'apps/scribe/**'
               - 'infra/*'
               - 'scripts/**'
               - '.github/workflows/ci.yml'
@@ -33,6 +35,9 @@ jobs:
               - 'apps/tg-bot/**'
               - 'infra/*'
               - 'scripts/**'
+              - '.github/workflows/ci.yml'
+            scribe:
+              - 'apps/scribe/**'
               - '.github/workflows/ci.yml'
 
   server:
@@ -86,6 +91,22 @@ jobs:
       - run: go test ./...
       - run: go build ./...
 
+  scribe:
+    name: lint-test / scribe
+    needs: changes
+    if: needs.changes.outputs.scribe == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/scribe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - run: cargo clippy -- -D warnings
+      - run: cargo test
+
   docker-build-server:
     name: image-build / server
     needs: server
@@ -97,6 +118,8 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ./apps/server
+          build-contexts: |
+            scribe=./apps/scribe
           push: false
 
   docker-build-client:
