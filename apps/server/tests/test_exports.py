@@ -142,8 +142,81 @@ class TestExports:
 
             download_resp = client.get(f"/exports/{job_id}/download", headers=headers)
             assert download_resp.status_code == 200
-            assert "cofr-transactions-" in download_resp.headers.get("content-disposition", "")
+            assert 'filename="Transactions-Mar-2026.csv"' in download_resp.headers.get(
+                "content-disposition", ""
+            )
             assert download_resp.content == b"Date,Amount\ntest,42.00\n"
+
+    def test_export_download_uses_sanitized_custom_name(
+        self, mock_cofr, client, auth_headers, system_categories
+    ):
+        headers, _ = auth_headers
+        mock_cofr.export_csv.return_value = b"named-export"
+
+        from tests.conftest import TestSession
+
+        with _patch_session_local(TestSession):
+            resp = client.post(
+                "/exports",
+                json={"format": "csv", "scope": "transactions", "name": 'Q1 / Revenue: "North"*'},
+                headers=headers,
+            )
+            job_id = resp.json()["job_id"]
+            time.sleep(1.0)
+
+            download_resp = client.get(f"/exports/{job_id}/download", headers=headers)
+            assert download_resp.status_code == 200
+            assert 'filename="Q1-Revenue-North.csv"' in download_resp.headers.get(
+                "content-disposition", ""
+            )
+
+    def test_export_download_full_dump_csv_uses_zip_extension(
+        self, mock_cofr, client, auth_headers, system_categories
+    ):
+        headers, _ = auth_headers
+        mock_cofr.export_csv_full_dump.return_value = b"zip-bytes"
+
+        from tests.conftest import TestSession
+
+        with _patch_session_local(TestSession):
+            resp = client.post(
+                "/exports",
+                json={"format": "csv", "scope": "full_dump"},
+                headers=headers,
+            )
+            job_id = resp.json()["job_id"]
+            time.sleep(1.0)
+
+            download_resp = client.get(f"/exports/{job_id}/download", headers=headers)
+            assert download_resp.status_code == 200
+            assert 'filename="Full-Backup-Mar-2026.zip"' in download_resp.headers.get(
+                "content-disposition", ""
+            )
+
+    def test_export_download_expired_returns_410(self, mock_cofr, client, auth_headers):
+        headers, _ = auth_headers
+
+        from app.services.export_service import ExportJob, _jobs
+
+        job = ExportJob(
+            id="expired-download-test",
+            user_id=auth_headers[1],
+            status="done",
+            format="csv",
+            scope="transactions",
+            name="Expired Export",
+            created_at=datetime.now(UTC) - timedelta(hours=1),
+            file_path=__file__,
+            expires_at=datetime.now(UTC) - timedelta(minutes=1),
+        )
+        _jobs[job.id] = job
+
+        try:
+            download_resp = client.get(f"/exports/{job.id}/download", headers=headers)
+            assert download_resp.status_code == 410
+            assert "expired" in download_resp.json()["detail"].lower()
+        finally:
+            del _jobs[job.id]
 
     def test_export_download_not_ready(self, mock_cofr, client, auth_headers, system_categories):
         headers, _ = auth_headers
@@ -157,6 +230,7 @@ class TestExports:
             status="rendering",
             format="csv",
             scope="transactions",
+            name="Test Export",
             created_at=datetime.now(UTC),
         )
         _jobs["not-ready-test"] = job
@@ -244,6 +318,41 @@ class TestExports:
             download_resp = client.get(f"/exports/{job_id}/download?token={token}")
             assert download_resp.status_code == 200
 
+    def test_s3_download_uses_sanitized_filename(
+        self, mock_cofr, client, auth_headers, system_categories
+    ):
+        headers, _ = auth_headers
+        mock_cofr.export_csv.return_value = b"s3-download"
+
+        from tests.conftest import TestSession
+
+        with _patch_session_local(TestSession):
+            resp = client.post(
+                "/exports",
+                json={"format": "csv", "scope": "transactions", "name": "Ops / APAC: Q1"},
+                headers=headers,
+            )
+            job_id = resp.json()["job_id"]
+            time.sleep(1.0)
+
+            from app.services.export_service import get_job
+
+            job = get_job(job_id)
+            assert job is not None
+            job.s3_key = "exports/test/s3.csv"
+
+            with patch("app.routers.exports.s3_mod") as mock_s3:
+                mock_s3.is_s3_available.return_value = True
+                mock_s3.presign_download.return_value = "https://s3.example.com/presigned"
+                download_resp = client.get(
+                    f"/exports/{job_id}/download", headers=headers, follow_redirects=False
+                )
+
+            assert download_resp.status_code == 307
+            mock_s3.presign_download.assert_called_once_with(
+                "exports/test/s3.csv", "Ops-APAC-Q1.csv"
+            )
+
 
 @patch("app.services.export_service._RUST_AVAILABLE", False)
 class TestExportsRustUnavailable:
@@ -268,6 +377,7 @@ class TestExportJobCleanup:
             status="done",
             format="csv",
             scope="transactions",
+            name="Test Export",
             created_at=datetime.now(UTC) - timedelta(hours=1),
             expires_at=datetime.now(UTC) - timedelta(minutes=1),
         )
@@ -285,6 +395,7 @@ class TestExportJobCleanup:
             status="done",
             format="csv",
             scope="transactions",
+            name="Test Export",
             created_at=datetime.now(UTC),
             expires_at=datetime.now(UTC) + timedelta(minutes=25),
         )

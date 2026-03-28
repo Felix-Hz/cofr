@@ -18,6 +18,8 @@ import {
   ExpensesResponseSchema,
   type ExpenseUpdate,
   type ExportCreate,
+  type ExportHistoryResponse,
+  ExportHistoryResponseSchema,
   type ExportJobResponse,
   ExportJobResponseSchema,
   type MonthlyStats,
@@ -472,6 +474,21 @@ export function getExportStreamUrl(jobId: string): string {
 export function getExportDownloadUrl(jobId: string): string {
   const token = getToken();
   return `${API_BASE_URL}/exports/${jobId}/download?token=${token}`;
+}
+
+export async function getExportHistory(limit = 15, offset = 0): Promise<ExportHistoryResponse> {
+  const response = await fetchWithAuth(`/exports/history?limit=${limit}&offset=${offset}`);
+  const json = await response.json();
+  return ExportHistoryResponseSchema.parse(json);
+}
+
+export async function deleteExportRecord(exportId: string): Promise<void> {
+  await fetchWithAuth(`/exports/history/${exportId}`, { method: "DELETE" });
+}
+
+export function getExportRecordDownloadUrl(exportId: string): string {
+  const token = getToken();
+  return `${API_BASE_URL}/exports/history/${exportId}/download?token=${token}`;
 }
 
 // ── Health check (no auth required) ──

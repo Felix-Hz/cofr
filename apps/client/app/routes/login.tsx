@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { redirect, useNavigate, useSearchParams } from "react-router";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
@@ -7,6 +7,10 @@ import { isAuthenticated, saveToken } from "~/lib/auth";
 import { isPasswordValid } from "~/lib/password";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
+
+export function meta() {
+  return [{ title: "cofr — Login" }];
+}
 
 export async function clientLoader() {
   if (isAuthenticated()) {
@@ -26,6 +30,10 @@ export default function Login() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(errorParam);
+
+  useEffect(() => {
+    document.title = `cofr — ${mode === "signin" ? "Login" : "Sign up"}`;
+  }, [mode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +57,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gradient-page">
-      <title>cofr — {mode === "signin" ? "login" : "sign up"}</title>
       <div className="max-w-lg w-full space-y-8 p-8">
         <div className="text-center">
           <img src="/logo.png" alt="cofr" className="h-16 w-16 mx-auto mb-4 logo-auto" />

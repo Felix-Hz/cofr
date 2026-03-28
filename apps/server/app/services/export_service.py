@@ -8,7 +8,7 @@ import sentry_sdk
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.db.models import Account, Category, ExchangeRate, Transaction, User
+from app.db.models import Account, Category, ExchangeRate, Export, Transaction, User
 from app.db.schemas import ExportCreateRequest
 
 try:
@@ -20,6 +20,30 @@ except ImportError:
     _RUST_AVAILABLE = False
 
 JOB_TTL_MINUTES = 30
+EXPORT_RETENTION_DAYS = 180
+USER_STORAGE_CAP_BYTES = 100 * 1024 * 1024  # 100 MB
+
+_SCOPE_LABELS = {
+    "transactions": "Transactions",
+    "accounts": "Accounts",
+    "categories": "Categories",
+    "full_dump": "Full Backup",
+}
+
+
+def generate_default_name(fmt: str, scope: str) -> str:
+    label = _SCOPE_LABELS.get(scope, scope.replace("_", " ").title())
+    month = datetime.now(UTC).strftime("%b %Y")
+    return f"{label} - {month}"
+
+
+def get_user_storage_bytes(db: Session, user_id: str) -> int:
+    result = (
+        db.query(func.coalesce(func.sum(Export.file_size), 0))
+        .filter(Export.user_id == user_id)
+        .scalar()
+    )
+    return int(result)
 
 
 @dataclass
@@ -29,11 +53,14 @@ class ExportJob:
     status: str  # pending, querying, rendering, done, error
     format: str
     scope: str
+    name: str
     created_at: datetime
     completed_at: datetime | None = None
     error: str | None = None
     file_path: str | None = None
     file_size: int | None = None
+    s3_key: str | None = None
+    export_id: str | None = None
     expires_at: datetime = field(
         default_factory=lambda: datetime.now(UTC) + timedelta(minutes=JOB_TTL_MINUTES)
     )
@@ -48,12 +75,14 @@ def get_job(job_id: str) -> ExportJob | None:
 
 
 def create_job(user_id: str, request: ExportCreateRequest) -> ExportJob:
+    name = request.name or generate_default_name(request.format, request.scope)
     job = ExportJob(
         id=str(uuid.uuid4()),
         user_id=user_id,
         status="pending",
         format=request.format,
         scope=request.scope,
+        name=name,
         created_at=datetime.now(UTC),
     )
     _jobs[job.id] = job
@@ -103,6 +132,35 @@ class ExportService:
                 f.write(file_bytes)
                 job.file_path = f.name
                 job.file_size = len(file_bytes)
+
+            # Phase 4: Upload to S3 + persist DB record (best-effort)
+            try:
+                from app import s3
+
+                if s3.is_s3_available():
+                    current_storage = get_user_storage_bytes(self.db, user_id)
+                    if current_storage + len(file_bytes) <= USER_STORAGE_CAP_BYTES:
+                        ext = suffix.lstrip(".")
+                        s3_key = f"exports/{user_id}/{job.id}.{ext}"
+                        content_type = s3.MEDIA_TYPES.get(ext, "application/octet-stream")
+                        s3.upload(s3_key, file_bytes, content_type)
+
+                        record = Export(
+                            id=uuid.UUID(job.id),
+                            user_id=uuid.UUID(user_id),
+                            name=job.name,
+                            format=job.format,
+                            scope=job.scope,
+                            file_size=len(file_bytes),
+                            s3_key=s3_key,
+                            expires_at=datetime.now(UTC) + timedelta(days=EXPORT_RETENTION_DAYS),
+                        )
+                        self.db.add(record)
+                        self.db.commit()
+                        job.export_id = str(record.id)
+                        job.s3_key = s3_key
+            except Exception as s3_err:
+                sentry_sdk.capture_exception(s3_err)
 
             job.status = "done"
             job.completed_at = datetime.now(UTC)

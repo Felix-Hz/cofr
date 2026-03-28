@@ -36,7 +36,7 @@ resource "aws_s3_bucket_public_access_block" "this" {
 resource "aws_s3_bucket_lifecycle_configuration" "this" {
   bucket = aws_s3_bucket.this.id
 
-  # Exports: infrequent after 30 days, auto-delete after 90
+  # Exports: infrequent after 30 days, auto-delete after 180 (6 months)
   rule {
     id     = "exports-lifecycle"
     status = "Enabled"
@@ -51,7 +51,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
     }
 
     expiration {
-      days = 90
+      days = 180
     }
   }
 

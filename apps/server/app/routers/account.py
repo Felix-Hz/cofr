@@ -10,7 +10,15 @@ from sqlalchemy.orm import Session
 from app.auth.dependencies import get_user_id
 from app.config import settings
 from app.database import get_db
-from app.db.models import Account, AuthProvider, Category, Transaction, User, UserCategoryPreference
+from app.db.models import (
+    Account,
+    AuthProvider,
+    Category,
+    Export,
+    Transaction,
+    User,
+    UserCategoryPreference,
+)
 
 router = APIRouter(prefix="/account", tags=["Account"])
 
@@ -313,10 +321,22 @@ async def delete_account(
             message="Account deactivated. Log back in anytime to reactivate.",
         )
 
-    # Hard delete: remove transactions, accounts, auth providers, then user
+    # Hard delete: remove all user data including S3 export files
+    # Clean up S3 export files before deleting DB records
+    from app import s3 as s3_mod
+
+    export_records = db.query(Export).filter(Export.user_id == user_id).all()
+    if s3_mod.is_s3_available() and export_records:
+        for record in export_records:
+            try:
+                s3_mod.delete(record.s3_key)
+            except Exception:
+                pass  # Best-effort S3 cleanup
+
     # Clear default_account_id FK before deleting accounts
     user.default_account_id = None
     db.flush()
+    db.query(Export).filter(Export.user_id == user_id).delete()
     db.query(Transaction).filter(Transaction.user_id == user_id).delete()
     db.query(Account).filter(Account.user_id == user_id).delete()
     db.query(UserCategoryPreference).filter(UserCategoryPreference.user_id == user_id).delete()

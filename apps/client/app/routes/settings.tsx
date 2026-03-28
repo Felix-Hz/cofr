@@ -4,6 +4,7 @@ import AccountDeleteModal from "~/components/AccountDeleteModal";
 import CategoryFormModal from "~/components/CategoryFormModal";
 import DeleteAccountModal from "~/components/DeleteAccountModal";
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
+import ExportHistoryTable from "~/components/ExportHistoryTable";
 import ExportModal from "~/components/ExportModal";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
@@ -51,6 +52,10 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 
 const ALL_PROVIDERS = ["google", "telegram"];
+
+export function meta() {
+  return [{ title: "cofr — Settings" }];
+}
 
 const SECTIONS = [
   { id: "preferences", label: "Preferences" },
@@ -314,6 +319,7 @@ export default function Settings() {
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceCurrency, setBalanceCurrency] = useState("NZD");
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportHistoryRefreshToken, setExportHistoryRefreshToken] = useState(0);
 
   const systemAccounts = accounts.filter((a) => a.is_system);
   const customAccounts = accounts.filter((a) => !a.is_system);
@@ -628,7 +634,6 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <title>cofr — settings</title>
       <h2 ref={titleRef} className="text-2xl font-bold text-content-primary mb-4">
         Settings
       </h2>
@@ -1567,7 +1572,7 @@ export default function Settings() {
       <div
         id="export"
         ref={(el) => {
-          sectionRefs.current["export"] = el;
+          sectionRefs.current.export = el;
         }}
         style={{ scrollMarginTop: "4rem" }}
         className="bg-surface-primary rounded-xl border border-edge-default mb-6 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
@@ -1580,22 +1585,24 @@ export default function Settings() {
         </div>
         <div className="px-6 py-4 space-y-4">
           <p className="text-sm text-content-secondary">
-            Export your financial data in CSV, Excel, or PDF format. You can export individual data
-            types or create a full backup of all your data.
+            Export your financial data in CSV, Excel, or PDF format. Exports are stored for 6 months
+            and can be recreated anytime using filters.
           </p>
           <button
             type="button"
             onClick={() => setIsExportModalOpen(true)}
             className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md transition-colors"
           >
-            Export Data
+            New Export
           </button>
+          <ExportHistoryTable refreshToken={exportHistoryRefreshToken} />
         </div>
       </div>
 
       <ExportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
+        onExportComplete={() => setExportHistoryRefreshToken((n) => n + 1)}
         defaultScope="full_dump"
       />
 

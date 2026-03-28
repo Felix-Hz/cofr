@@ -205,6 +205,22 @@ class EmailEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class Export(Base):
+    __tablename__ = "exports"
+
+    id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    format: Mapped[str] = mapped_column(String(10))
+    scope: Mapped[str] = mapped_column(String(20))
+    file_size: Mapped[int] = mapped_column(Integer)
+    s3_key: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class EmailSuppression(Base):
     __tablename__ = "email_suppressions"
 

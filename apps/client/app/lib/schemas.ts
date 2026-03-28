@@ -165,6 +165,7 @@ export const TransferResponseSchema = z.object({
 export const ExportCreateSchema = z.object({
   format: z.enum(["csv", "xlsx", "pdf"]),
   scope: z.enum(["transactions", "accounts", "categories", "full_dump"]),
+  name: z.string().max(120).optional(),
   start_date: z.coerce.date().optional(),
   end_date: z.coerce.date().optional(),
   account_id: z.string().optional(),
@@ -179,6 +180,24 @@ export const ExportJobResponseSchema = z.object({
   scope: z.string(),
   created_at: z.coerce.date(),
   error: z.string().nullable().optional(),
+  export_id: z.string().nullable().optional(),
+});
+
+export const ExportRecordSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  format: z.string(),
+  scope: z.string(),
+  file_size: z.number(),
+  created_at: z.coerce.date(),
+  expires_at: z.coerce.date(),
+});
+
+export const ExportHistoryResponseSchema = z.object({
+  exports: z.array(ExportRecordSchema),
+  total_count: z.number(),
+  limit: z.number(),
+  offset: z.number(),
 });
 
 // ============================================================================
@@ -202,3 +221,5 @@ export type TransferCreate = z.infer<typeof TransferCreateSchema>;
 export type TransferResponse = z.infer<typeof TransferResponseSchema>;
 export type ExportCreate = z.infer<typeof ExportCreateSchema>;
 export type ExportJobResponse = z.infer<typeof ExportJobResponseSchema>;
+export type ExportRecord = z.infer<typeof ExportRecordSchema>;
+export type ExportHistoryResponse = z.infer<typeof ExportHistoryResponseSchema>;

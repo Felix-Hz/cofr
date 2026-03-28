@@ -32,6 +32,10 @@ import { formatCurrency, formatDate, isPositiveType, truncateText } from "~/lib/
 
 const CURRENCIES = [...SUPPORTED_CURRENCIES];
 
+export function meta() {
+  return [{ title: "cofr — Dashboard" }];
+}
+
 export async function clientLoader({ request }: { request: Request }) {
   const url = new URL(request.url);
 
@@ -419,8 +423,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 pb-16">
-      <title>cofr — dashboard</title>
-
       {/* ─── Header ─── */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">

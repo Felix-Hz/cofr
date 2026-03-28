@@ -2,11 +2,10 @@ terraform {
   required_version = ">= 1.5.0"
 
   backend "s3" {
-    bucket       = "cofr-terraform-state"
-    key          = "cofr/terraform.tfstate"
-    region       = "ap-southeast-2"
-    use_lockfile = true
-    encrypt      = true
+    bucket  = "cofr-terraform-state"
+    key     = "cofr/terraform.tfstate"
+    region  = "ap-southeast-2"
+    encrypt = true
   }
 
   required_providers {
