@@ -108,9 +108,9 @@ fn export_pdf(rows: Vec<Bound<'_, PyDict>>, meta: Bound<'_, PyDict>) -> PyResult
         .get_item("title")?
         .map(|v| {
             v.extract::<String>()
-                .unwrap_or_else(|_| "Cofr Export".to_string())
+                .unwrap_or_else(|_| "Export".to_string())
         })
-        .unwrap_or_else(|| "Cofr Export".to_string());
+        .unwrap_or_else(|| "Export".to_string());
     let currency: String = meta
         .get_item("currency")?
         .map(|v| v.extract::<String>().unwrap_or_else(|_| "NZD".to_string()))
