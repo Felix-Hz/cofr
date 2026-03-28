@@ -174,7 +174,7 @@ function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={transition(0)}
-          className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-6"
+          className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent mb-6 text-left sm:text-center"
         >
           Private by design. Sharp by default.
         </motion.p>
@@ -184,11 +184,11 @@ function Hero() {
           animate="visible"
           variants={fadeUp}
           transition={transition(0.1)}
-          className="text-[2.6rem] sm:text-6xl md:text-[4.6rem] font-bold tracking-tight text-content-heading leading-[1.02]"
+          className="text-[2.25rem] sm:text-6xl md:text-[4.6rem] font-bold tracking-tight text-content-heading leading-[1.05] text-left sm:text-center"
         >
           Stop guessing
           <br className="hidden sm:block" />
-          where your money went.
+          {" where your money went."}
         </motion.h1>
 
         <motion.p
@@ -196,7 +196,7 @@ function Hero() {
           animate="visible"
           variants={fadeUp}
           transition={transition(0.2)}
-          className="mt-7 sm:mt-7 text-[1rem] sm:text-lg md:text-[1.35rem] text-content-secondary max-w-lg sm:max-w-2xl mx-auto leading-relaxed"
+          className="mt-7 sm:mt-7 text-[1rem] sm:text-lg md:text-[1.35rem] text-content-secondary max-w-lg sm:max-w-2xl sm:mx-auto leading-relaxed text-left sm:text-center"
         >
           cofr tracks spending across real accounts and multiple currencies without the usual
           finance-theatre fluff. Just a clean ledger, a sharper picture, and privacy baked in.
@@ -207,7 +207,7 @@ function Hero() {
           animate="visible"
           variants={fadeUp}
           transition={transition(0.3)}
-          className="mt-10 sm:mt-11 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto"
+          className="mt-10 sm:mt-11 flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-center gap-3 w-full sm:w-auto"
         >
           <Link
             to="/login?mode=signup"
@@ -217,7 +217,7 @@ function Hero() {
           </Link>
           <a
             href="#features"
-            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-medium text-content-secondary border border-edge-strong rounded-xl hover:bg-surface-hover transition-colors"
+            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-medium text-content-secondary bg-surface-primary/80 dark:bg-surface-elevated/60 border border-edge-strong rounded-xl hover:bg-surface-hover backdrop-blur-sm transition-colors"
           >
             See the workflow
           </a>
