@@ -19,6 +19,7 @@ apps/server/.pytest_cache/
 apps/client/node_modules/
 apps/client/build/
 apps/client/.react-router/
+apps/*/target/
 
 # Docker volumes
 caddy_data/

@@ -15,6 +15,13 @@ repos:
         files: ^apps/server/.*\.py$
         pass_filenames: false
 
+      - id: scribe-check
+        name: cargo fmt + clippy (scribe)
+        entry: bash -c 'cd apps/scribe && cargo fmt --check && cargo clippy -- -D warnings'
+        language: system
+        files: ^apps/scribe/.*\.(rs|toml)$
+        pass_filenames: false
+
       - id: gofmt
         name: gofmt (tg-bot)
         entry: gofmt -w
