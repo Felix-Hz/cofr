@@ -4,6 +4,7 @@ import AccountDeleteModal from "~/components/AccountDeleteModal";
 import CategoryFormModal from "~/components/CategoryFormModal";
 import DeleteAccountModal from "~/components/DeleteAccountModal";
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
+import ExportModal from "~/components/ExportModal";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
 import { useAccounts } from "~/lib/accounts";
@@ -57,6 +58,7 @@ const SECTIONS = [
   { id: "categories", label: "Categories" },
   { id: "linked-accounts", label: "Linked Accounts" },
   { id: "security", label: "Security" },
+  { id: "export", label: "Export" },
   { id: "danger-zone", label: "Danger Zone" },
 ] as const;
 
@@ -130,6 +132,24 @@ function LockIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+      />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
       />
     </svg>
   );
@@ -293,6 +313,7 @@ export default function Settings() {
   const [balanceAccountId, setBalanceAccountId] = useState<string | null>(null);
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceCurrency, setBalanceCurrency] = useState("NZD");
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const systemAccounts = accounts.filter((a) => a.is_system);
   const customAccounts = accounts.filter((a) => !a.is_system);
@@ -1541,6 +1562,42 @@ export default function Settings() {
           . Code expires in 10 minutes.
         </p>
       )}
+
+      {/* ── Export ── */}
+      <div
+        id="export"
+        ref={(el) => {
+          sectionRefs.current["export"] = el;
+        }}
+        style={{ scrollMarginTop: "4rem" }}
+        className="bg-surface-primary rounded-xl border border-edge-default mb-6 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+      >
+        <div className="px-6 py-4 border-b border-edge-default flex items-center gap-3">
+          <span className="text-content-tertiary">
+            <DownloadIcon />
+          </span>
+          <h3 className="text-lg font-medium text-content-primary">Export</h3>
+        </div>
+        <div className="px-6 py-4 space-y-4">
+          <p className="text-sm text-content-secondary">
+            Export your financial data in CSV, Excel, or PDF format. You can export individual data
+            types or create a full backup of all your data.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsExportModalOpen(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md transition-colors"
+          >
+            Export Data
+          </button>
+        </div>
+      </div>
+
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        defaultScope="full_dump"
+      />
 
       {/* ── Danger Zone ── */}
       <div

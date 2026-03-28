@@ -15,6 +15,7 @@ from app.routers import (
     categories,
     exchange_rates,
     expenses,
+    exports,
     local_auth,
     oauth,
     transfers,
@@ -48,8 +49,10 @@ async def lifespan(app: FastAPI):
     refresh_rates_in_db(SessionLocal())
     # Schedule daily refresh
     task = asyncio.create_task(_daily_rates_refresh_loop())
+    cleanup_task = asyncio.create_task(_export_cleanup_loop())
     yield
     task.cancel()
+    cleanup_task.cancel()
     engine.dispose()
 
 
@@ -61,6 +64,15 @@ async def _daily_rates_refresh_loop():
     while True:
         await asyncio.sleep(86400)
         refresh_rates_in_db(SessionLocal())
+
+
+async def _export_cleanup_loop():
+    """Clean up expired export jobs every 5 minutes."""
+    from app.services.export_service import cleanup_expired_jobs
+
+    while True:
+        await asyncio.sleep(300)
+        cleanup_expired_jobs()
 
 
 app = FastAPI(
@@ -103,3 +115,4 @@ app.include_router(transfers.router)
 app.include_router(exchange_rates.router)
 app.include_router(local_auth.router)
 app.include_router(webhooks.router)
+app.include_router(exports.router)

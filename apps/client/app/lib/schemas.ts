@@ -159,6 +159,29 @@ export const TransferResponseSchema = z.object({
 });
 
 // ============================================================================
+// Export Schemas
+// ============================================================================
+
+export const ExportCreateSchema = z.object({
+  format: z.enum(["csv", "xlsx", "pdf"]),
+  scope: z.enum(["transactions", "accounts", "categories", "full_dump"]),
+  start_date: z.coerce.date().optional(),
+  end_date: z.coerce.date().optional(),
+  account_id: z.string().optional(),
+  category_id: z.string().optional(),
+  currency: z.string().length(3).optional(),
+});
+
+export const ExportJobResponseSchema = z.object({
+  job_id: z.string(),
+  status: z.string(),
+  format: z.string(),
+  scope: z.string(),
+  created_at: z.coerce.date(),
+  error: z.string().nullable().optional(),
+});
+
+// ============================================================================
 // Infer TypeScript Types from Schemas (Single Source of Truth)
 // ============================================================================
 
@@ -177,3 +200,5 @@ export type ExpenseUpdate = z.infer<typeof ExpenseUpdateSchema>;
 export type ExpenseDeleteResponse = z.infer<typeof ExpenseDeleteResponseSchema>;
 export type TransferCreate = z.infer<typeof TransferCreateSchema>;
 export type TransferResponse = z.infer<typeof TransferResponseSchema>;
+export type ExportCreate = z.infer<typeof ExportCreateSchema>;
+export type ExportJobResponse = z.infer<typeof ExportJobResponseSchema>;

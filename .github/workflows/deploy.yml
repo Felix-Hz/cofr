@@ -51,6 +51,7 @@ jobs:
           filters: |
             server:
               - 'apps/server/**'
+              - 'apps/scribe/**'
               - 'infra/*'
               - 'scripts/**'
               - '.github/workflows/deploy.yml'
@@ -180,6 +181,8 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ./apps/server
+          build-contexts: |
+            scribe=./apps/scribe
           push: true
           tags: |
             ${{ needs.changes.outputs.registry-namespace }}/cofr-server:${{ needs.changes.outputs.image-tag }}

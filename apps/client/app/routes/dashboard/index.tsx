@@ -11,6 +11,7 @@ import ControlsPanel, {
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
 import ExchangeRatesModal from "~/components/ExchangeRatesModal";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
+import ExportModal from "~/components/ExportModal";
 import Tooltip from "~/components/Tooltip";
 import TransferFormModal from "~/components/TransferFormModal";
 import {
@@ -162,6 +163,7 @@ export default function Dashboard() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRatesModalOpen, setIsRatesModalOpen] = useState(false);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const controlsToggleRef = useRef<HTMLButtonElement>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -486,6 +488,29 @@ export default function Dashboard() {
           <span className="hidden sm:flex h-7 px-2.5 items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
             {currentCurrency || "All"}
           </span>
+
+          {/* Export */}
+          <Tooltip content="Export data">
+            <button
+              onClick={() => setIsExportModalOpen(true)}
+              className="h-9 w-9 flex items-center justify-center rounded-lg border border-edge-strong hover:bg-surface-hover text-content-tertiary hover:text-content-primary transition-colors"
+              aria-label="Export data"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+          </Tooltip>
 
           {/* Controls toggle */}
           <div className="relative">
@@ -1141,6 +1166,18 @@ export default function Dashboard() {
         isOpen={isRatesModalOpen}
         onClose={() => setIsRatesModalOpen(false)}
         preferredCurrency={monthlyStats.currency}
+      />
+
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        transactionCount={total_count}
+        defaultFilters={{
+          startDate: startDate,
+          endDate: endDate,
+          categoryId: currentCategory || undefined,
+          currency: currentCurrency || undefined,
+        }}
       />
     </div>
   );
