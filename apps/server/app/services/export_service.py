@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
+import sentry_sdk
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -109,6 +110,28 @@ class ExportService:
         except Exception as e:
             job.status = "error"
             job.error = str(e)
+            with sentry_sdk.new_scope() as scope:
+                scope.set_tag("export.format", request.format)
+                scope.set_tag("export.scope", request.scope)
+                scope.set_tag("export.status", job.status)
+                scope.set_tag("export.job_id", job.id)
+                scope.set_user({"id": user_id})
+                scope.set_context(
+                    "export_request",
+                    {
+                        "job_id": job.id,
+                        "format": request.format,
+                        "scope": request.scope,
+                        "start_date": request.start_date.isoformat()
+                        if request.start_date
+                        else None,
+                        "end_date": request.end_date.isoformat() if request.end_date else None,
+                        "account_id": request.account_id,
+                        "category_id": request.category_id,
+                        "currency": request.currency,
+                    },
+                )
+                sentry_sdk.capture_exception(e)
 
     def _collect_data(self, user_id: str, request: ExportCreateRequest) -> dict:
         result = {}
