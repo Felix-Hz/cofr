@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     # Sentry (empty = disabled)
     SENTRY_DSN: str = ""
 
+    # AWS S3 — export file storage (empty = disabled, exports still work via temp files)
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "ap-southeast-2"
+    S3_BUCKET_NAME: str = "cofr-data"
+
     # URLs
     API_URL: str = "http://localhost:5784"
     FRONTEND_URL: str = "http://localhost:5173"

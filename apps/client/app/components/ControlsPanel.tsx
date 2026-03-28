@@ -165,7 +165,7 @@ export default function ControlsPanel({
           onTouchEnd={handleTouchEnd}
           className="
             w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden overscroll-contain
-            sm:absolute sm:top-full sm:right-0 sm:mt-2 sm:w-80 sm:max-h-[80vh] sm:overflow-y-auto
+            sm:absolute sm:top-full sm:right-0 sm:z-50 sm:mt-2 sm:w-80 sm:max-h-[80vh] sm:overflow-y-auto
             bg-surface-primary border border-edge-default rounded-t-2xl sm:rounded-xl
             shadow-xl p-5 pb-8 sm:pb-5
           "

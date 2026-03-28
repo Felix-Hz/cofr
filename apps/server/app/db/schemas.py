@@ -175,6 +175,7 @@ class TransferResponse(BaseModel):
 class ExportCreateRequest(BaseModel):
     format: str = Field(pattern=r"^(csv|xlsx|pdf)$")
     scope: str = Field(pattern=r"^(transactions|accounts|categories|full_dump)$")
+    name: str | None = Field(default=None, max_length=120)
     start_date: datetime | None = None
     end_date: datetime | None = None
     account_id: str | None = None
@@ -189,3 +190,23 @@ class ExportJobResponse(BaseModel):
     scope: str
     created_at: datetime
     error: str | None = None
+    export_id: str | None = None
+
+
+class ExportRecordSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    format: str
+    scope: str
+    file_size: int
+    created_at: datetime
+    expires_at: datetime
+
+
+class ExportHistoryResponse(BaseModel):
+    exports: list[ExportRecordSchema]
+    total_count: int
+    limit: int
+    offset: int

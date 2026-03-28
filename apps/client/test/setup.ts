@@ -1,6 +1,7 @@
 import { afterEach } from "vitest";
 
 vi.stubEnv("VITE_API_BASE_URL", "http://localhost:5784");
+vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
 
 // Node.js 22+ has a built-in localStorage that conflicts with happy-dom.
 // Provide a proper in-memory implementation.
@@ -28,4 +29,5 @@ afterEach(() => {
   vi.restoreAllMocks();
   // Re-stub after restoreAllMocks clears stubs
   vi.stubGlobal("localStorage", localStorageMock);
+  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
 });
