@@ -167,3 +167,25 @@ class TransferCreateRequest(BaseModel):
 class TransferResponse(BaseModel):
     from_transaction: ExpenseSchema
     to_transaction: ExpenseSchema
+
+
+# ── Export Schemas ──
+
+
+class ExportCreateRequest(BaseModel):
+    format: str = Field(pattern=r"^(csv|xlsx|pdf)$")
+    scope: str = Field(pattern=r"^(transactions|accounts|categories|full_dump)$")
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    account_id: str | None = None
+    category_id: str | None = None
+    currency: str | None = Field(default=None, pattern="^[A-Z]{3}$")
+
+
+class ExportJobResponse(BaseModel):
+    job_id: str
+    status: str
+    format: str
+    scope: str
+    created_at: datetime
+    error: str | None = None

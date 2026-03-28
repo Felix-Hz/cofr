@@ -17,6 +17,9 @@ import {
   type ExpensesResponse,
   ExpensesResponseSchema,
   type ExpenseUpdate,
+  type ExportCreate,
+  type ExportJobResponse,
+  ExportJobResponseSchema,
   type MonthlyStats,
   MonthlyStatsSchema,
   type TransferCreate,
@@ -439,6 +442,36 @@ export async function deleteUserAccount(
     }),
   });
   return response.json();
+}
+
+// ── Exports ──
+
+export async function createExport(data: ExportCreate): Promise<ExportJobResponse> {
+  const response = await fetchWithAuth("/exports", {
+    method: "POST",
+    body: JSON.stringify({
+      ...data,
+      start_date: data.start_date?.toISOString(),
+      end_date: data.end_date?.toISOString(),
+    }),
+  });
+  const json = await response.json();
+  return ExportJobResponseSchema.parse(json);
+}
+
+export async function getExportStatus(jobId: string): Promise<ExportJobResponse> {
+  const response = await fetchWithAuth(`/exports/${jobId}/status`);
+  const json = await response.json();
+  return ExportJobResponseSchema.parse(json);
+}
+
+export function getExportStreamUrl(jobId: string): string {
+  return `${API_BASE_URL}/exports/${jobId}/stream`;
+}
+
+export function getExportDownloadUrl(jobId: string): string {
+  const token = getToken();
+  return `${API_BASE_URL}/exports/${jobId}/download?token=${token}`;
 }
 
 // ── Health check (no auth required) ──

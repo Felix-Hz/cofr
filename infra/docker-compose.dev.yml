@@ -7,7 +7,10 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
 
   server:
-    build: ../apps/server
+    build:
+      context: ../apps/server
+      additional_contexts:
+        scribe: ../apps/scribe
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 5784 --reload"
     env_file:
       - ../apps/server/.env
@@ -16,7 +19,6 @@ services:
       - "5784:5784"
     volumes:
       - ../apps/server:/app
-      - /app/.venv  # Exclude container's .venv from being overridden
 
   client:
     build: ../apps/client
