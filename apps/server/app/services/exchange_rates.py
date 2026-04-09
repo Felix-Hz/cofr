@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_CURRENCIES = ["NZD", "EUR", "USD", "GBP", "AUD", "BRL", "ARS", "COP", "JPY"]
 
-FRANKFURTER_URL = "https://api.frankfurter.app/latest?from=USD"
+FRANKFURTER_URL = "https://api.frankfurter.dev/v1/latest?from=USD"
 
 
 def get_rates_from_db(db: Session) -> dict[str, float]:
@@ -47,7 +47,7 @@ def refresh_rates_in_db(db: Session) -> bool:
     Returns True on success, False on failure (DB keeps last known values).
     """
     try:
-        resp = httpx.get(FRANKFURTER_URL, timeout=10)
+        resp = httpx.get(FRANKFURTER_URL, timeout=10, follow_redirects=True)
         resp.raise_for_status()
         data = resp.json()
         api_rates: dict[str, float] = data.get("rates", {})
