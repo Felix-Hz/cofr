@@ -611,7 +611,7 @@ function Footer() {
 
 export default function Index() {
   return (
-    <div className="landing-page min-h-screen bg-surface-page relative overflow-hidden">
+    <div className="landing-page min-h-screen bg-surface-page relative overflow-x-hidden">
       <div className="landing-grid-top absolute inset-x-0 top-0 h-[72rem] sm:h-[56rem] pointer-events-none" />
       <div className="landing-grid-bottom absolute inset-x-0 top-[94rem] sm:top-[68rem] bottom-0 pointer-events-none" />
       <Nav />
