@@ -1,6 +1,6 @@
 # Cofr — Server
 
-Expense Dashboard API — FastAPI backend serving expense data from PostgreSQL with OAuth and Telegram authentication.
+Expense Dashboard API - FastAPI backend serving expense data from PostgreSQL with OAuth and email/password authentication.
 
 ## Quick Start
 

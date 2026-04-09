@@ -31,12 +31,6 @@ services:
     environment:
       - VITE_API_BASE_URL=/api
 
-  tg-bot:
-    build: ../apps/tg-bot
-    env_file:
-      - ../apps/tg-bot/.env
-      - ../apps/tg-bot/.dev.env
-
   caddy:
     ports:
       - "8080:80"

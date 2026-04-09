@@ -2,8 +2,6 @@ import os
 
 # Set dummy env vars BEFORE any app imports (database.py runs at import time)
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
-os.environ.setdefault("TELEGRAM_BOT_TOKEN", "123456:ABC-DEF-dummy")
-os.environ.setdefault("TELEGRAM_BOT_NAME", "test_bot")
 os.environ.setdefault("JWT_SECRET", "test-secret-key-at-least-32-chars-long")
 os.environ.setdefault("ENCRYPTION_KEY", "yoiUSNghFamT5wyzMwk8YL2XS1T4uNg5Ih3k05CH51Q=")
 os.environ["RESEND_API_KEY"] = ""  # Force ConsoleProvider in tests — never send real emails

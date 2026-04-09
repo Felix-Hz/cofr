@@ -28,7 +28,6 @@ copy_env_if_missing() {
 copy_env_if_missing "infra/.env"
 copy_env_if_missing "apps/server/.env"
 copy_env_if_missing "apps/client/.env"
-copy_env_if_missing "apps/tg-bot/.env"
 
 # ── Create dev env overrides if missing ───────────────────
 if [ ! -f "apps/server/.dev.env" ]; then
@@ -38,13 +37,6 @@ API_URL=http://localhost:8080/api
 FRONTEND_URL=http://localhost:8080
 EOF
     echo "Created apps/server/.dev.env"
-fi
-
-if [ ! -f "apps/tg-bot/.dev.env" ]; then
-    cat > "apps/tg-bot/.dev.env" <<'EOF'
-ENV=local
-EOF
-    echo "Created apps/tg-bot/.dev.env"
 fi
 
 # ── Warn about empty secrets ────────────────────────────────
@@ -71,7 +63,6 @@ echo ""
 echo "Dashboard:       http://localhost:8080"
 echo "API:             http://localhost:8080/api"
 echo "API Health:      http://localhost:8080/health"
-echo "Telegram Bot:    Running (check logs)"
 echo ""
 echo "View logs:       docker compose -p cofr-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml logs -f"
 echo "Stop:            docker compose -p cofr-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml down"

@@ -18,23 +18,6 @@ services:
       retries: 5
       start_period: 10s
 
-  # Golang Telegram Bot
-  tg-bot:
-    restart: unless-stopped
-    env_file:
-      - ../apps/tg-bot/.env
-    networks:
-      - cofr-network
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "pgrep", "-f", "main" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
-
   # FastAPI Backend
   server:
     restart: unless-stopped

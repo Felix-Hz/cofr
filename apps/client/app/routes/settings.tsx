@@ -18,7 +18,6 @@ import {
   deleteCategory,
   getLinkedProviders,
   getPreferences,
-  initTelegramLink,
   moveTransactions,
   toggleCategory,
   unlinkProvider,
@@ -46,12 +45,11 @@ interface LinkedProvider {
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
-  telegram: "Telegram",
   google: "Google",
   local: "Email",
 };
 
-const ALL_PROVIDERS = ["google", "telegram"];
+const ALL_PROVIDERS = ["google"];
 
 export function meta() {
   return [{ title: "cofr — Settings" }];
@@ -220,14 +218,6 @@ function GoogleIcon() {
   );
 }
 
-function TelegramIcon() {
-  return (
-    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-    </svg>
-  );
-}
-
 function EnvelopeIcon() {
   return (
     <svg
@@ -250,8 +240,6 @@ function getProviderIcon(provider: string) {
   switch (provider) {
     case "google":
       return <GoogleIcon />;
-    case "telegram":
-      return <TelegramIcon />;
     case "local":
       return <EnvelopeIcon />;
     default:
@@ -272,8 +260,7 @@ export default function Settings() {
   const [providers, setProviders] = useState<LinkedProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [linkData, setLinkData] = useState<{ code: string; deep_link: string } | null>(null);
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const [preferredCurrency, setPreferredCurrency] = useState("NZD");
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState<number | null>(null);
@@ -525,9 +512,6 @@ export default function Settings() {
   useEffect(() => {
     fetchProviders();
     fetchPreferences();
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
   }, []);
 
   const linkedProviderNames = providers.map((p) => p.provider);
@@ -562,38 +546,6 @@ export default function Settings() {
     } finally {
       setSavingTimeout(false);
     }
-  };
-
-  const handleLinkTelegram = async () => {
-    setError(null);
-    try {
-      const data = await initTelegramLink();
-      setLinkData(data);
-      window.open(data.deep_link, "_blank");
-
-      // Poll for linking completion
-      pollingRef.current = setInterval(async () => {
-        try {
-          const updated = await getLinkedProviders();
-          if (updated.some((p) => p.provider === "telegram")) {
-            if (pollingRef.current) clearInterval(pollingRef.current);
-            pollingRef.current = null;
-            setLinkData(null);
-            setProviders(updated);
-          }
-        } catch {
-          // Silently retry
-        }
-      }, 3000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to initiate Telegram link");
-    }
-  };
-
-  const handleCancelLink = () => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
-    pollingRef.current = null;
-    setLinkData(null);
   };
 
   const handleUnlink = async (id: string) => {
@@ -1434,42 +1386,12 @@ export default function Settings() {
                   <p className="text-sm text-content-muted">Not connected</p>
                 </div>
               </div>
-              {provider === "telegram" ? (
-                linkData ? (
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={linkData.deep_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
-                    >
-                      Open Telegram
-                    </a>
-                    <button
-                      type="button"
-                      onClick={handleCancelLink}
-                      className="px-3 py-1.5 text-sm font-medium text-content-tertiary border border-edge-default rounded-md hover:bg-surface-hover transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleLinkTelegram}
-                    className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
-                  >
-                    Link Telegram
-                  </button>
-                )
-              ) : (
-                <a
-                  href={`${API_BASE_URL}/auth/oauth/${provider}/login`}
-                  className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
-                >
-                  Link
-                </a>
-              )}
+              <a
+                href={`${API_BASE_URL}/auth/oauth/${provider}/login`}
+                className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
+              >
+                Link
+              </a>
             </div>
           ))}
         </div>
@@ -1547,25 +1469,6 @@ export default function Settings() {
             </button>
           </form>
         </div>
-      )}
-
-      {linkData && (
-        <p className="text-sm text-content-tertiary mt-2">
-          Or send{" "}
-          <code className="bg-surface-hover px-1 py-0.5 rounded text-xs">
-            /start {linkData.code}
-          </code>{" "}
-          to the bot in{" "}
-          <a
-            href={linkData.deep_link.split("?")[0]}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-content-secondary"
-          >
-            Telegram
-          </a>
-          . Code expires in 10 minutes.
-        </p>
       )}
 
       {/* ── Export ── */}

@@ -9,7 +9,6 @@
 cofr/
 ├── apps/
 │   ├── server/      # FastAPI backend (Python, internal port 5784)
-│   ├── tg-bot/      # Telegram bot (Go)
 │   └── client/      # Web dashboard (React Router 7 / Bun, internal port 3000)
 ├── infra/           # Docker Compose, Caddyfiles, Cloudflare Tunnel config
 └── scripts/         # Dev/prod setup helpers
@@ -21,7 +20,7 @@ cofr/
 
 - Docker & Docker Compose
 - Environment files: copy `.env.example` values into `apps/server/.env`,
-  `apps/tg-bot/.env`, `apps/client/.env`
+  `apps/client/.env`
 - Generate a Fernet encryption key for the server:
   ```bash
   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
@@ -55,7 +54,6 @@ OAuth in Docker dev uses the public dev API URL from `apps/server/.dev.env`:
 | Service     | Tech                              | Port | Description                                      |
 | ----------- | --------------------------------- | ---- | ------------------------------------------------ |
 | server      | Python / FastAPI                  | 5784 | REST API for expenses, auth, accounts            |
-| tg-bot      | Go                                | —    | Telegram bot for expense tracking                |
 | client      | TypeScript / React Router 7 / Bun | 3000 | Web dashboard with SSR                           |
 | caddy       | Caddy 2                           | 8080 in dev, 80/443 in prod | Reverse proxy (`/api/*` → server, `/*` → client) |
 | cloudflared | Cloudflare Tunnel                 | —    | Exposes services at `cofr.cash`                  |

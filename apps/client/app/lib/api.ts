@@ -326,13 +326,6 @@ export async function unlinkProvider(id: string): Promise<{ success: boolean; me
   return response.json();
 }
 
-export async function initTelegramLink(): Promise<{ code: string; deep_link: string }> {
-  const response = await fetchWithAuth("/account/link/telegram/init", {
-    method: "POST",
-  });
-  return response.json();
-}
-
 // ── Preferences ──
 
 export async function getPreferences(): Promise<{

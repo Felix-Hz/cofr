@@ -174,7 +174,7 @@ export default function CategoryFormModal({
                 htmlFor="cat-alias"
                 className="block text-sm font-medium text-content-secondary mb-1"
               >
-                Alias (for Telegram bot)
+                Alias
               </label>
               <input
                 type="text"
@@ -206,7 +206,7 @@ export default function CategoryFormModal({
                 </p>
               ) : (
                 <p className="text-xs text-content-tertiary mt-1">
-                  Short code used in the Telegram bot. Optional.
+                  Optional short code for this category.
                 </p>
               )}
             </div>

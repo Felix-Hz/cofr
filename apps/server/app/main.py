@@ -77,7 +77,7 @@ async def _export_cleanup_loop():
 
 app = FastAPI(
     title="Cofr — Expense Dashboard API",
-    description="API for expense tracking with Google OAuth and Telegram bot integration",
+    description="API for expense tracking with Google OAuth",
     version="1.0.0",
     lifespan=lifespan,
 )

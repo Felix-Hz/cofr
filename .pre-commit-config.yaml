@@ -22,12 +22,6 @@ repos:
         files: ^apps/scribe/.*\.(rs|toml)$
         pass_filenames: false
 
-      - id: gofmt
-        name: gofmt (tg-bot)
-        entry: gofmt -w
-        language: system
-        files: ^apps/tg-bot/.*\.go$
-
       - id: terraform-fmt
         name: terraform fmt (infra)
         entry: terraform fmt -recursive
