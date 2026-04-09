@@ -51,8 +51,6 @@ class User(Base):
     preferred_currency: Mapped[str] = mapped_column(String, default="NZD")
     session_timeout_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    link_code: Mapped[str | None] = mapped_column(String, nullable=True)
-    link_code_expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     email_verified: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default=text("false")
     )
@@ -149,7 +147,6 @@ class Transaction(Base):
         )
     )
     hash: Mapped[str | None] = mapped_column(String, unique=True, index=True, nullable=True)
-    receipt_file_id: Mapped[str | None] = mapped_column(String, nullable=True)
     is_opening_balance: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default=text("false")
     )
@@ -162,13 +159,6 @@ class Transaction(Base):
     user: Mapped["User"] = relationship(back_populates="transactions")
     category_rel: Mapped["Category | None"] = relationship(back_populates="transactions")
     account_rel: Mapped["Account"] = relationship(back_populates="transactions")
-
-
-class Offset(Base):
-    __tablename__ = "offsets"
-
-    id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
-    offset: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class AuthProvider(Base):

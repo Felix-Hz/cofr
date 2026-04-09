@@ -142,7 +142,10 @@ class TestExports:
 
             download_resp = client.get(f"/exports/{job_id}/download", headers=headers)
             assert download_resp.status_code == 200
-            assert 'filename="Transactions-Mar-2026.csv"' in download_resp.headers.get(
+            from datetime import UTC, datetime
+
+            month = datetime.now(UTC).strftime("%b-%Y")
+            assert f'filename="Transactions-{month}.csv"' in download_resp.headers.get(
                 "content-disposition", ""
             )
             assert download_resp.content == b"Date,Amount\ntest,42.00\n"
@@ -189,7 +192,10 @@ class TestExports:
 
             download_resp = client.get(f"/exports/{job_id}/download", headers=headers)
             assert download_resp.status_code == 200
-            assert 'filename="Full-Backup-Mar-2026.zip"' in download_resp.headers.get(
+            from datetime import UTC, datetime
+
+            month = datetime.now(UTC).strftime("%b-%Y")
+            assert f'filename="Full-Backup-{month}.zip"' in download_resp.headers.get(
                 "content-disposition", ""
             )
 

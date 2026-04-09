@@ -12,7 +12,6 @@ jobs:
     outputs:
       server: ${{ steps.filter.outputs.server }}
       client: ${{ steps.filter.outputs.client }}
-      tg-bot: ${{ steps.filter.outputs.tg-bot }}
       scribe: ${{ steps.filter.outputs.scribe }}
     steps:
       - uses: actions/checkout@v4
@@ -28,11 +27,6 @@ jobs:
               - '.github/workflows/ci.yml'
             client:
               - 'apps/client/**'
-              - 'infra/*'
-              - 'scripts/**'
-              - '.github/workflows/ci.yml'
-            tg-bot:
-              - 'apps/tg-bot/**'
               - 'infra/*'
               - 'scripts/**'
               - '.github/workflows/ci.yml'
@@ -73,23 +67,6 @@ jobs:
       - run: bun run typecheck
       - run: bun run test
       - run: bun run build
-
-  tg-bot:
-    name: lint-test-build / tg-bot
-    needs: changes
-    if: needs.changes.outputs.tg-bot == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/tg-bot
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: apps/tg-bot/go.mod
-      - run: go vet ./...
-      - run: go test ./...
-      - run: go build ./...
 
   scribe:
     name: lint-test / scribe
@@ -135,15 +112,3 @@ jobs:
           context: ./apps/client
           push: false
 
-  docker-build-tg-bot:
-    name: image-build / tg-bot
-    needs: tg-bot
-    if: needs.tg-bot.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./apps/tg-bot
-          push: false

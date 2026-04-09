@@ -1,5 +1,4 @@
-import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Literal
 
 import bcrypt
@@ -8,7 +7,6 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_user_id
-from app.config import settings
 from app.database import get_db
 from app.db.models import (
     Account,
@@ -58,11 +56,6 @@ class PreferencesUpdate(BaseModel):
                 f"session_timeout_minutes must be one of {sorted(VALID_TIMEOUT_VALUES)}"
             )
         return v
-
-
-class TelegramLinkInitResponse(BaseModel):
-    code: str
-    deep_link: str
 
 
 class ProfileResponse(BaseModel):
@@ -191,35 +184,6 @@ async def unlink_provider(
     db.delete(provider)
     db.commit()
     return UnlinkResponse(success=True, message="Provider unlinked successfully")
-
-
-@router.post("/link/telegram/init", response_model=TelegramLinkInitResponse)
-async def init_telegram_link(
-    user_id: str = Depends(get_user_id),
-    db: Session = Depends(get_db),
-):
-    """Generate a deep-link code for Telegram account linking"""
-    # Check if already linked
-    existing = (
-        db.query(AuthProvider)
-        .filter(AuthProvider.user_id == user_id, AuthProvider.provider == "telegram")
-        .first()
-    )
-    if existing:
-        raise HTTPException(status_code=400, detail="Telegram already linked to this account")
-
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    code = secrets.token_urlsafe(6)
-    user.link_code = code
-    user.link_code_expires = datetime.now(UTC) + timedelta(minutes=10)
-    db.commit()
-
-    deep_link = f"https://t.me/{settings.TELEGRAM_BOT_NAME}?start={code}"
-
-    return TelegramLinkInitResponse(code=code, deep_link=deep_link)
 
 
 @router.get("/preferences", response_model=PreferencesResponse)

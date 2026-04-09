@@ -32,7 +32,6 @@ jobs:
     outputs:
       server: ${{ steps.resolve.outputs.server }}
       client: ${{ steps.resolve.outputs.client }}
-      tg-bot: ${{ steps.resolve.outputs.tg-bot }}
       any-app: ${{ steps.resolve.outputs.any-app }}
       deploy-only: ${{ steps.resolve.outputs.deploy-only }}
       image-tag: ${{ steps.resolve.outputs.image-tag }}
@@ -60,11 +59,6 @@ jobs:
               - 'infra/*'
               - 'scripts/**'
               - '.github/workflows/deploy.yml'
-            tg-bot:
-              - 'apps/tg-bot/**'
-              - 'infra/*'
-              - 'scripts/**'
-              - '.github/workflows/deploy.yml'
 
       - name: Resolve outputs
         id: resolve
@@ -86,23 +80,19 @@ jobs:
               fi
               echo "server=false" >> "$GITHUB_OUTPUT"
               echo "client=false" >> "$GITHUB_OUTPUT"
-              echo "tg-bot=false" >> "$GITHUB_OUTPUT"
               echo "any-app=true" >> "$GITHUB_OUTPUT"
             else
               echo "server=true" >> "$GITHUB_OUTPUT"
               echo "client=true" >> "$GITHUB_OUTPUT"
-              echo "tg-bot=true" >> "$GITHUB_OUTPUT"
               echo "any-app=true" >> "$GITHUB_OUTPUT"
             fi
           else
             echo "deploy-only=false" >> "$GITHUB_OUTPUT"
             echo "server=${{ steps.filter.outputs.server }}" >> "$GITHUB_OUTPUT"
             echo "client=${{ steps.filter.outputs.client }}" >> "$GITHUB_OUTPUT"
-            echo "tg-bot=${{ steps.filter.outputs.tg-bot }}" >> "$GITHUB_OUTPUT"
 
             if [ "${{ steps.filter.outputs.server }}" = "true" ] || \
-               [ "${{ steps.filter.outputs.client }}" = "true" ] || \
-               [ "${{ steps.filter.outputs.tg-bot }}" = "true" ]; then
+               [ "${{ steps.filter.outputs.client }}" = "true" ]; then
               echo "any-app=true" >> "$GITHUB_OUTPUT"
             else
               echo "any-app=false" >> "$GITHUB_OUTPUT"
@@ -145,23 +135,6 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run build
-
-  verify-tg-bot:
-    name: verify / tg-bot
-    needs: changes
-    if: needs.changes.outputs.tg-bot == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/tg-bot
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: apps/tg-bot/go.mod
-      - run: go build ./...
 
   build-server:
     name: build / server
@@ -215,32 +188,9 @@ jobs:
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
             SENTRY_ORG=${{ secrets.SENTRY_ORG }}
 
-  build-tg-bot:
-    name: build / tg-bot
-    needs: [changes, verify-tg-bot]
-    if: always() && !failure() && !cancelled() && needs.changes.outputs.tg-bot == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          context: ./apps/tg-bot
-          push: true
-          tags: |
-            ${{ needs.changes.outputs.registry-namespace }}/cofr-tg-bot:${{ needs.changes.outputs.image-tag }}
-            ${{ needs.changes.outputs.registry-namespace }}/cofr-tg-bot:main
-
   deploy:
     name: deploy
-    needs: [changes, build-server, build-client, build-tg-bot]
+    needs: [changes, build-server, build-client]
     if: >-
       always() && !failure() && !cancelled() &&
       (needs.changes.outputs.any-app == 'true')
@@ -290,11 +240,9 @@ jobs:
           if [ "${{ needs.changes.outputs.deploy-only }}" = "true" ]; then
             SERVER_TAG="$TAG"
             CLIENT_TAG="$TAG"
-            TGBOT_TAG="$TAG"
           else
             if [ "${{ needs.changes.outputs.server }}" = "true" ]; then SERVER_TAG="$TAG"; else SERVER_TAG="main"; fi
             if [ "${{ needs.changes.outputs.client }}" = "true" ]; then CLIENT_TAG="$TAG"; else CLIENT_TAG="main"; fi
-            if [ "${{ needs.changes.outputs.tg-bot }}" = "true" ]; then TGBOT_TAG="$TAG"; else TGBOT_TAG="main"; fi
           fi
 
           ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
@@ -304,7 +252,6 @@ jobs:
              export GHCR_NAMESPACE='${{ needs.changes.outputs.registry-namespace }}' && \
              export SERVER_IMAGE_TAG='${SERVER_TAG}' && \
              export CLIENT_IMAGE_TAG='${CLIENT_TAG}' && \
-             export TGBOT_IMAGE_TAG='${TGBOT_TAG}' && \
              ./scripts/setup_prod.sh"
 
   release:
@@ -385,7 +332,7 @@ jobs:
         if: steps.release_meta.outputs.bump != ''
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
-          for image in cofr-server cofr-client cofr-tg-bot; do
+          for image in cofr-server cofr-client; do
             docker buildx imagetools create \
               -t "${{ needs.changes.outputs.registry-namespace }}/${image}:${{ steps.release_version.outputs.next }}" \
               "${{ needs.changes.outputs.registry-namespace }}/${image}:main"

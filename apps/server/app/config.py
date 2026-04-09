@@ -5,8 +5,6 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     DATABASE_URL: str
-    TELEGRAM_BOT_TOKEN: str
-    TELEGRAM_BOT_NAME: str = ""
     JWT_SECRET: str
     ENCRYPTION_KEY: str
     API_PORT: int = 5784

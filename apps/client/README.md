@@ -4,7 +4,7 @@ A modern expense tracking dashboard. Track your expenses, view analytics, and ma
 
 ## Features
 
-- 🔐 **Telegram Authentication** - Secure login via Telegram
+- 🔐 **Authentication** - Secure login via Google OAuth or email/password
 - 📊 **Expense Tracking** - View and manage all your expenses
 - 📈 **Analytics** - Monthly statistics and category breakdowns
 - 🎨 **Category Management** - 14 predefined expense categories with color coding
@@ -24,7 +24,7 @@ A modern expense tracking dashboard. Track your expenses, view analytics, and ma
 ### Prerequisites
 
 - [Bun](https://bun.sh) v1.3.3 or higher
-- Telegram Bot Token (for authentication)
+- A running cofr server instance
 
 ### Installation
 
