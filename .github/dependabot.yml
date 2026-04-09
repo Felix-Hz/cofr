@@ -4,7 +4,13 @@ updates:
     directory: "/apps/server"
     schedule:
       interval: "weekly"
+    labels:
+      - "release:patch"
     open-pull-requests-limit: 5
+    groups:
+      server-deps:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
@@ -13,7 +19,43 @@ updates:
     directory: "/apps/client"
     schedule:
       interval: "weekly"
+    labels:
+      - "release:patch"
     open-pull-requests-limit: 5
+    groups:
+      client-deps:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "cargo"
+    directory: "/apps/scribe"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "release:patch"
+    open-pull-requests-limit: 5
+    groups:
+      scribe-rust-deps:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "pip"
+    directory: "/apps/scribe"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "release:patch"
+    open-pull-requests-limit: 5
+    groups:
+      scribe-python-deps:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
