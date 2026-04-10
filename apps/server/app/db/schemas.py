@@ -123,6 +123,30 @@ class MonthlyStats(BaseModel):
     savings_net_change: float = 0.0
 
 
+class LifetimeStats(BaseModel):
+    """All-time totals: net worth (sum of balances), savings + investment separately, lifetime income/expense."""
+
+    net_worth: float
+    savings_balance: float
+    investment_balance: float
+    checking_balance: float
+    lifetime_income: float
+    lifetime_spent: float
+    currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
+    is_converted: bool = False
+
+
+class SparklinePoint(BaseModel):
+    date: str
+    total: float
+
+
+class SparklineResponse(BaseModel):
+    points: list[SparklinePoint]
+    currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
+    is_converted: bool = False
+
+
 class ExpenseCreateRequest(BaseModel):
     amount: float = Field(ge=0)
     category_id: str
@@ -210,3 +234,53 @@ class ExportHistoryResponse(BaseModel):
     total_count: int
     limit: int
     offset: int
+
+
+# ── Dashboard Schemas ──
+
+
+class DashboardWidgetSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    widget_type: str
+    col_x: int = Field(ge=0, le=11)
+    col_y: int = Field(ge=0)
+    col_span: int = Field(ge=1, le=12)
+    row_span: int = Field(ge=1, le=12)
+    config: dict | None = None
+
+
+class DashboardSpaceSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    position: int
+    is_default: bool
+    widgets: list[DashboardWidgetSchema]
+
+
+class DashboardLayoutResponse(BaseModel):
+    spaces: list[DashboardSpaceSchema]
+
+
+class DashboardWidgetInput(BaseModel):
+    widget_type: str = Field(min_length=1, max_length=40)
+    col_x: int = Field(ge=0, le=11)
+    col_y: int = Field(ge=0, le=99)
+    col_span: int = Field(ge=1, le=12)
+    row_span: int = Field(ge=1, le=12)
+    config: dict | None = None
+
+
+class DashboardSpaceInput(BaseModel):
+    id: str | None = None
+    name: str = Field(min_length=1, max_length=60)
+    position: int = Field(ge=0)
+    is_default: bool = False
+    widgets: list[DashboardWidgetInput]
+
+
+class DashboardLayoutUpdate(BaseModel):
+    spaces: list[DashboardSpaceInput] = Field(min_length=1)

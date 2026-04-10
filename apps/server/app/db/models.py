@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     Float,
@@ -209,6 +210,44 @@ class Export(Base):
     s3_key: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class DashboardSpace(Base):
+    __tablename__ = "dashboard_spaces"
+    __table_args__ = (UniqueConstraint("user_id", "name", name="uq_dashboard_space_user_name"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(60))
+    position: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    widgets: Mapped[list["DashboardWidget"]] = relationship(
+        back_populates="space",
+        cascade="all, delete-orphan",
+        order_by="(DashboardWidget.col_y, DashboardWidget.col_x)",
+    )
+
+
+class DashboardWidget(Base):
+    __tablename__ = "dashboard_widgets"
+
+    id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
+    space_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("dashboard_spaces.id", ondelete="CASCADE"), index=True
+    )
+    widget_type: Mapped[str] = mapped_column(String(40))
+    col_x: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    col_y: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
+    col_span: Mapped[int] = mapped_column(Integer, default=6, server_default=text("6"))
+    row_span: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"))
+    config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    space: Mapped["DashboardSpace"] = relationship(back_populates="widgets")
 
 
 class EmailSuppression(Base):

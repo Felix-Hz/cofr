@@ -201,6 +201,95 @@ export const ExportHistoryResponseSchema = z.object({
 });
 
 // ============================================================================
+// Lifetime + Sparkline Stats Schemas
+// ============================================================================
+
+export const LifetimeStatsSchema = z.object({
+  net_worth: z.number(),
+  savings_balance: z.number(),
+  investment_balance: z.number(),
+  checking_balance: z.number(),
+  lifetime_income: z.number(),
+  lifetime_spent: z.number(),
+  currency: z.string().length(3),
+  is_converted: z.boolean().default(false),
+});
+
+export const SparklinePointSchema = z.object({
+  date: z.string(),
+  total: z.number(),
+});
+
+export const SparklineResponseSchema = z.object({
+  points: z.array(SparklinePointSchema),
+  currency: z.string().length(3),
+  is_converted: z.boolean().default(false),
+});
+
+// ============================================================================
+// Dashboard Layout Schemas
+// ============================================================================
+
+export const WIDGET_TYPES = [
+  "stat_income",
+  "stat_spent",
+  "stat_net",
+  "stat_savings_rate",
+  "period_stats_4up",
+  "category_pie",
+  "account_balances",
+  "transactions",
+  "net_worth",
+  "savings_investment",
+  "spend_sparkline",
+] as const;
+
+export const WidgetTypeSchema = z.enum(WIDGET_TYPES);
+
+export const DashboardWidgetSchema = z.object({
+  id: z.string(),
+  widget_type: WidgetTypeSchema,
+  col_x: z.number().int().min(0).max(11),
+  col_y: z.number().int().min(0),
+  col_span: z.number().int().min(1).max(12),
+  row_span: z.number().int().min(1).max(12),
+  config: z.record(z.string(), z.unknown()).nullable().optional(),
+});
+
+export const DashboardSpaceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  position: z.number().int().min(0),
+  is_default: z.boolean(),
+  widgets: z.array(DashboardWidgetSchema),
+});
+
+export const DashboardLayoutResponseSchema = z.object({
+  spaces: z.array(DashboardSpaceSchema),
+});
+
+export const DashboardWidgetInputSchema = z.object({
+  widget_type: WidgetTypeSchema,
+  col_x: z.number().int().min(0).max(11),
+  col_y: z.number().int().min(0),
+  col_span: z.number().int().min(1).max(12),
+  row_span: z.number().int().min(1).max(12),
+  config: z.record(z.string(), z.unknown()).nullable().optional(),
+});
+
+export const DashboardSpaceInputSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1).max(60),
+  position: z.number().int().min(0),
+  is_default: z.boolean(),
+  widgets: z.array(DashboardWidgetInputSchema),
+});
+
+export const DashboardLayoutUpdateSchema = z.object({
+  spaces: z.array(DashboardSpaceInputSchema).min(1),
+});
+
+// ============================================================================
 // Infer TypeScript Types from Schemas (Single Source of Truth)
 // ============================================================================
 
@@ -223,3 +312,13 @@ export type ExportCreate = z.infer<typeof ExportCreateSchema>;
 export type ExportJobResponse = z.infer<typeof ExportJobResponseSchema>;
 export type ExportRecord = z.infer<typeof ExportRecordSchema>;
 export type ExportHistoryResponse = z.infer<typeof ExportHistoryResponseSchema>;
+export type LifetimeStats = z.infer<typeof LifetimeStatsSchema>;
+export type SparklinePoint = z.infer<typeof SparklinePointSchema>;
+export type SparklineResponse = z.infer<typeof SparklineResponseSchema>;
+export type WidgetType = z.infer<typeof WidgetTypeSchema>;
+export type DashboardWidget = z.infer<typeof DashboardWidgetSchema>;
+export type DashboardSpace = z.infer<typeof DashboardSpaceSchema>;
+export type DashboardLayoutResponse = z.infer<typeof DashboardLayoutResponseSchema>;
+export type DashboardWidgetInput = z.infer<typeof DashboardWidgetInputSchema>;
+export type DashboardSpaceInput = z.infer<typeof DashboardSpaceInputSchema>;
+export type DashboardLayoutUpdate = z.infer<typeof DashboardLayoutUpdateSchema>;

@@ -452,3 +452,140 @@ h6 {
     transform: none;
   }
 }
+
+/* ─── Dashboard composable grid ─────────────────────────────────────────── */
+
+.dashboard-ambient {
+  position: relative;
+  isolation: isolate;
+}
+
+.dashboard-ambient::before {
+  content: "";
+  position: absolute;
+  inset: -10% -10% auto -10%;
+  height: 420px;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 80% at 50% 0%, rgba(16, 185, 129, 0.1), transparent 70%);
+  z-index: -1;
+}
+
+.dark .dashboard-ambient::before {
+  background: radial-gradient(ellipse 60% 80% at 50% 0%, rgba(16, 185, 129, 0.12), transparent 70%);
+}
+
+.widget-surface {
+  background: var(--surface-primary);
+  border: 1px solid var(--edge-default);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px -12px rgba(15, 23, 42, 0.08);
+  transition:
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.2s ease,
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark .widget-surface {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 12px 32px -12px rgba(0, 0, 0, 0.6);
+}
+
+.widget-surface:hover {
+  border-color: rgba(16, 185, 129, 0.28);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 20px 48px -16px rgba(16, 185, 129, 0.18);
+}
+
+.dark .widget-surface:hover {
+  border-color: rgba(52, 211, 153, 0.32);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 24px 56px -16px rgba(16, 185, 129, 0.28);
+}
+
+.widget-surface--hero {
+  background: linear-gradient(
+    135deg,
+    var(--surface-primary) 0%,
+    color-mix(in srgb, var(--accent) 6%, var(--surface-primary)) 100%
+  );
+}
+
+.widget-edit-mode {
+  cursor: grab;
+  animation: widgetJiggle 3.4s ease-in-out infinite;
+}
+
+.widget-edit-mode:active {
+  cursor: grabbing;
+  animation: none;
+}
+
+@keyframes widgetJiggle {
+  0%,
+  100% {
+    transform: rotate(-0.25deg);
+  }
+  50% {
+    transform: rotate(0.25deg);
+  }
+}
+
+.widget-surface.widget-dragging,
+.widget-surface.widget-dragging:hover {
+  z-index: 50;
+  box-shadow:
+    0 24px 64px -12px rgba(16, 185, 129, 0.3),
+    0 8px 32px -8px rgba(15, 23, 42, 0.24);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.drop-placeholder {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent) 8%, transparent),
+    color-mix(in srgb, var(--accent) 3%, transparent)
+  );
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  border-radius: 16px;
+  animation: dropPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes dropPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.edit-toolbar {
+  background: color-mix(in srgb, var(--surface-primary) 92%, transparent);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--edge-default);
+  border-radius: 9999px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 20px 56px -12px rgba(16, 185, 129, 0.22);
+}
+
+.dark .edit-toolbar {
+  background: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 24px 64px -12px rgba(16, 185, 129, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget-edit-mode,
+  .drop-placeholder {
+    animation: none;
+  }
+}
