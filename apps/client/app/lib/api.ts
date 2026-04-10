@@ -9,6 +9,9 @@ import {
   type CategoryCreate,
   CategorySchema,
   type CategoryUpdate,
+  type DashboardLayoutResponse,
+  DashboardLayoutResponseSchema,
+  type DashboardLayoutUpdate,
   type Expense,
   type ExpenseCreate,
   type ExpenseDeleteResponse,
@@ -22,8 +25,12 @@ import {
   ExportHistoryResponseSchema,
   type ExportJobResponse,
   ExportJobResponseSchema,
+  type LifetimeStats,
+  LifetimeStatsSchema,
   type MonthlyStats,
   MonthlyStatsSchema,
+  type SparklineResponse,
+  SparklineResponseSchema,
   type TransferCreate,
   type TransferResponse,
   TransferResponseSchema,
@@ -482,6 +489,48 @@ export async function deleteExportRecord(exportId: string): Promise<void> {
 export function getExportRecordDownloadUrl(exportId: string): string {
   const token = getToken();
   return `${API_BASE_URL}/exports/history/${exportId}/download?token=${token}`;
+}
+
+// ── Dashboard ──
+
+export async function getDashboardLayout(): Promise<DashboardLayoutResponse> {
+  const response = await fetchWithAuth("/dashboard/layout");
+  const json = await response.json();
+  return DashboardLayoutResponseSchema.parse(json);
+}
+
+export async function updateDashboardLayout(
+  payload: DashboardLayoutUpdate,
+): Promise<DashboardLayoutResponse> {
+  const response = await fetchWithAuth("/dashboard/layout", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  const json = await response.json();
+  return DashboardLayoutResponseSchema.parse(json);
+}
+
+export async function getLifetimeStats(currency?: string): Promise<LifetimeStats> {
+  const params = new URLSearchParams();
+  if (currency) params.set("currency", currency);
+  const response = await fetchWithAuth(`/expenses/stats/lifetime?${params}`);
+  const json = await response.json();
+  return LifetimeStatsSchema.parse(json);
+}
+
+export async function getSpendSparkline(
+  startDate: string,
+  endDate: string,
+  currency?: string,
+): Promise<SparklineResponse> {
+  const params = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+  });
+  if (currency) params.set("currency", currency);
+  const response = await fetchWithAuth(`/expenses/stats/sparkline?${params}`);
+  const json = await response.json();
+  return SparklineResponseSchema.parse(json);
 }
 
 // ── Health check (no auth required) ──

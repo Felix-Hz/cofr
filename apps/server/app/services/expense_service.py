@@ -12,7 +12,10 @@ from app.db.schemas import (
     ExpenseCreateRequest,
     ExpenseSchema,
     ExpenseUpdateRequest,
+    LifetimeStats,
     MonthlyStats,
+    SparklinePoint,
+    SparklineResponse,
 )
 
 
@@ -394,10 +397,16 @@ class ExpenseService:
             is_converted=True,
         )
 
-    def get_account_balances(self, user_id: str) -> list[AccountBalance]:
-        """Calculate balance for each of the user's accounts, converting to preferred currency."""
+    def get_account_balances(
+        self, user_id: str, currency: str | None = None
+    ) -> list[AccountBalance]:
+        """Calculate balance for each of the user's accounts.
+
+        If `currency` is provided, balances are filtered to only transactions in
+        that currency (no conversion). Otherwise converts all to preferred currency.
+        """
         user = self.db.query(User).filter(User.id == user_id).first()
-        preferred = user.preferred_currency if user else "NZD"
+        preferred = currency or (user.preferred_currency if user else "NZD")
 
         # Target currency rate for conversion
         target_rate = (
@@ -419,6 +428,10 @@ class ExpenseService:
         # Single query: aggregate all transaction amounts per account with correct sign
         # - income category or transfer 'to' → positive
         # - expense category or transfer 'from' → negative
+        balance_filters = [Transaction.user_id == user_id]
+        if currency:
+            balance_filters.append(Transaction.currency == currency)
+
         balance_subq = (
             self.db.query(
                 Transaction.account_id,
@@ -441,7 +454,7 @@ class ExpenseService:
             )
             .outerjoin(Category, Transaction.category_id == Category.id)
             .outerjoin(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
-            .filter(Transaction.user_id == user_id)
+            .filter(*balance_filters)
             .group_by(Transaction.account_id)
             .subquery()
         )
@@ -468,6 +481,105 @@ class ExpenseService:
             )
             for row in results
         ]
+
+    def get_lifetime_stats(self, user_id: str, currency: str | None = None) -> LifetimeStats:
+        """All-time aggregates: net worth, balances by account type, lifetime income/spent."""
+        balances = self.get_account_balances(user_id)
+        checking = sum(b.balance for b in balances if b.account_type == "checking")
+        savings = sum(b.balance for b in balances if b.account_type == "savings")
+        investment = sum(b.balance for b in balances if b.account_type == "investment")
+        net_worth = sum(b.balance for b in balances)
+
+        base_filter = [
+            Transaction.user_id == user_id,
+            Transaction.is_opening_balance == sa_false(),
+            Transaction.is_transfer == sa_false(),
+        ]
+        if currency:
+            base_filter.append(Transaction.currency == currency)
+            stats = self._aggregate_sql(base_filter, currency)
+            resolved_currency = currency
+            is_converted = False
+        else:
+            stats = self._aggregate_with_conversion(base_filter, user_id)
+            user = self.db.query(User).filter(User.id == user_id).first()
+            resolved_currency = user.preferred_currency if user else "NZD"
+            is_converted = True
+
+        return LifetimeStats(
+            net_worth=net_worth,
+            savings_balance=savings,
+            investment_balance=investment,
+            checking_balance=checking,
+            lifetime_income=stats.total_income,
+            lifetime_spent=stats.total_spent,
+            currency=resolved_currency,
+            is_converted=is_converted,
+        )
+
+    def get_spend_sparkline(
+        self,
+        user_id: str,
+        start_date: datetime,
+        end_date: datetime,
+        currency: str | None = None,
+    ) -> SparklineResponse:
+        """Daily spend totals between start_date and end_date (inclusive).
+
+        Uses Python-side grouping for cross-DB compatibility (SQLite lacks extract()).
+        """
+        filters = [
+            Transaction.user_id == user_id,
+            Transaction.timestamp >= start_date,
+            Transaction.timestamp <= end_date,
+            Transaction.is_opening_balance == sa_false(),
+            Transaction.is_transfer == sa_false(),
+        ]
+        if currency:
+            filters.append(Transaction.currency == currency)
+            resolved_currency = currency
+            is_converted = False
+
+            rows = (
+                self.db.query(Transaction.timestamp, Transaction.amount)
+                .join(Category, Transaction.category_id == Category.id)
+                .filter(*filters, Category.type == "expense")
+                .all()
+            )
+            totals: dict[str, float] = {}
+            for ts, amount in rows:
+                key = ts.date().isoformat()
+                totals[key] = totals.get(key, 0.0) + float(amount)
+        else:
+            user = self.db.query(User).filter(User.id == user_id).first()
+            resolved_currency = user.preferred_currency if user else "NZD"
+            is_converted = True
+
+            target_rate = (
+                self.db.query(ExchangeRate.rate_to_usd)
+                .filter(ExchangeRate.currency_code == resolved_currency)
+                .scalar_subquery()
+            )
+            converted_amount = Transaction.amount / ExchangeRate.rate_to_usd * target_rate
+
+            rows = (
+                self.db.query(Transaction.timestamp, converted_amount.label("amt"))
+                .join(Category, Transaction.category_id == Category.id)
+                .join(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
+                .filter(*filters, Category.type == "expense")
+                .all()
+            )
+            totals = {}
+            for ts, amount in rows:
+                key = ts.date().isoformat()
+                totals[key] = totals.get(key, 0.0) + float(amount or 0)
+
+        points = [
+            SparklinePoint(date=date_key, total=total) for date_key, total in sorted(totals.items())
+        ]
+        return SparklineResponse(
+            points=points, currency=resolved_currency, is_converted=is_converted
+        )
 
     async def get_expense_by_id(self, user_id: str, expense_id: str) -> ExpenseSchema:
         """Get single expense with ownership check"""

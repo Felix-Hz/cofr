@@ -11,7 +11,9 @@ from app.db.schemas import (
     ExpenseSchema,
     ExpensesResponse,
     ExpenseUpdateRequest,
+    LifetimeStats,
     MonthlyStats,
+    SparklineResponse,
 )
 from app.services.expense_service import ExpenseService
 
@@ -100,6 +102,30 @@ async def get_range_stats(
     """Get statistics for a date range with category breakdown"""
     service = ExpenseService(db)
     return await service.get_range_stats(user_id, start_date, end_date, currency)
+
+
+@router.get("/stats/lifetime", response_model=LifetimeStats)
+async def get_lifetime_stats(
+    currency: str | None = Query(default=None, pattern="^[A-Z]{3}$"),
+    user_id: str = Depends(get_user_id),
+    db: Session = Depends(get_db),
+):
+    """All-time aggregates: net worth, savings/investment/checking balances, lifetime income and spend."""
+    service = ExpenseService(db)
+    return service.get_lifetime_stats(user_id, currency)
+
+
+@router.get("/stats/sparkline", response_model=SparklineResponse)
+async def get_spend_sparkline(
+    start_date: datetime = Query(...),
+    end_date: datetime = Query(...),
+    currency: str | None = Query(default=None, pattern="^[A-Z]{3}$"),
+    user_id: str = Depends(get_user_id),
+    db: Session = Depends(get_db),
+):
+    """Daily spend totals between start_date and end_date (inclusive)."""
+    service = ExpenseService(db)
+    return service.get_spend_sparkline(user_id, start_date, end_date, currency)
 
 
 @router.post("/", response_model=ExpenseSchema, status_code=201)

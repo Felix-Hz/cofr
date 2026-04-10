@@ -170,4 +170,4 @@ async def get_account_balances(
 ):
     """Get all account balances"""
     service = ExpenseService(db)
-    return service.get_account_balances(user_id)
+    return service.get_account_balances(user_id, currency=currency)
