@@ -10,25 +10,15 @@ const MOBILE_ROW_SPANS: Partial<Record<WidgetType, number>> = {
   stat_spent: 1,
   stat_net: 1,
   stat_savings_rate: 1,
-  net_worth: 1,
+  net_worth: 2,
   savings_investment: 2,
   account_balances: 2,
   category_pie: 3,
-  spend_sparkline: 1,
-  transactions: 4,
+  spend_sparkline: 2,
+  transactions: 5,
 };
 
-/**
- * Pack widgets into non-overlapping positions on a 12-column grid.
- *
- * Walks the grid row-by-row, left-to-right, and places each widget at the
- * first slot where every cell its `col_span` x `row_span` footprint covers
- * is free. This correctly handles multi-row widgets blocking subsequent
- * placements, which the previous cursor-based packer did not.
- *
- * Input order is preserved so the caller's intent (post-splice from a drag
- * reorder, or an append from the gallery) drives placement.
- */
+/** Preserve widget order while packing them into non-overlapping grid slots. */
 export function repackWidgetsForColumns<
   T extends {
     widget_type: WidgetType;
@@ -122,9 +112,7 @@ export function widgetGridStyle(
   };
 }
 
-/**
- * Total number of rows in a layout (for CSS Grid `grid-template-rows`).
- */
+/** Bottom-most occupied grid row. */
 export function layoutRowCount(widgets: Array<DashboardWidget | DefaultLayoutWidget>): number {
   let max = 0;
   for (const w of widgets) {

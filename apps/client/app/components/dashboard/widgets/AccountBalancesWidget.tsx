@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { useDashboardData } from "~/lib/dashboard/data-context";
+import type { WidgetRenderProps } from "~/lib/dashboard/registry";
 import { formatCurrency } from "~/lib/utils";
 
 const ACCOUNT_ICONS: Record<string, ReactElement> = {
@@ -26,11 +27,15 @@ const ACCOUNT_ICONS: Record<string, ReactElement> = {
   ),
 };
 
-export function AccountBalancesWidget() {
+export function AccountBalancesWidget({ widget }: WidgetRenderProps) {
   const { accountBalances, periodStats } = useDashboardData();
   const total = accountBalances.reduce((sum, ab) => sum + ab.balance, 0);
+  const isCompact = widget.row_span <= 1;
+  const visibleBalances = isCompact ? accountBalances.slice(0, 2) : accountBalances;
+  const hiddenCount = Math.max(0, accountBalances.length - visibleBalances.length);
+  const compactNames = visibleBalances.map((ab) => ab.account_name).join(", ");
   return (
-    <div className="flex h-full flex-col p-4">
+    <div className={`flex h-full flex-col ${isCompact ? "gap-2.5 p-3.5" : "p-4"}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
           <svg
@@ -56,9 +61,30 @@ export function AccountBalancesWidget() {
         <div className="mt-4 flex flex-1 items-center justify-center text-xs text-content-muted">
           No accounts yet
         </div>
+      ) : isCompact ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="rounded-lg border border-edge-default bg-surface-elevated px-3.5 py-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-content-tertiary">
+              Primary accounts
+            </div>
+            <div className="mt-2 truncate text-[13px] font-semibold text-content-primary">
+              {compactNames}
+              {hiddenCount > 0 ? ` +${hiddenCount} more` : ""}
+            </div>
+            <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.18em] text-content-tertiary">
+              {accountBalances.length} active accounts
+            </div>
+          </div>
+          <div className="mt-auto flex items-center justify-between border-t border-edge-default/80 pt-3 text-[10px] font-medium uppercase tracking-[0.18em] text-content-tertiary">
+            <span>Live balances</span>
+            <span className="text-[11px] font-semibold text-content-primary">
+              {formatCurrency(total, periodStats.currency)}
+            </span>
+          </div>
+        </div>
       ) : (
         <div className="mt-3 grid flex-1 auto-rows-min grid-cols-1 gap-2 sm:grid-cols-2">
-          {accountBalances.map((ab) => (
+          {visibleBalances.map((ab) => (
             <div
               key={ab.account_id}
               className="flex min-w-0 items-center gap-2 rounded-lg border border-edge-default bg-surface-elevated px-3 py-2"

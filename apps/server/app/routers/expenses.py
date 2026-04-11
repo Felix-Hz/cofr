@@ -31,6 +31,7 @@ async def get_expenses(
     category: str | None = Query(default=None),
     min_amount: float | None = Query(default=None, ge=0),
     max_amount: float | None = Query(default=None, ge=0),
+    collapse_transfer_pairs: bool = Query(default=False),
 ):
     """Get paginated expenses for authenticated user with optional filters"""
     service = ExpenseService(db)
@@ -43,6 +44,7 @@ async def get_expenses(
         category=category,
         min_amount=min_amount,
         max_amount=max_amount,
+        collapse_transfer_pairs=collapse_transfer_pairs,
     )
     return ExpensesResponse(expenses=expenses, total_count=total, limit=limit, offset=offset)
 

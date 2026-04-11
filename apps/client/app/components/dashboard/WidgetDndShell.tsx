@@ -5,11 +5,6 @@ import { widgetGridStyle } from "~/lib/dashboard/grid";
 import type { DashboardWidget } from "~/lib/schemas";
 import { WidgetMotionCard } from "./WidgetMotionCard";
 
-/**
- * Outer drag/drop layer. Owns dnd-kit transforms on its bare div; delegates
- * visual styling + enter/exit animation to WidgetMotionCard so the two layers
- * never fight for the transform CSS property.
- */
 export function WidgetDndShell({
   widget,
   layoutWidget,
@@ -45,7 +40,6 @@ export function WidgetDndShell({
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!isEditMode) return;
     if (event.key === "Delete" || event.key === "Backspace") {
-      // Don't hijack keystrokes the user is typing into an input inside the widget.
       const target = event.target as HTMLElement;
       if (target.closest("input, textarea, [contenteditable='true']")) return;
       event.preventDefault();
@@ -70,7 +64,7 @@ export function WidgetDndShell({
       {isEditMode && (
         <>
           {onResize && (
-            <div className="absolute left-3 top-3 z-10 flex items-center gap-1 opacity-0 transition-opacity duration-200 group-hover/widget:opacity-100 group-focus-within/widget:opacity-100">
+            <div className="absolute left-3 top-3 z-10 hidden items-center gap-1 opacity-0 transition-opacity duration-200 group-hover/widget:opacity-100 group-focus-within/widget:opacity-100 sm:flex">
               {[
                 { action: "narrower", label: "Make narrower", icon: "W-" },
                 { action: "wider", label: "Make wider", icon: "W+" },

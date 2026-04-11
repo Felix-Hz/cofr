@@ -19,7 +19,7 @@ export function TransactionsWidget() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
-  const displayExpenses = expenses.filter((e) => !(e.is_transfer && e.transfer_direction === "to"));
+  const displayExpenses = expenses;
   const page = Math.floor(expensesOffset / Math.max(1, expensesLimit));
   const totalPages = Math.max(1, Math.ceil(expensesTotal / Math.max(1, expensesLimit)));
   const pageStart = expensesTotal === 0 ? 0 : expensesOffset + 1;
@@ -28,10 +28,7 @@ export function TransactionsWidget() {
   const canGoNext = expensesOffset + expensesLimit < expensesTotal;
 
   const getTransferLabel = (expense: Expense): string => {
-    const linkedTo = expenses.find(
-      (e) => e.id === expense.linked_transaction_id && e.transfer_direction === "to",
-    );
-    return `${expense.account_name} → ${linkedTo?.account_name ?? "?"}`;
+    return `${expense.account_name} → ${expense.linked_account_name ?? "?"}`;
   };
 
   return (

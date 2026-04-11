@@ -88,12 +88,19 @@ describe("getExpenses", () => {
       json: () => Promise.resolve({ expenses: [], total_count: 0, limit: 10, offset: 0 }),
     });
     saveToken("t");
-    await getExpenses({ limit: 10, offset: 5, startDate: "2024-01-01", category: "food" });
+    await getExpenses({
+      limit: 10,
+      offset: 5,
+      startDate: "2024-01-01",
+      category: "food",
+      collapseTransferPairs: true,
+    });
     const url = vi.mocked(fetch).mock.calls[0][0] as string;
     expect(url).toContain("limit=10");
     expect(url).toContain("offset=5");
     expect(url).toContain("start_date=2024-01-01");
     expect(url).toContain("category=food");
+    expect(url).toContain("collapse_transfer_pairs=true");
   });
 });
 

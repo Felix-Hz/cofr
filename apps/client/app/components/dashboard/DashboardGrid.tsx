@@ -27,11 +27,6 @@ import type { DashboardWidget } from "~/lib/schemas";
 import { WidgetDndShell } from "./WidgetDndShell";
 import { WidgetMotionCard } from "./WidgetMotionCard";
 
-/**
- * Top-level grid runtime. Owns the DndContext so dnd-kit sensors are only
- * active while the user is editing, and owns the layout animation wrapper
- * that gives widgets their iOS-style reflow.
- */
 export function DashboardGrid({
   widgets,
   isEditMode,
@@ -117,9 +112,9 @@ export function DashboardGrid({
   const gridStyle: React.CSSProperties = {
     display: "grid",
     gridTemplateColumns: `repeat(${renderColumns}, minmax(0, 1fr))`,
-    gridAutoRows: isMobileGrid ? "72px" : "96px",
-    gridTemplateRows: `repeat(${rowCount}, ${isMobileGrid ? 72 : 96}px)`,
-    gap: isMobileGrid ? "0.75rem" : "1rem",
+    gridAutoRows: isMobileGrid ? "84px" : "96px",
+    gridTemplateRows: `repeat(${rowCount}, ${isMobileGrid ? 84 : 96}px)`,
+    gap: isMobileGrid ? "0.875rem" : "1rem",
   };
 
   return (
@@ -284,7 +279,7 @@ export function DashboardGrid({
                     onRequestRemove={() => onRequestRemove(widget)}
                     onResize={isMobileGrid ? undefined : (action) => onResize(widget, action)}
                   >
-                    <Component widget={widget} isEditMode={isEditMode} />
+                    <Component widget={layoutWidget} isEditMode={isEditMode} />
                   </WidgetDndShell>
                 );
               })}
@@ -302,7 +297,7 @@ export function DashboardGrid({
               return (
                 <div style={widgetGridStyle(activeDisplayWidget ?? activeWidget)}>
                   <WidgetMotionCard isEditMode isDragging>
-                    <Component widget={activeWidget} isEditMode />
+                    <Component widget={activeDisplayWidget ?? activeWidget} isEditMode />
                   </WidgetMotionCard>
                 </div>
               );

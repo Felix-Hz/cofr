@@ -1,11 +1,8 @@
 import { useDashboardData } from "~/lib/dashboard/data-context";
+import type { WidgetRenderProps } from "~/lib/dashboard/registry";
 import { formatCurrency } from "~/lib/utils";
 
-/**
- * The combined 4-up overview shipped in every new user's default layout.
- * Designed to stay readable even at col_span=12, row_span=1.
- */
-export function PeriodStats4UpWidget() {
+export function PeriodStats4UpWidget({ widget }: WidgetRenderProps) {
   const { periodStats } = useDashboardData();
   const net = periodStats.total_income - periodStats.total_spent;
   const netPct =
@@ -14,6 +11,7 @@ export function PeriodStats4UpWidget() {
     periodStats.total_income > 0
       ? (periodStats.savings_net_change / periodStats.total_income) * 100
       : 0;
+  const isCompact = widget.row_span <= 1;
   const cells: Array<{
     label: string;
     value: string;
@@ -52,14 +50,21 @@ export function PeriodStats4UpWidget() {
   return (
     <div className="grid h-full grid-cols-2 divide-x divide-y divide-edge-default sm:grid-cols-4 sm:divide-y-0">
       {cells.map((cell) => (
-        <div key={cell.label} className="flex flex-col justify-center gap-1 px-5 py-4">
+        <div
+          key={cell.label}
+          className={`flex flex-col justify-center ${isCompact ? "gap-1 px-4 py-3" : "gap-1 px-5 py-4"}`}
+        >
           <span
             className={`text-[11px] font-semibold uppercase tracking-wider ${toneLabel[cell.tone]}`}
           >
             {cell.label}
           </span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold tabular-nums text-content-primary sm:text-2xl">
+          <div
+            className={`flex ${isCompact ? "flex-col items-start gap-0.5" : "items-baseline gap-2"}`}
+          >
+            <span
+              className={`font-bold tabular-nums text-content-primary ${isCompact ? "text-lg leading-tight sm:text-xl" : "text-xl sm:text-2xl"}`}
+            >
               {cell.value}
             </span>
             {cell.trailing && (

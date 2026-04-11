@@ -1,10 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "~/lib/utils";
 
-/**
- * Shared shell for all single-metric stat widgets. Keeps typography,
- * padding, and iconography consistent so composing them feels coherent.
- */
 export function StatCardBase({
   label,
   value,
@@ -28,21 +24,25 @@ export function StatCardBase({
   }[tone];
 
   return (
-    <div className="flex h-full flex-col justify-between p-5">
+    <div className="flex h-full min-h-0 flex-col justify-between overflow-hidden px-4 py-3.5">
       <div
         className={cn(
-          "flex items-center gap-2 text-xs font-medium uppercase tracking-wider",
+          "flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] leading-none",
           toneStyles,
         )}
       >
         <span className="inline-flex h-4 w-4 items-center justify-center">{icon}</span>
         {label}
       </div>
-      <div className="mt-3 flex items-end justify-between gap-3">
-        <div className="text-2xl font-bold tabular-nums text-content-primary">{value}</div>
+      <div className="mt-2.5 flex min-w-0 items-end justify-between gap-2">
+        <div className="min-w-0 truncate text-[clamp(1.7rem,2.1vw,2.15rem)] font-bold leading-none tabular-nums text-content-primary">
+          {value}
+        </div>
         {trailing}
       </div>
-      {footnote && <p className="mt-2 text-[11px] text-content-tertiary">{footnote}</p>}
+      {footnote && (
+        <p className="mt-1.5 truncate text-[10px] leading-none text-content-tertiary">{footnote}</p>
+      )}
     </div>
   );
 }

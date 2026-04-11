@@ -11,10 +11,6 @@ import { StatSavingsRateWidget } from "./StatSavingsRateWidget";
 import { StatSpentWidget } from "./StatSpentWidget";
 import { TransactionsWidget } from "./TransactionsWidget";
 
-/**
- * Registers every widget component at module-load time. Import this once
- * from the dashboard route so the registry is warm before any widget renders.
- */
 let registered = false;
 
 export function ensureWidgetsRegistered(): void {

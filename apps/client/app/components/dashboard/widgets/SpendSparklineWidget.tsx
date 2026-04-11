@@ -1,18 +1,15 @@
 import { useId, useMemo } from "react";
 import { useDashboardData } from "~/lib/dashboard/data-context";
+import type { WidgetRenderProps } from "~/lib/dashboard/registry";
 import { formatCurrency } from "~/lib/utils";
 
 const VIEWBOX_W = 320;
 const VIEWBOX_H = 64;
 const PAD = 4;
-
-/**
- * Minimalist daily-spend sparkline. SVG polyline + gradient fill, no chart
- * library, so it stays cheap at any size.
- */
-export function SpendSparklineWidget() {
+export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
   const { sparkline } = useDashboardData();
   const gradientId = useId();
+  const isCompact = widget.row_span <= 2;
   const { path, areaPath, total, peak, latest, average, change, changeTone, startLabel, endLabel } =
     useMemo(() => {
       const points = sparkline.points;
@@ -58,9 +55,9 @@ export function SpendSparklineWidget() {
     }, [sparkline]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+    <div className={`flex h-full flex-col overflow-hidden ${isCompact ? "p-3" : "p-4"}`}>
+      <div className={`flex items-start ${isCompact ? "gap-2.5" : "justify-between gap-4"}`}>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-content-tertiary">
             <span className="inline-flex h-5 w-5 items-center justify-center rounded-sm border border-edge-default bg-surface-elevated text-content-secondary">
               <svg
@@ -75,12 +72,14 @@ export function SpendSparklineWidget() {
             </span>
             Spend pulse
           </div>
-          <div className="mt-3 flex items-end gap-3">
-            <div className="text-2xl font-semibold tracking-tight text-content-heading tabular-nums">
+          <div className={`flex items-end gap-2 ${isCompact ? "mt-1.5" : "mt-3"}`}>
+            <div
+              className={`font-semibold tracking-tight text-content-heading tabular-nums ${isCompact ? "text-[1.75rem] leading-none" : "text-2xl"}`}
+            >
               {formatCurrency(latest, sparkline.currency, true, 0)}
             </div>
             <span
-              className={`mb-0.5 inline-flex items-center rounded-sm px-2 py-0.5 text-[11px] font-medium tabular-nums ${
+              className={`inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-medium leading-none tabular-nums ${
                 changeTone === "up"
                   ? "bg-negative-bg text-negative-text"
                   : changeTone === "down"
@@ -92,25 +91,37 @@ export function SpendSparklineWidget() {
               {formatCurrency(change, sparkline.currency, true, 0)}
             </span>
           </div>
-          <div className="mt-1 text-[11px] text-content-tertiary">
+          <div
+            className={`text-content-tertiary ${isCompact ? "mt-1 truncate text-[9px] leading-tight" : "mt-1 text-[11px]"}`}
+          >
             Latest day vs first day in range
           </div>
         </div>
 
-        <div className="grid shrink-0 gap-2 text-right">
-          <div className="rounded-md border border-edge-default bg-surface-elevated/80 px-3 py-2">
+        <div
+          className={`shrink-0 text-right ${isCompact ? "grid w-[88px] gap-1.5" : "grid gap-2"}`}
+        >
+          <div
+            className={`rounded-md border border-edge-default bg-surface-elevated/80 ${isCompact ? "px-2.5 py-1.5" : "px-3 py-2"}`}
+          >
             <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-content-tertiary">
               Peak
             </div>
-            <div className="mt-1 text-sm font-semibold text-content-primary tabular-nums">
+            <div
+              className={`font-semibold text-content-primary tabular-nums ${isCompact ? "mt-0.5 text-[12px]" : "mt-1 text-sm"}`}
+            >
               {formatCurrency(peak, sparkline.currency, true, 0)}
             </div>
           </div>
-          <div className="rounded-md border border-edge-default bg-surface-elevated/80 px-3 py-2">
+          <div
+            className={`rounded-md border border-edge-default bg-surface-elevated/80 ${isCompact ? "px-2.5 py-1.5" : "px-3 py-2"}`}
+          >
             <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-content-tertiary">
               Avg
             </div>
-            <div className="mt-1 text-sm font-semibold text-content-primary tabular-nums">
+            <div
+              className={`font-semibold text-content-primary tabular-nums ${isCompact ? "mt-0.5 text-[12px]" : "mt-1 text-sm"}`}
+            >
               {formatCurrency(average, sparkline.currency, true, 0)}
             </div>
           </div>
@@ -122,10 +133,18 @@ export function SpendSparklineWidget() {
           No spend yet
         </div>
       ) : (
-        <div className="relative mt-4 flex min-h-0 flex-1 flex-col">
-          <div className="relative flex-1 overflow-hidden rounded-md border border-edge-default bg-surface-elevated/65 px-3 py-3">
-            <div className="pointer-events-none absolute inset-x-3 top-1/2 border-t border-dashed border-edge-default/70" />
-            <div className="pointer-events-none absolute inset-x-3 bottom-3 border-t border-edge-default/55" />
+        <div className={`relative flex min-h-0 flex-1 flex-col ${isCompact ? "mt-2" : "mt-4"}`}>
+          <div
+            className={`relative overflow-hidden rounded-md border border-edge-default bg-surface-elevated/65 ${
+              isCompact ? "h-[68px] px-2 py-2" : "flex-1 px-3 py-3"
+            }`}
+          >
+            <div
+              className={`pointer-events-none absolute top-1/2 border-t border-dashed border-edge-default/70 ${isCompact ? "inset-x-2" : "inset-x-3"}`}
+            />
+            <div
+              className={`pointer-events-none absolute border-t border-edge-default/55 ${isCompact ? "bottom-2 inset-x-2" : "bottom-3 inset-x-3"}`}
+            />
             <svg
               viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
               preserveAspectRatio="none"
@@ -149,16 +168,26 @@ export function SpendSparklineWidget() {
             </svg>
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.2em] text-content-tertiary">
+          <div
+            className={`flex items-center justify-between font-medium uppercase tracking-[0.2em] text-content-tertiary ${
+              isCompact ? "mt-1 text-[9px]" : "mt-2 text-[10px]"
+            }`}
+          >
             <span>{startLabel}</span>
             <span>{endLabel}</span>
           </div>
         </div>
       )}
 
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-edge-default/80 pt-3">
-        <div className="text-[11px] text-content-tertiary">Range total</div>
-        <div className="text-sm font-semibold text-content-primary tabular-nums">
+      <div
+        className={`flex items-center justify-between gap-3 border-t border-edge-default/80 ${isCompact ? "mt-2 pt-2" : "mt-3 pt-3"}`}
+      >
+        <div className={`${isCompact ? "text-[10px]" : "text-[11px]"} text-content-tertiary`}>
+          Range total
+        </div>
+        <div
+          className={`font-semibold text-content-primary tabular-nums ${isCompact ? "text-[12px]" : "text-sm"}`}
+        >
           {formatCurrency(total, sparkline.currency, true, 0)}
         </div>
       </div>

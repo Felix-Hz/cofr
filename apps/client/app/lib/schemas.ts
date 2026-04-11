@@ -84,6 +84,7 @@ export const ExpenseSchema = z.object({
   account_name: z.string(),
   is_transfer: z.boolean().default(false),
   linked_transaction_id: z.string().nullable().optional(),
+  linked_account_name: z.string().nullable().optional(),
   transfer_direction: z.string().nullable().optional(),
 });
 

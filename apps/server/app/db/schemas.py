@@ -91,6 +91,7 @@ class ExpenseSchema(BaseModel):
     account_name: str
     is_transfer: bool = False
     linked_transaction_id: str | None = None
+    linked_account_name: str | None = None
     transfer_direction: str | None = None
 
 

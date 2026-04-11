@@ -98,6 +98,7 @@ export async function clientLoader({ request }: { request: Request }) {
       category: category || undefined,
       minAmount: minAmount ? Number(minAmount) : undefined,
       maxAmount: maxAmount ? Number(maxAmount) : undefined,
+      collapseTransferPairs: true,
     }),
     getRangeStats(startDate + "T00:00:00", endDate + "T23:59:59", currency),
     getLifetimeStats(currency),
@@ -305,7 +306,6 @@ export default function Dashboard() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [draftSpaces.length, navigateSpace]);
 
-  // --- URL helpers ---
   const buildUrl = useCallback(
     (overrides: Record<string, string | number | undefined>) => {
       const params = new URLSearchParams();
@@ -403,7 +403,6 @@ export default function Dashboard() {
     [navigate, buildUrl],
   );
 
-  // --- CRUD ---
   const handleAdd = () => {
     setSelectedExpense(null);
     setIsFormModalOpen(true);
@@ -482,7 +481,6 @@ export default function Dashboard() {
     }
   };
 
-  // --- Layout mutation ---
   const updateDraftLayout = useCallback(
     (updater: (spaces: DashboardSpace[]) => DashboardSpace[]) => {
       const nextSpaces = normalizeDashboardSpaces(updater(draftSpacesRef.current));
@@ -724,7 +722,231 @@ export default function Dashboard() {
     <DashboardDataProvider value={dashboardData}>
       <div className="space-y-6 pb-24">
         {/* ─── Header ─── */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="sm:hidden">
+          <div className="dashboard-ambient overflow-hidden rounded-[var(--radius-xl)] border border-edge-default bg-surface-primary p-3 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.3)]">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-content-tertiary">
+                  Financial overview
+                </div>
+                <div className="mt-2 flex min-w-0 items-center gap-2">
+                  {showArrows && (
+                    <ToolbarButton
+                      label="Previous period"
+                      onClick={goToPrev}
+                      className="h-8 w-8 rounded-md"
+                      icon={
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 19l-7-7 7-7"
+                          />
+                        </svg>
+                      }
+                    />
+                  )}
+
+                  <h2
+                    className={`min-w-0 truncate font-bold tracking-tight text-content-heading ${
+                      periodLabel.length > (showArrows ? 16 : 22) ? "text-lg" : "text-[1.4rem]"
+                    }`}
+                  >
+                    {periodLabel}
+                  </h2>
+
+                  {showArrows && (
+                    <ToolbarButton
+                      label="Next period"
+                      onClick={goToNext}
+                      className="h-8 w-8 rounded-md"
+                      icon={
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      }
+                    />
+                  )}
+                </div>
+              </div>
+
+              <Tooltip content={isEditMode ? "Done editing" : "Edit dashboard"}>
+                <button
+                  type="button"
+                  aria-label={isEditMode ? "Exit edit mode" : "Edit dashboard"}
+                  onClick={handleToggleEditMode}
+                  className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border transition-[background-color,color,border-color] duration-200 ${
+                    isEditMode
+                      ? "border-transparent bg-emerald text-white hover:bg-emerald-hover"
+                      : "border-edge-strong bg-surface-elevated text-content-primary hover:bg-surface-hover"
+                  }`}
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                </button>
+              </Tooltip>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2 rounded-lg border border-edge-default bg-surface-elevated p-1">
+              <ToolbarButton
+                label="Export data"
+                onClick={() => setIsExportModalOpen(true)}
+                className="h-9 w-9 rounded-md border-transparent"
+                icon={
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                }
+              />
+
+              <div className="relative">
+                <Tooltip content="Filters & controls">
+                  <button
+                    type="button"
+                    ref={mobileControlsToggleRef}
+                    onClick={() => setIsControlsOpen(!isControlsOpen)}
+                    className={`relative flex h-9 w-9 items-center justify-center rounded-md transition-[background-color,color] duration-200 ${
+                      isControlsOpen
+                        ? "bg-emerald text-white"
+                        : "text-content-tertiary hover:bg-surface-hover hover:text-content-primary"
+                    }`}
+                    aria-label="Filters & controls"
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="4" y1="7" x2="20" y2="7" />
+                      <line x1="4" y1="12" x2="20" y2="12" />
+                      <line x1="4" y1="17" x2="20" y2="17" />
+                      <circle cx="8" cy="7" r="2" fill="currentColor" />
+                      <circle cx="16" cy="12" r="2" fill="currentColor" />
+                      <circle cx="10" cy="17" r="2" fill="currentColor" />
+                    </svg>
+                    {hasActiveFilters && (
+                      <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-accent" />
+                    )}
+                  </button>
+                </Tooltip>
+
+                <ControlsPanel
+                  isOpen={isControlsOpen}
+                  onClose={() => setIsControlsOpen(false)}
+                  preset={preset}
+                  onPresetChange={handlePresetChange}
+                  currency={currentCurrency}
+                  onCurrencyChange={handleCurrencyChange}
+                  customStart={customStart}
+                  customEnd={customEnd}
+                  onCustomStartChange={handleCustomStartChange}
+                  onCustomEndChange={handleCustomEndChange}
+                  currencies={CURRENCIES}
+                  categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+                  category={currentCategory}
+                  onCategoryChange={handleCategoryFilterChange}
+                  minAmount={currentMinAmount}
+                  onMinAmountChange={handleMinAmountChange}
+                  maxAmount={currentMaxAmount}
+                  onMaxAmountChange={handleMaxAmountChange}
+                  hasActiveFilters={hasActiveFilters}
+                  onClearFilters={clearFilters}
+                />
+              </div>
+
+              <ToolbarButton
+                label="Transfer between accounts"
+                onClick={handleTransfer}
+                className="h-9 w-9 rounded-md border-transparent text-accent hover:bg-accent-soft-bg"
+                icon={
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
+                  </svg>
+                }
+              />
+
+              <button
+                type="button"
+                aria-label="Add an expense"
+                onClick={handleAdd}
+                className="ml-auto inline-flex h-9 items-center gap-2 rounded-md bg-emerald px-3.5 text-sm font-medium text-white transition-[background-color] duration-200 hover:bg-emerald-hover"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                <span>Add</span>
+              </button>
+            </div>
+          </div>
+
+          {!isEditMode && (
+            <div className="mt-3">
+              <DashboardSpacesBar
+                spaces={draftSpaces}
+                activeSpaceId={activeSpaceId}
+                isEditMode={false}
+                onSelectSpace={setActiveSpaceId}
+                onPrevSpace={() => navigateSpace(-1)}
+                onNextSpace={() => navigateSpace(1)}
+                onRenameActiveSpace={handleRenameActiveSpace}
+                onAddSpace={handleAddSpace}
+                onSetDefaultSpace={handleSetDefaultSpace}
+                onRequestDeleteActiveSpace={() => {
+                  if (!activeSpace || draftSpaces.length <= 1) return;
+                  setPendingSpaceRemoval(activeSpace);
+                }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="hidden flex-col gap-3 sm:flex sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-center justify-between gap-2 sm:justify-start sm:gap-4">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               {showArrows && (
@@ -794,162 +1016,6 @@ export default function Dashboard() {
                 />
               </div>
             )}
-
-            <div className="flex items-center gap-2 sm:hidden">
-              <div className="flex min-w-0 items-center justify-center rounded-lg border border-edge-default bg-surface-primary p-0.5 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.35)]">
-                <ToolbarButton
-                  label="Export data"
-                  onClick={() => setIsExportModalOpen(true)}
-                  className="h-[30px] w-[30px] rounded-sm border-transparent"
-                  icon={
-                    <svg
-                      className="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                  }
-                />
-
-                <div className="relative">
-                  <Tooltip content="Filters & controls">
-                    <button
-                      type="button"
-                      ref={mobileControlsToggleRef}
-                      onClick={() => setIsControlsOpen(!isControlsOpen)}
-                      className={`relative flex h-[30px] w-[30px] items-center justify-center rounded-sm transition-[background-color,color] duration-200 ${
-                        isControlsOpen
-                          ? "bg-emerald text-white"
-                          : "text-content-tertiary hover:bg-surface-hover hover:text-content-primary"
-                      }`}
-                      aria-label="Filters & controls"
-                    >
-                      <svg
-                        className="h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="4" y1="7" x2="20" y2="7" />
-                        <line x1="4" y1="12" x2="20" y2="12" />
-                        <line x1="4" y1="17" x2="20" y2="17" />
-                        <circle cx="8" cy="7" r="2" fill="currentColor" />
-                        <circle cx="16" cy="12" r="2" fill="currentColor" />
-                        <circle cx="10" cy="17" r="2" fill="currentColor" />
-                      </svg>
-                      {hasActiveFilters && (
-                        <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-accent" />
-                      )}
-                    </button>
-                  </Tooltip>
-
-                  <ControlsPanel
-                    isOpen={isControlsOpen}
-                    onClose={() => setIsControlsOpen(false)}
-                    toggleRef={mobileControlsToggleRef}
-                    preset={preset}
-                    onPresetChange={handlePresetChange}
-                    currency={currentCurrency}
-                    onCurrencyChange={handleCurrencyChange}
-                    customStart={customStart}
-                    customEnd={customEnd}
-                    onCustomStartChange={handleCustomStartChange}
-                    onCustomEndChange={handleCustomEndChange}
-                    currencies={CURRENCIES}
-                    categories={categories.map((c) => ({ id: c.id, name: c.name }))}
-                    category={currentCategory}
-                    onCategoryChange={handleCategoryFilterChange}
-                    minAmount={currentMinAmount}
-                    onMinAmountChange={handleMinAmountChange}
-                    maxAmount={currentMaxAmount}
-                    onMaxAmountChange={handleMaxAmountChange}
-                    hasActiveFilters={hasActiveFilters}
-                    onClearFilters={clearFilters}
-                  />
-                </div>
-
-                <ToolbarButton
-                  label="Transfer between accounts"
-                  onClick={handleTransfer}
-                  className="h-[30px] w-[30px] rounded-sm border-transparent text-accent hover:bg-accent-soft-bg"
-                  icon={
-                    <svg
-                      className="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
-                      />
-                    </svg>
-                  }
-                />
-              </div>
-
-              <Tooltip content={isEditMode ? "Done editing" : "Edit dashboard"}>
-                <button
-                  type="button"
-                  aria-label={isEditMode ? "Exit edit mode" : "Edit dashboard"}
-                  onClick={handleToggleEditMode}
-                  className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border transition-[background-color,color,border-color] duration-200 ${
-                    isEditMode
-                      ? "border-transparent bg-emerald text-white hover:bg-emerald-hover"
-                      : "border-edge-strong bg-surface-primary text-content-primary hover:bg-surface-hover"
-                  }`}
-                >
-                  <svg
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </button>
-              </Tooltip>
-
-              <Tooltip content="Add an expense">
-                <button
-                  type="button"
-                  aria-label="Add an expense"
-                  onClick={handleAdd}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald text-white transition-[background-color] duration-200 hover:bg-emerald-hover"
-                >
-                  <svg
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </button>
-              </Tooltip>
-            </div>
           </div>
 
           <div className="hidden shrink-0 items-center gap-3 sm:flex">
@@ -1013,7 +1079,6 @@ export default function Dashboard() {
                 <ControlsPanel
                   isOpen={isControlsOpen}
                   onClose={() => setIsControlsOpen(false)}
-                  toggleRef={desktopControlsToggleRef}
                   preset={preset}
                   onPresetChange={handlePresetChange}
                   currency={currentCurrency}
@@ -1149,7 +1214,7 @@ export default function Dashboard() {
         )}
 
         {isEditMode && (
-          <div className="hidden sm:block">
+          <div>
             <DashboardSpacesBar
               spaces={draftSpaces}
               activeSpaceId={activeSpaceId}

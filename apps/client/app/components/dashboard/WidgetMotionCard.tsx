@@ -3,10 +3,6 @@ import type { ReactNode } from "react";
 import { springs } from "~/lib/dashboard/motion-config";
 import { cn } from "~/lib/utils";
 
-/**
- * Inner visual layer for a widget. Lives *inside* WidgetDndShell so we never
- * fight dnd-kit over the outer element's transform property.
- */
 export function WidgetMotionCard({
   children,
   isEditMode,

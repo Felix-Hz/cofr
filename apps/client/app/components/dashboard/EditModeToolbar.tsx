@@ -2,11 +2,6 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect } from "react";
 import { springs } from "~/lib/dashboard/motion-config";
 
-/**
- * Floating pill-shaped toolbar shown while the dashboard is in edit mode.
- * Sits above everything via fixed positioning so it never fights the grid
- * layout and stays thumb-reachable on mobile.
- */
 export function EditModeToolbar({
   isEditMode,
   onExit,

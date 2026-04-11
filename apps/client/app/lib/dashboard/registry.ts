@@ -1,19 +1,6 @@
 import type { ComponentType } from "react";
 import type { DashboardWidget, WidgetType } from "../schemas";
 
-/**
- * Widget contract — every composable widget satisfies this interface.
- *
- * To add a new widget:
- *   1. Implement a component receiving `WidgetRenderProps`.
- *   2. Register it in `WIDGET_REGISTRY` with its metadata + constraints.
- *   3. Add its type string to `WIDGET_TYPES` in `../schemas.ts` (and the
- *      server's `ALLOWED_WIDGET_TYPES` in `dashboard_service.py`).
- *
- * Data is delivered via the shared `DashboardDataContext` so widgets stay
- * pure view components and we avoid N+1 network requests.
- */
-
 export type WidgetSizeConstraint = {
   minColSpan: number;
   maxColSpan: number;
@@ -181,10 +168,6 @@ export type DefaultLayoutWidget = {
   row_span: number;
 };
 
-/**
- * Mirrors the server's DEFAULT_LAYOUT. Used as a fallback when the client
- * boots before the API responds, so first paint never stalls.
- */
 export const DEFAULT_LAYOUT: readonly DefaultLayoutWidget[] = [
   { widget_type: "period_stats_4up", col_x: 0, col_y: 0, col_span: 12, row_span: 1 },
   { widget_type: "net_worth", col_x: 0, col_y: 1, col_span: 4, row_span: 2 },

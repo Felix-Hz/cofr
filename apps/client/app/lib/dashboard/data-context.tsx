@@ -7,13 +7,6 @@ import type {
   SparklineResponse,
 } from "../schemas";
 
-/**
- * Shared data delivered to every widget.
- *
- * Widgets read from this context instead of firing their own network requests,
- * so one period change = one loader round trip. Future widgets can subscribe
- * to additional slices by extending this interface and the dashboard loader.
- */
 export type DashboardData = {
   periodStats: MonthlyStats;
   lifetimeStats: LifetimeStats;

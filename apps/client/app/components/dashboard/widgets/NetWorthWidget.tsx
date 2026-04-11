@@ -1,11 +1,19 @@
 import { useDashboardData } from "~/lib/dashboard/data-context";
+import type { WidgetRenderProps } from "~/lib/dashboard/registry";
 import { formatCurrency } from "~/lib/utils";
 
-export function NetWorthWidget() {
+export function NetWorthWidget({ widget }: WidgetRenderProps) {
   const { lifetimeStats } = useDashboardData();
   const { net_worth, lifetime_income, lifetime_spent, currency } = lifetimeStats;
+  const isCompact = widget.row_span <= 1;
+  const valueClass = isCompact
+    ? "text-[clamp(1.5rem,5.4vw,1.9rem)] leading-none"
+    : "text-[clamp(2rem,8vw,2.75rem)] leading-[0.95] sm:text-4xl";
+
   return (
-    <div className="flex h-full flex-col justify-between gap-4 p-5">
+    <div
+      className={`flex h-full flex-col ${isCompact ? "gap-2.5 p-3.5" : "justify-between gap-4 p-5"}`}
+    >
       <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
         <svg
           className="h-3.5 w-3.5"
@@ -23,17 +31,25 @@ export function NetWorthWidget() {
         Net worth
       </div>
       <div>
-        <div className="text-3xl font-bold tracking-tight text-content-primary tabular-nums sm:text-4xl">
+        <div className={`font-bold tracking-tight text-content-primary tabular-nums ${valueClass}`}>
           {formatCurrency(net_worth, currency, true, 0)}
         </div>
-        <p className="mt-1 text-xs text-content-tertiary">All-time across every account</p>
+        {!isCompact && (
+          <p className="mt-1 max-w-[18rem] text-xs leading-5 text-content-tertiary">
+            All-time across every account
+          </p>
+        )}
       </div>
-      <div className="flex gap-6 text-xs">
+      <div
+        className={`mt-auto grid text-xs ${isCompact ? "grid-cols-2 gap-4 border-t border-edge-default/80 pt-2" : "grid-cols-2 gap-4 sm:flex sm:gap-6"}`}
+      >
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
             In
           </div>
-          <div className="text-sm font-semibold text-positive-text-strong tabular-nums">
+          <div
+            className={`${isCompact ? "text-[13px]" : "text-sm"} font-semibold text-positive-text-strong tabular-nums`}
+          >
             {formatCurrency(lifetime_income, currency, true, 0)}
           </div>
         </div>
@@ -41,7 +57,9 @@ export function NetWorthWidget() {
           <div className="text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
             Out
           </div>
-          <div className="text-sm font-semibold text-negative-text tabular-nums">
+          <div
+            className={`${isCompact ? "text-[13px]" : "text-sm"} font-semibold text-negative-text tabular-nums`}
+          >
             {formatCurrency(lifetime_spent, currency, true, 0)}
           </div>
         </div>

@@ -5,10 +5,6 @@ import { WIDGET_META, WIDGET_ORDER } from "~/lib/dashboard/registry";
 import type { WidgetType } from "~/lib/schemas";
 import { cn } from "~/lib/utils";
 
-/**
- * Drawer listing every registered widget so the user can drop a new one onto
- * the grid. Widgets already present in the active space are marked as added.
- */
 export function WidgetGallery({
   isOpen,
   onClose,

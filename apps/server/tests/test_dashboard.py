@@ -15,9 +15,9 @@ def test_get_layout_lazy_creates_default(client, auth_headers):
 
     widget_types = [w["widget_type"] for w in space["widgets"]]
     assert "period_stats_4up" in widget_types
-    assert "category_pie" in widget_types
     assert "transactions" in widget_types
     assert "net_worth" in widget_types
+    assert "account_balances" in widget_types
 
 
 def test_get_layout_idempotent(client, auth_headers):

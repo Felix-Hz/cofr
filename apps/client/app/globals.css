@@ -690,3 +690,22 @@ h6 {
     transition: none;
   }
 }
+
+@media (max-width: 639px) {
+  .widget-surface {
+    border-radius: var(--radius-lg);
+  }
+
+  .widget-edit-mode {
+    animation: none;
+  }
+
+  .widget-remove-btn {
+    top: 0.625rem;
+    right: 0.625rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    opacity: 1;
+    transform: scale(1);
+  }
+}
