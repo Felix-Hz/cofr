@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { redirect, useNavigate, useSearchParams } from "react-router";
+import { Link, redirect, useNavigate, useSearchParams } from "react-router";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
 import { loginWithEmail, registerWithEmail } from "~/lib/api";
@@ -23,6 +23,8 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const errorParam = searchParams.get("error");
+  const verifiedParam = searchParams.get("verified");
+  const resetParam = searchParams.get("reset");
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -30,10 +32,29 @@ export default function Login() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(errorParam);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = `cofr — ${mode === "signin" ? "Login" : "Sign up"}`;
   }, [mode]);
+
+  useEffect(() => {
+    if (verifiedParam === "true") {
+      setNotice("Email verified. You can sign in now.");
+      return;
+    }
+    if (verifiedParam === "expired") {
+      setError("Your verification link expired. Sign in and resend it from settings.");
+      return;
+    }
+    if (verifiedParam === "invalid") {
+      setError("That verification link is invalid.");
+      return;
+    }
+    if (resetParam === "success") {
+      setNotice("Password updated. Sign in with your new password.");
+    }
+  }, [verifiedParam, resetParam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +71,7 @@ export default function Login() {
       navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+      setNotice(null);
     } finally {
       setLoading(false);
     }
@@ -71,6 +93,12 @@ export default function Login() {
         {error && (
           <div className="bg-negative-bg border border-negative-text text-negative-text px-4 py-3 rounded-md">
             <p className="text-sm">{error}</p>
+          </div>
+        )}
+
+        {notice && (
+          <div className="bg-positive-bg border border-positive-border text-positive-text px-4 py-3 rounded-md">
+            <p className="text-sm">{notice}</p>
           </div>
         )}
 
@@ -152,12 +180,22 @@ export default function Login() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-content-secondary mb-1"
-            >
-              Password
-            </label>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-content-secondary"
+              >
+                Password
+              </label>
+              {mode === "signin" && (
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-medium text-emerald hover:text-emerald-hover transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              )}
+            </div>
             <PasswordInput
               id="password"
               required
@@ -197,6 +235,7 @@ export default function Login() {
                 onClick={() => {
                   setMode("signup");
                   setError(null);
+                  setNotice(null);
                 }}
                 className="font-medium text-emerald hover:text-emerald-hover transition-colors cursor-pointer"
               >
@@ -211,6 +250,7 @@ export default function Login() {
                 onClick={() => {
                   setMode("signin");
                   setError(null);
+                  setNotice(null);
                 }}
                 className="font-medium text-emerald hover:text-emerald-hover transition-colors cursor-pointer"
               >

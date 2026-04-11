@@ -414,6 +414,35 @@ export async function loginWithEmail(email: string, password: string): Promise<{
   return response.json();
 }
 
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/auth/local/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: "Password reset failed" }));
+    throw new ApiError(response.status, error.detail || "Password reset failed");
+  }
+  return response.json();
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/auth/local/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: "Unable to reset password" }));
+    throw new ApiError(response.status, error.detail || "Unable to reset password");
+  }
+  return response.json();
+}
+
 // ── Password Management ──
 
 export async function changePassword(

@@ -11,7 +11,13 @@ from app.email.provider import ConsoleProvider
 from app.email.rate_limit import RateLimiter
 from app.email.service import _hash_email, is_suppressed
 from app.email.templates import render_template
-from app.email.tokens import generate_verification_token, validate_verification_token
+from app.email.tokens import (
+    generate_password_reset_token,
+    generate_verification_token,
+    password_reset_token_matches,
+    validate_password_reset_token,
+    validate_verification_token,
+)
 
 # ── Template rendering ──
 
@@ -29,9 +35,16 @@ def test_welcome_template_contains_name():
     assert "Welcome" in html
 
 
+def test_password_reset_template_contains_link():
+    html = render_template("password_reset", reset_url="https://cofr.cash/reset?token=abc123")
+    assert "https://cofr.cash/reset?token=abc123" in html
+    assert "Reset password" in html
+    assert "1 hour" in html
+
+
 def test_base_template_has_cofr_branding():
     html = render_template("verification", verify_url="https://example.com")
-    assert "Cofr" in html
+    assert "cofr" in html
 
 
 # ── Token generation / validation ──
@@ -49,6 +62,15 @@ def test_token_tampered_raises_bad_signature():
     token = generate_verification_token("user-123", "alice@example.com")
     with pytest.raises(BadSignature):
         validate_verification_token(token + "tampered")
+
+
+def test_password_reset_token_roundtrip():
+    token = generate_password_reset_token("user-123", "alice@example.com", "hashed-password")
+    payload = validate_password_reset_token(token)
+    assert payload["user_id"] == "user-123"
+    assert payload["email"] == "alice@example.com"
+    assert payload["purpose"] == "reset_password"
+    assert password_reset_token_matches("hashed-password", payload) is True
 
 
 def test_token_expired_raises_signature_expired(monkeypatch):
