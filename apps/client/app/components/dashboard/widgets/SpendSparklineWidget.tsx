@@ -99,7 +99,7 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
         </div>
 
         <div
-          className={`shrink-0 text-right ${isCompact ? "grid w-[88px] gap-1.5" : "grid gap-2"}`}
+          className={`shrink-0 text-right ${isCompact ? "hidden w-[88px] gap-1.5 sm:grid" : "grid gap-2"}`}
         >
           <div
             className={`rounded-md border border-edge-default bg-surface-elevated/80 ${isCompact ? "px-2.5 py-1.5" : "px-3 py-2"}`}
@@ -133,10 +133,10 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
           No spend yet
         </div>
       ) : (
-        <div className={`relative flex min-h-0 flex-1 flex-col ${isCompact ? "mt-2" : "mt-4"}`}>
+        <div className={`relative flex min-h-0 flex-1 flex-col ${isCompact ? "mt-1.5" : "mt-4"}`}>
           <div
-            className={`relative overflow-hidden rounded-md border border-edge-default bg-surface-elevated/65 ${
-              isCompact ? "h-[68px] px-2 py-2" : "flex-1 px-3 py-3"
+            className={`relative flex-1 overflow-hidden rounded-md border border-edge-default bg-surface-elevated/65 ${
+              isCompact ? "min-h-[56px] px-2 py-1.5" : "min-h-[72px] px-3 py-3"
             }`}
           >
             <div
@@ -168,22 +168,20 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
             </svg>
           </div>
 
-          <div
-            className={`flex items-center justify-between font-medium uppercase tracking-[0.2em] text-content-tertiary ${
-              isCompact ? "mt-1 text-[9px]" : "mt-2 text-[10px]"
-            }`}
-          >
-            <span>{startLabel}</span>
-            <span>{endLabel}</span>
-          </div>
+          {!isCompact && (
+            <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.2em] text-content-tertiary">
+              <span>{startLabel}</span>
+              <span>{endLabel}</span>
+            </div>
+          )}
         </div>
       )}
 
       <div
-        className={`flex items-center justify-between gap-3 border-t border-edge-default/80 ${isCompact ? "mt-2 pt-2" : "mt-3 pt-3"}`}
+        className={`flex items-center justify-between gap-3 border-t border-edge-default/80 ${isCompact ? "mt-1.5 pt-1.5" : "mt-3 pt-3"}`}
       >
         <div className={`${isCompact ? "text-[10px]" : "text-[11px]"} text-content-tertiary`}>
-          Range total
+          {isCompact ? `${startLabel} – ${endLabel}` : "Range total"}
         </div>
         <div
           className={`font-semibold text-content-primary tabular-nums ${isCompact ? "text-[12px]" : "text-sm"}`}

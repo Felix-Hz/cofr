@@ -84,6 +84,7 @@ class ExpenseSchema(BaseModel):
     category_color_dark: str
     category_type: str
     description: str
+    merchant: str | None = None
     created_at: datetime
     currency: str = Field(pattern="^[A-Z]{3}$")
     is_opening_balance: bool = False
@@ -148,10 +149,75 @@ class SparklineResponse(BaseModel):
     is_converted: bool = False
 
 
+class MonthlyTrendPoint(BaseModel):
+    month: str  # YYYY-MM
+    income: float
+    spent: float
+
+
+class MonthlyTrendResponse(BaseModel):
+    points: list[MonthlyTrendPoint]
+    currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
+    is_converted: bool = False
+
+
+class WeekdayHeatmapCell(BaseModel):
+    weekday: int  # 0=Mon ... 6=Sun
+    week: int  # 0=oldest week in window
+    total: float
+
+
+class WeekdayHeatmapResponse(BaseModel):
+    cells: list[WeekdayHeatmapCell]
+    weeks: int
+    currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
+    is_converted: bool = False
+
+
+class AccountTrendPoint(BaseModel):
+    date: str  # YYYY-MM-DD
+    balance: float
+
+
+class AccountTrendSeries(BaseModel):
+    account_id: str
+    account_name: str
+    account_type: str
+    color: str
+    points: list[AccountTrendPoint]
+
+
+class AccountTrendResponse(BaseModel):
+    series: list[AccountTrendSeries]
+    days: int
+    currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
+    is_converted: bool = False
+
+
+class RecurringCharge(BaseModel):
+    merchant: str
+    amount: float
+    currency: str
+    cadence_days: float  # average spacing between occurrences
+    occurrences: int
+    last_seen: datetime
+    next_expected: datetime | None = None
+    category_name: str | None = None
+    category_color_light: str | None = None
+    category_color_dark: str | None = None
+
+
+class RecurringResponse(BaseModel):
+    charges: list[RecurringCharge]
+    currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
+    is_converted: bool = False
+
+
 class ExpenseCreateRequest(BaseModel):
     amount: float = Field(ge=0)
     category_id: str
     description: str = Field(default="", max_length=360)
+    merchant: str | None = Field(default=None, max_length=120)
     currency: str = Field(default="NZD", pattern="^[A-Z]{3}$")
     created_at: datetime | None = None
     is_opening_balance: bool = False
@@ -162,6 +228,7 @@ class ExpenseUpdateRequest(BaseModel):
     amount: float | None = Field(default=None, ge=0)
     category_id: str | None = None
     description: str | None = Field(default=None, max_length=360)
+    merchant: str | None = Field(default=None, max_length=120)
     currency: str | None = Field(default=None, pattern="^[A-Z]{3}$")
     created_at: datetime | None = None
     is_opening_balance: bool | None = None

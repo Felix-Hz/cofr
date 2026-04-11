@@ -21,7 +21,7 @@ export function PeriodStats4UpWidget({ widget }: WidgetRenderProps) {
       {cells.map((cell) => (
         <div
           key={cell.label}
-          className={`flex flex-col justify-center ${isCompact ? "gap-1 px-4 py-3" : "gap-1 px-5 py-4"}`}
+          className={`flex flex-col justify-center sm:justify-between ${isCompact ? "gap-1 px-4 py-3" : "gap-1 px-5 py-4"}`}
         >
           <span
             className={`text-[11px] font-semibold uppercase tracking-wider ${toneLabel[cell.tone]}`}

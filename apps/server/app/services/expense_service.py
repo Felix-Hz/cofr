@@ -630,6 +630,7 @@ class ExpenseService:
             category_id=data.category_id,
             account_id=account_id,
             notes=data.description,
+            merchant=(data.merchant or None),
             timestamp=created_at,
             currency=data.currency,
             is_opening_balance=data.is_opening_balance,
@@ -658,6 +659,8 @@ class ExpenseService:
             transaction.category_id = data.category_id
         if data.description is not None:
             transaction.notes = data.description
+        if data.merchant is not None:
+            transaction.merchant = data.merchant or None
         if data.currency is not None:
             transaction.currency = data.currency
         if data.created_at is not None:
@@ -721,6 +724,7 @@ class ExpenseService:
             category_color_dark=cat.color_dark if cat else "#9CA3AF",
             category_type=cat.type if cat else "transfer",
             description=transaction.notes or "",
+            merchant=transaction.merchant,
             created_at=transaction.timestamp,
             currency=transaction.currency,
             is_opening_balance=transaction.is_opening_balance,

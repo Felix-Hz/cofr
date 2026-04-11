@@ -140,6 +140,7 @@ class Transaction(Base):
     amount: Mapped[float] = mapped_column(Float)
     currency: Mapped[str] = mapped_column(String, default="NZD", index=True)
     notes: Mapped[str] = mapped_column(String, default="")
+    merchant: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
     timestamp: Mapped[datetime] = mapped_column(
         DateTime(timezone=True)
     )  # user-controlled: when the transaction happened

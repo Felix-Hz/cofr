@@ -1,6 +1,7 @@
 import { registerWidgets } from "~/lib/dashboard/registry";
 import { AccountBalancesWidget } from "./AccountBalancesWidget";
 import { CategoryPieWidget } from "./CategoryPieWidget";
+import { IncomeSpendCompareWidget } from "./IncomeSpendCompareWidget";
 import { NetWorthWidget } from "./NetWorthWidget";
 import { PeriodStats4UpWidget } from "./PeriodStats4UpWidget";
 import { SavingsInvestmentWidget } from "./SavingsInvestmentWidget";
@@ -9,6 +10,7 @@ import { StatIncomeWidget } from "./StatIncomeWidget";
 import { StatNetWidget } from "./StatNetWidget";
 import { StatSavingsRateWidget } from "./StatSavingsRateWidget";
 import { StatSpentWidget } from "./StatSpentWidget";
+import { TopCategoriesBarsWidget } from "./TopCategoriesBarsWidget";
 import { TransactionsWidget } from "./TransactionsWidget";
 
 let registered = false;
@@ -22,6 +24,8 @@ export function ensureWidgetsRegistered(): void {
     stat_net: StatNetWidget,
     stat_savings_rate: StatSavingsRateWidget,
     category_pie: CategoryPieWidget,
+    top_categories_bars: TopCategoriesBarsWidget,
+    income_spend_compare: IncomeSpendCompareWidget,
     account_balances: AccountBalancesWidget,
     transactions: TransactionsWidget,
     net_worth: NetWorthWidget,

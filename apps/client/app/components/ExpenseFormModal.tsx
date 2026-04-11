@@ -30,6 +30,7 @@ export default function ExpenseFormModal({
   const [categoryId, setCategoryId] = useState("");
   const [accountId, setAccountId] = useState("");
   const [description, setDescription] = useState("");
+  const [merchant, setMerchant] = useState("");
   const [currency, setCurrency] = useState("NZD");
   const [date, setDate] = useState("");
   const [isOpeningBalance, setIsOpeningBalance] = useState(false);
@@ -63,6 +64,7 @@ export default function ExpenseFormModal({
       setCategoryId(expense.category_id || defaultExpenseCategoryId);
       setAccountId(expense.account_id || defaultAccountId);
       setDescription(expense.description);
+      setMerchant(expense.merchant ?? "");
       setCurrency(expense.currency);
       setIsOpeningBalance(expense.is_opening_balance);
       setShowDeleteConfirm(false);
@@ -77,6 +79,7 @@ export default function ExpenseFormModal({
       setCategoryId(defaultExpenseCategoryId);
       setAccountId(defaultAccountId);
       setDescription("");
+      setMerchant("");
       setCurrency("NZD");
       setIsOpeningBalance(false);
       setShowDeleteConfirm(false);
@@ -102,6 +105,7 @@ export default function ExpenseFormModal({
       amount: parseFloat(amount),
       category_id: categoryId,
       description,
+      merchant: merchant.trim() ? merchant.trim() : null,
       currency,
       created_at: date ? new Date(date) : undefined,
       is_opening_balance: isOpeningBalance,
@@ -288,23 +292,43 @@ export default function ExpenseFormModal({
                 )}
               </div>
 
-              {/* Description */}
-              <div>
-                <label
-                  htmlFor="description"
-                  className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
-                >
-                  Description
-                </label>
-                <input
-                  type="text"
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  maxLength={360}
-                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                  placeholder="Optional"
-                />
+              {/* Merchant + Description (stacked on mobile, side-by-side on desktop) */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+                <div className="sm:w-[42%]">
+                  <label
+                    htmlFor="merchant"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                  >
+                    Merchant
+                  </label>
+                  <input
+                    type="text"
+                    id="merchant"
+                    value={merchant}
+                    onChange={(e) => setMerchant(e.target.value)}
+                    maxLength={120}
+                    autoComplete="off"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    placeholder="e.g. Starbucks"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <label
+                    htmlFor="description"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                  >
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    maxLength={360}
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    placeholder="Optional"
+                  />
+                </div>
               </div>
 
               {/* Date */}
