@@ -9,7 +9,6 @@ export function WidgetDndShell({
   widget,
   layoutWidget,
   isEditMode,
-  isHero,
   onRequestRemove,
   onResize,
   children,
@@ -17,7 +16,6 @@ export function WidgetDndShell({
   widget: DashboardWidget;
   layoutWidget?: DashboardWidget;
   isEditMode: boolean;
-  isHero?: boolean;
   onRequestRemove: () => void;
   onResize?: (action: "narrower" | "wider" | "shorter" | "taller") => void;
   children: ReactNode;
@@ -57,7 +55,7 @@ export function WidgetDndShell({
       tabIndex={isEditMode ? 0 : -1}
       onKeyDown={handleKeyDown}
     >
-      <WidgetMotionCard isEditMode={isEditMode} isDragging={isDragging} isHero={isHero}>
+      <WidgetMotionCard isEditMode={isEditMode} isDragging={isDragging}>
         {children}
       </WidgetMotionCard>
 

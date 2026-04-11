@@ -7,13 +7,11 @@ export function WidgetMotionCard({
   children,
   isEditMode,
   isDragging,
-  isHero,
   className,
 }: {
   children: ReactNode;
   isEditMode: boolean;
   isDragging: boolean;
-  isHero?: boolean;
   className?: string;
 }) {
   return (
@@ -22,7 +20,6 @@ export function WidgetMotionCard({
       transition={isDragging ? springs.lift : springs.layout}
       className={cn(
         "widget-surface relative h-full w-full overflow-hidden",
-        isHero && "widget-surface--hero",
         isEditMode && "widget-edit-mode",
         isDragging && "widget-dragging",
         className,

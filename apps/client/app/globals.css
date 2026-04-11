@@ -531,17 +531,6 @@ h6 {
   border-color: rgba(16, 185, 129, 0.5);
 }
 
-.drop-placeholder {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 8%, transparent),
-    color-mix(in srgb, var(--accent) 3%, transparent)
-  );
-  border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, transparent);
-  border-radius: var(--radius-xl);
-  animation: dropPulse 1.6s ease-in-out infinite;
-}
-
 .drag-grid-overlay {
   z-index: 0;
 }
@@ -608,16 +597,6 @@ h6 {
   }
 }
 
-@keyframes dropPulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-
 .edit-toolbar {
   background: color-mix(in srgb, var(--surface-primary) 92%, transparent);
   backdrop-filter: blur(20px) saturate(1.4);
@@ -675,16 +654,8 @@ h6 {
   border-color: #b91c1c;
 }
 
-.widget-surface--hero .widget-remove-btn,
-.widget-surface--hero + .widget-remove-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .widget-edit-mode,
-  .drop-placeholder,
   .widget-remove-btn {
     animation: none;
     transition: none;

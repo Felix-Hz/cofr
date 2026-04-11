@@ -1,5 +1,7 @@
 import type { DashboardWidget, WidgetType } from "../schemas";
-import { clampWidgetSize, type DefaultLayoutWidget } from "./registry";
+import { clampWidgetSize } from "./registry";
+
+type GridSlot = Pick<DashboardWidget, "widget_type" | "col_x" | "col_y" | "col_span" | "row_span">;
 
 export const GRID_COLUMNS = 12;
 export const MOBILE_GRID_COLUMNS = 6;
@@ -53,11 +55,15 @@ export function repackWidgetsForColumns<
   };
 
   for (const widget of widgets) {
-    const { colSpan, rowSpan } = clampWidgetSize(
+    const clamped = clampWidgetSize(
       widget.widget_type,
       Math.min(columns, widget.col_span),
       widget.row_span,
     );
+    // minColSpan from the registry can exceed `columns` (e.g. a 6-col widget on a future
+    // narrower breakpoint). Cap against grid width so the placer loop can terminate.
+    const colSpan = Math.min(columns, clamped.colSpan);
+    const rowSpan = clamped.rowSpan;
 
     let placedX = 0;
     let placedY = 0;
@@ -102,9 +108,7 @@ export function getMobileRowSpan(type: WidgetType, fallback: number): number {
   return MOBILE_ROW_SPANS[type] ?? fallback;
 }
 
-export function widgetGridStyle(
-  widget: DashboardWidget | DefaultLayoutWidget,
-): React.CSSProperties {
+export function widgetGridStyle(widget: GridSlot): React.CSSProperties {
   return {
     gridColumn: `${widget.col_x + 1} / span ${widget.col_span}`,
     gridRow: `${widget.col_y + 1} / span ${widget.row_span}`,
@@ -112,7 +116,7 @@ export function widgetGridStyle(
 }
 
 /** Bottom-most occupied grid row. */
-export function layoutRowCount(widgets: Array<DashboardWidget | DefaultLayoutWidget>): number {
+export function layoutRowCount(widgets: GridSlot[]): number {
   let max = 0;
   for (const w of widgets) {
     max = Math.max(max, w.col_y + w.row_span);

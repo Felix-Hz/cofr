@@ -537,12 +537,12 @@ export default function Dashboard() {
     setPendingRemoval(null);
     setPendingSpaceRemoval(null);
     setActiveSpaceIdSynced(
-      nextSpaces.find((space) => space.name === activeSpace?.name)?.id ??
+      nextSpaces.find((space) => space.id === activeSpaceId)?.id ??
         nextSpaces.find((space) => space.is_default)?.id ??
         nextSpaces[0]?.id ??
         null,
     );
-  }, [activeSpace?.name, savedSpaces, setActiveSpaceIdSynced, setDraftSpacesSynced]);
+  }, [activeSpaceId, savedSpaces, setActiveSpaceIdSynced, setDraftSpacesSynced]);
 
   const handleToggleEditMode = useCallback(() => {
     if (!isEditMode) {
@@ -681,7 +681,7 @@ export default function Dashboard() {
 
   const handleConfirmRemoveSpace = useCallback(async () => {
     if (!pendingSpaceRemoval) return;
-    const nextSpaces = removeDashboardSpace(draftSpaces, pendingSpaceRemoval.id);
+    const nextSpaces = removeDashboardSpace(draftSpacesRef.current, pendingSpaceRemoval.id);
     setDraftSpacesSynced(nextSpaces);
     setIsDirty(true);
     setLayoutSaveError(null);
@@ -689,7 +689,7 @@ export default function Dashboard() {
     setActiveSpaceIdSynced(
       nextSpaces.find((space) => space.is_default)?.id ?? nextSpaces[0]?.id ?? null,
     );
-  }, [draftSpaces, pendingSpaceRemoval, setActiveSpaceIdSynced, setDraftSpacesSynced]);
+  }, [pendingSpaceRemoval, setActiveSpaceIdSynced, setDraftSpacesSynced]);
 
   const activeTypes = useMemo(() => new Set(widgets.map((w) => w.widget_type)), [widgets]);
 

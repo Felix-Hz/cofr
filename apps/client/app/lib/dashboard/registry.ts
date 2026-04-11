@@ -160,22 +160,6 @@ export const WIDGET_ORDER: readonly WidgetType[] = [
   "transactions",
 ];
 
-export type DefaultLayoutWidget = {
-  widget_type: WidgetType;
-  col_x: number;
-  col_y: number;
-  col_span: number;
-  row_span: number;
-};
-
-export const DEFAULT_LAYOUT: readonly DefaultLayoutWidget[] = [
-  { widget_type: "period_stats_4up", col_x: 0, col_y: 0, col_span: 12, row_span: 1 },
-  { widget_type: "net_worth", col_x: 0, col_y: 1, col_span: 4, row_span: 2 },
-  { widget_type: "savings_investment", col_x: 4, col_y: 1, col_span: 4, row_span: 2 },
-  { widget_type: "account_balances", col_x: 8, col_y: 1, col_span: 4, row_span: 2 },
-  { widget_type: "transactions", col_x: 0, col_y: 3, col_span: 12, row_span: 4 },
-];
-
 type Registry = Record<WidgetType, WidgetDefinition>;
 
 let registryInternal: Registry | null = null;
@@ -202,10 +186,6 @@ export function getRegistry(): Registry {
     );
   }
   return registryInternal;
-}
-
-export function getWidgetMeta(type: WidgetType): WidgetMeta {
-  return WIDGET_META[type];
 }
 
 export function clampWidgetSize(
