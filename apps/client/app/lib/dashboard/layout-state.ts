@@ -1,8 +1,13 @@
 import type { DashboardLayoutUpdate, DashboardSpace, DashboardWidget } from "../schemas";
+import { repackWidgets } from "./grid";
+import { clampWidgetSize } from "./registry";
 
 function cloneWidget(widget: DashboardWidget): DashboardWidget {
+  const nextSize = clampWidgetSize(widget.widget_type, widget.col_span, widget.row_span);
   return {
     ...widget,
+    col_span: nextSize.colSpan,
+    row_span: nextSize.rowSpan,
     config: widget.config ?? null,
   };
 }
@@ -10,7 +15,7 @@ function cloneWidget(widget: DashboardWidget): DashboardWidget {
 export function cloneDashboardSpaces(spaces: DashboardSpace[]): DashboardSpace[] {
   return spaces.map((space) => ({
     ...space,
-    widgets: space.widgets.map(cloneWidget),
+    widgets: repackWidgets(space.widgets.map(cloneWidget)),
   }));
 }
 

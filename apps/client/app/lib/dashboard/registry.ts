@@ -154,7 +154,7 @@ export const WIDGET_META: Record<WidgetType, WidgetMeta> = {
     description: "30-day daily spend sparkline.",
     category: "insights",
     icon: "activity",
-    size: size(6, 1, { minColSpan: 4, minRowSpan: 1, maxRowSpan: 2 }),
+    size: size(6, 2, { minColSpan: 4, minRowSpan: 2, maxRowSpan: 3 }),
     supportsFilterOverride: true,
   },
 };
@@ -191,7 +191,7 @@ export const DEFAULT_LAYOUT: readonly DefaultLayoutWidget[] = [
   { widget_type: "savings_investment", col_x: 6, col_y: 1, col_span: 6, row_span: 2 },
   { widget_type: "category_pie", col_x: 0, col_y: 3, col_span: 6, row_span: 3 },
   { widget_type: "account_balances", col_x: 6, col_y: 3, col_span: 6, row_span: 2 },
-  { widget_type: "spend_sparkline", col_x: 6, col_y: 5, col_span: 6, row_span: 1 },
+  { widget_type: "spend_sparkline", col_x: 6, col_y: 5, col_span: 6, row_span: 2 },
   { widget_type: "transactions", col_x: 0, col_y: 6, col_span: 12, row_span: 4 },
 ];
 

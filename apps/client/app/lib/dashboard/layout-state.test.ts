@@ -30,6 +30,81 @@ describe("normalizeDashboardSpaces", () => {
     expect(spaces.map((space) => space.position)).toEqual([0, 1]);
     expect(spaces.filter((space) => space.is_default).map((space) => space.id)).toEqual(["one"]);
   });
+
+  it("clamps widget spans to current widget constraints", () => {
+    const spaces = normalizeDashboardSpaces([
+      {
+        ...makeSpace("one", "Overview", 0, true),
+        widgets: [
+          {
+            id: "spark",
+            widget_type: "spend_sparkline",
+            col_x: 0,
+            col_y: 0,
+            col_span: 6,
+            row_span: 1,
+            config: null,
+          },
+        ],
+      },
+    ]);
+
+    expect(spaces[0].widgets[0]?.row_span).toBe(2);
+  });
+
+  it("re-packs widgets after span normalization so taller widgets do not overlap following cards", () => {
+    const spaces = normalizeDashboardSpaces([
+      {
+        ...makeSpace("one", "Overview", 0, true),
+        widgets: [
+          {
+            id: "pie",
+            widget_type: "category_pie",
+            col_x: 0,
+            col_y: 3,
+            col_span: 6,
+            row_span: 3,
+            config: null,
+          },
+          {
+            id: "balances",
+            widget_type: "account_balances",
+            col_x: 6,
+            col_y: 3,
+            col_span: 6,
+            row_span: 2,
+            config: null,
+          },
+          {
+            id: "spark",
+            widget_type: "spend_sparkline",
+            col_x: 6,
+            col_y: 5,
+            col_span: 6,
+            row_span: 1,
+            config: null,
+          },
+          {
+            id: "transactions",
+            widget_type: "transactions",
+            col_x: 0,
+            col_y: 6,
+            col_span: 12,
+            row_span: 4,
+            config: null,
+          },
+        ],
+      },
+    ]);
+
+    const spark = spaces[0].widgets.find((widget) => widget.id === "spark");
+    const transactions = spaces[0].widgets.find((widget) => widget.id === "transactions");
+
+    expect(spark?.row_span).toBe(2);
+    expect(transactions?.col_y).toBeGreaterThanOrEqual(
+      (spark?.col_y ?? 0) + (spark?.row_span ?? 0),
+    );
+  });
 });
 
 describe("createDashboardSpace", () => {

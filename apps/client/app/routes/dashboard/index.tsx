@@ -196,10 +196,10 @@ export default function Dashboard() {
   const [isDirty, setIsDirty] = useState(false);
   const [layoutSaveError, setLayoutSaveError] = useState<string | null>(null);
   const [savedSpaces, setSavedSpaces] = useState<DashboardSpace[]>(() =>
-    cloneDashboardSpaces(layout.spaces),
+    normalizeDashboardSpaces(layout.spaces),
   );
   const [draftSpaces, setDraftSpaces] = useState<DashboardSpace[]>(() =>
-    cloneDashboardSpaces(layout.spaces),
+    normalizeDashboardSpaces(layout.spaces),
   );
   const [activeSpaceId, setActiveSpaceId] = useState<string | null>(
     () => layout.spaces.find((space) => space.is_default)?.id ?? layout.spaces[0]?.id ?? null,
@@ -247,7 +247,7 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    const nextSavedSpaces = cloneDashboardSpaces(layout.spaces);
+    const nextSavedSpaces = normalizeDashboardSpaces(layout.spaces);
     setSavedSpaces(nextSavedSpaces);
     if (!isDirtyRef.current) {
       setDraftSpacesSynced(nextSavedSpaces);

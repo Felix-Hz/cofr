@@ -117,8 +117,8 @@ export function DashboardGrid({
   const gridStyle: React.CSSProperties = {
     display: "grid",
     gridTemplateColumns: `repeat(${renderColumns}, minmax(0, 1fr))`,
-    gridAutoRows: isMobileGrid ? "minmax(72px, auto)" : "minmax(96px, auto)",
-    gridTemplateRows: `repeat(${rowCount}, minmax(${isMobileGrid ? 72 : 96}px, auto))`,
+    gridAutoRows: isMobileGrid ? "72px" : "96px",
+    gridTemplateRows: `repeat(${rowCount}, ${isMobileGrid ? 72 : 96}px)`,
     gap: isMobileGrid ? "0.75rem" : "1rem",
   };
 
