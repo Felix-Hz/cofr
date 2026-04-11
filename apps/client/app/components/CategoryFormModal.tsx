@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
+import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import type { Category, CategoryCreate, CategoryUpdate } from "~/lib/schemas";
 import CategoryColorPicker, { COLOR_PRESETS } from "./CategoryColorPicker";
 
@@ -76,6 +77,7 @@ export default function CategoryFormModal({
   };
 
   useBodyScrollLock(isOpen);
+  useModalKeyboardShortcuts({ isOpen, onEscape: onClose });
 
   if (!isOpen) return null;
 

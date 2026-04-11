@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import PasswordInput from "~/components/PasswordInput";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
+import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { deleteUserAccount } from "~/lib/api";
 import { removeToken } from "~/lib/auth";
 
@@ -28,8 +29,6 @@ export default function DeleteAccountModal({
   const [error, setError] = useState<string | null>(null);
 
   useBodyScrollLock(isOpen);
-
-  if (!isOpen) return null;
 
   const reset = () => {
     setStep("choose");
@@ -59,17 +58,42 @@ export default function DeleteAccountModal({
   };
 
   const isConfirmValid = confirmationText === "DELETE" && (!hasLocalAuth || password.length > 0);
+  useModalKeyboardShortcuts({
+    isOpen,
+    onEscape: handleClose,
+    onEnter:
+      step === "choose"
+        ? () => setStep("confirm")
+        : isConfirmValid
+          ? () => void handleConfirm()
+          : undefined,
+    disableEscape: loading,
+    disableEnter: loading,
+    allowEnterFromEditable: true,
+  });
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50">
       <div className="flex h-full items-center justify-center p-4 touch-none">
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={handleClose} />
 
-        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md">
+        <div
+          className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-account-title"
+        >
           {step === "choose" ? (
             <>
               <div className="px-6 pt-6 pb-2">
-                <h3 className="text-lg font-semibold text-content-primary">Delete Account</h3>
+                <h3
+                  id="delete-account-title"
+                  className="text-lg font-semibold text-content-primary"
+                >
+                  Delete Account
+                </h3>
                 <p className="text-sm text-content-tertiary mt-1">
                   Choose how you'd like to proceed
                 </p>
@@ -129,7 +153,10 @@ export default function DeleteAccountModal({
           ) : (
             <>
               <div className="px-6 pt-6 pb-2">
-                <h3 className="text-lg font-semibold text-content-primary">
+                <h3
+                  id="delete-account-title"
+                  className="text-lg font-semibold text-content-primary"
+                >
                   {mode === "soft" ? "Confirm Deactivation" : "Confirm Permanent Deletion"}
                 </h3>
               </div>

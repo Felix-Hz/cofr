@@ -1,16 +1,12 @@
 import { useDashboardData } from "~/lib/dashboard/data-context";
 import { formatCurrency } from "~/lib/utils";
 
-/**
- * Hero-style card showing all-time net worth. Uses the `widget-surface--hero`
- * modifier on the parent shell so the emerald gradient flows through here.
- */
 export function NetWorthWidget() {
   const { lifetimeStats } = useDashboardData();
   const { net_worth, lifetime_income, lifetime_spent, currency } = lifetimeStats;
   return (
-    <div className="flex h-full flex-col justify-between p-6">
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
+    <div className="flex h-full flex-col justify-between gap-4 p-5">
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
         <svg
           className="h-3.5 w-3.5"
           fill="none"
@@ -27,23 +23,25 @@ export function NetWorthWidget() {
         Net worth
       </div>
       <div>
-        <div className="text-4xl font-bold tracking-tight text-white tabular-nums">
+        <div className="text-3xl font-bold tracking-tight text-content-primary tabular-nums sm:text-4xl">
           {formatCurrency(net_worth, currency, true, 0)}
         </div>
-        <p className="mt-1 text-xs text-white/60">All-time across every account</p>
+        <p className="mt-1 text-xs text-content-tertiary">All-time across every account</p>
       </div>
       <div className="flex gap-6 text-xs">
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-white/50">In</div>
-          <div className="text-sm font-semibold text-white tabular-nums">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
+            In
+          </div>
+          <div className="text-sm font-semibold text-positive-text-strong tabular-nums">
             {formatCurrency(lifetime_income, currency, true, 0)}
           </div>
         </div>
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-white/50">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
             Out
           </div>
-          <div className="text-sm font-semibold text-white tabular-nums">
+          <div className="text-sm font-semibold text-negative-text tabular-nums">
             {formatCurrency(lifetime_spent, currency, true, 0)}
           </div>
         </div>

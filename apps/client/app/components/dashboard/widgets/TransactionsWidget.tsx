@@ -3,17 +3,28 @@ import type { Expense } from "~/lib/schemas";
 import { useTheme } from "~/lib/theme";
 import { formatCurrency, formatDate, isPositiveType, truncateText } from "~/lib/utils";
 
-/**
- * Recent-transactions table widget. Pagination is intentionally omitted
- * from the widget itself — dashboard controls still drive the period and
- * slice via URL params, keeping widgets stateless.
- */
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+
 export function TransactionsWidget() {
-  const { expenses, onExpenseEdit } = useDashboardData();
+  const {
+    expenses,
+    expensesLimit,
+    expensesOffset,
+    expensesTotal,
+    onExpenseEdit,
+    onTransactionsPageChange,
+    onTransactionsPageSizeChange,
+  } = useDashboardData();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
   const displayExpenses = expenses.filter((e) => !(e.is_transfer && e.transfer_direction === "to"));
+  const page = Math.floor(expensesOffset / Math.max(1, expensesLimit));
+  const totalPages = Math.max(1, Math.ceil(expensesTotal / Math.max(1, expensesLimit)));
+  const pageStart = expensesTotal === 0 ? 0 : expensesOffset + 1;
+  const pageEnd = Math.min(expensesOffset + expenses.length, expensesTotal);
+  const canGoPrevious = expensesOffset > 0;
+  const canGoNext = expensesOffset + expensesLimit < expensesTotal;
 
   const getTransferLabel = (expense: Expense): string => {
     const linkedTo = expenses.find(
@@ -38,7 +49,7 @@ export function TransactionsWidget() {
           Transactions
         </div>
         <span className="text-[11px] text-content-tertiary tabular-nums">
-          {displayExpenses.length} showing
+          {pageStart}-{pageEnd} of {expensesTotal}
         </span>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
@@ -149,6 +160,43 @@ export function TransactionsWidget() {
           </tbody>
         </table>
       </div>
+      {(expensesTotal > 0 || expensesOffset > 0) && (
+        <div className="flex items-center justify-between gap-3 border-t border-edge-default px-4 py-3">
+          <button
+            type="button"
+            onClick={() => onTransactionsPageChange(expensesOffset - expensesLimit)}
+            disabled={!canGoPrevious}
+            className="rounded-md px-2.5 py-1.5 text-[11px] font-medium text-content-secondary transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="hidden text-[11px] text-content-tertiary sm:inline">
+              Page {page + 1} of {totalPages}
+            </span>
+            <select
+              value={expensesLimit}
+              onChange={(event) => onTransactionsPageSizeChange(Number(event.target.value))}
+              className="h-7 rounded-md border border-edge-strong bg-surface-primary px-2 text-[11px] text-content-secondary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              aria-label="Transactions per page"
+            >
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {size} / page
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={() => onTransactionsPageChange(expensesOffset + expensesLimit)}
+            disabled={!canGoNext}
+            className="rounded-md px-2.5 py-1.5 text-[11px] font-medium text-content-secondary transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

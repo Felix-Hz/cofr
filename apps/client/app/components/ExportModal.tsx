@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
+import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import {
   createExport,
   getExportDownloadUrl,
@@ -134,6 +135,7 @@ export default function ExportModal({
 
   const isExporting = status !== "idle" && status !== "done" && status !== "error";
   const hasNoTransactions = scope === "transactions" && transactionCount === 0;
+  const canConfirm = !isExporting && !hasNoTransactions;
 
   useEffect(() => {
     if (!isOpen || isExporting || status === "idle") return;
@@ -235,6 +237,23 @@ export default function ExportModal({
       readerRef.current = null;
     }
   }, [format, scope, name, nameEdited, defaultFilters, onExportComplete]);
+
+  useModalKeyboardShortcuts({
+    isOpen,
+    onEscape: onClose,
+    onEnter:
+      status === "done" && jobId
+        ? () => {
+            const url = getExportDownloadUrl(jobId);
+            window.open(url, "_blank");
+          }
+        : canConfirm
+          ? () => void handleExport()
+          : undefined,
+    disableEscape: isExporting,
+    disableEnter: !canConfirm && !(status === "done" && !!jobId),
+    allowEnterFromEditable: true,
+  });
 
   if (!isOpen) return null;
 

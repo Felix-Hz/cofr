@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
+import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { getExchangeRates } from "~/lib/api";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 
@@ -32,14 +33,7 @@ export default function ExchangeRatesModal({
       .finally(() => setLoading(false));
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  useModalKeyboardShortcuts({ isOpen, onEscape: onClose });
 
   useBodyScrollLock(isOpen);
 

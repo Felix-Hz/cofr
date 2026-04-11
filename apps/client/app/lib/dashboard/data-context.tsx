@@ -34,6 +34,8 @@ export type DashboardDataActions = {
   onExpenseDelete: (expense: Expense) => void;
   onCreateExpense: () => void;
   onCreateTransfer: () => void;
+  onTransactionsPageChange: (nextOffset: number) => void;
+  onTransactionsPageSizeChange: (nextLimit: number) => void;
 };
 
 export type DashboardContextValue = DashboardData & DashboardDataActions;

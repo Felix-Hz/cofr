@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { WidgetType } from "../schemas";
-import { layoutRowCount, repackWidgets, widgetGridStyle } from "./grid";
+import {
+  getMobileRowSpan,
+  layoutRowCount,
+  MOBILE_GRID_COLUMNS,
+  repackWidgets,
+  repackWidgetsForColumns,
+  widgetGridStyle,
+} from "./grid";
 
 type TestWidget = {
   widget_type: WidgetType;
@@ -48,6 +55,27 @@ describe("repackWidgets", () => {
     const packed = repackWidgets([widget("stat_income", 99)]);
     expect(packed[0].col_span).toBeLessThanOrEqual(6);
   });
+
+  it("never produces overlapping footprints across multi-row widgets", () => {
+    const packed = repackWidgets([
+      widget("net_worth", 6, 2),
+      widget("savings_investment", 6, 2),
+      widget("category_pie", 6, 3),
+      widget("account_balances", 6, 2),
+      widget("spend_sparkline", 6, 1),
+      widget("transactions", 12, 4),
+    ]);
+    const cells = new Set<string>();
+    for (const p of packed) {
+      for (let dy = 0; dy < p.row_span; dy++) {
+        for (let dx = 0; dx < p.col_span; dx++) {
+          const key = `${p.col_x + dx},${p.col_y + dy}`;
+          expect(cells.has(key)).toBe(false);
+          cells.add(key);
+        }
+      }
+    }
+  });
 });
 
 describe("layoutRowCount", () => {
@@ -75,5 +103,26 @@ describe("widgetGridStyle", () => {
     } as TestWidget);
     expect(style.gridColumn).toBe("1 / span 6");
     expect(style.gridRow).toBe("4 / span 3");
+  });
+
+  it("supports reflowing the same widget order into a smaller grid", () => {
+    const packed = repackWidgetsForColumns(
+      [
+        widget("net_worth", MOBILE_GRID_COLUMNS, getMobileRowSpan("net_worth", 2)),
+        widget("stat_spent", MOBILE_GRID_COLUMNS, getMobileRowSpan("stat_spent", 1)),
+        widget("transactions", MOBILE_GRID_COLUMNS, 4),
+      ],
+      MOBILE_GRID_COLUMNS,
+    );
+    expect(packed.map((item) => [item.col_x, item.col_y])).toEqual([
+      [0, 0],
+      [0, 2],
+      [0, 3],
+    ]);
+  });
+
+  it("uses compact mobile row spans for summary widgets", () => {
+    expect(getMobileRowSpan("net_worth", 2)).toBe(1);
+    expect(getMobileRowSpan("transactions", 4)).toBe(4);
   });
 });

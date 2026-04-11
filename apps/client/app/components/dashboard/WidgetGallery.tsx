@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { springs } from "~/lib/dashboard/motion-config";
 import { WIDGET_META, WIDGET_ORDER } from "~/lib/dashboard/registry";
 import type { WidgetType } from "~/lib/schemas";
@@ -19,6 +20,8 @@ export function WidgetGallery({
   onAdd: (type: WidgetType) => void;
   activeTypes: Set<WidgetType>;
 }) {
+  useModalKeyboardShortcuts({ isOpen, onEscape: onClose });
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -28,16 +31,16 @@ export function WidgetGallery({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            className="fixed -inset-8 z-[60] bg-black/30 backdrop-blur-sm"
             onClick={onClose}
             aria-hidden
           />
           <motion.aside
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            initial={{ x: "100%", opacity: 0.9 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0.9 }}
             transition={springs.drawer}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-edge-default bg-surface-primary shadow-2xl"
+            className="fixed right-4 top-4 z-[61] flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md flex-col overflow-hidden rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary shadow-2xl"
             role="dialog"
             aria-label="Add widget"
           >
@@ -51,7 +54,7 @@ export function WidgetGallery({
               <button
                 type="button"
                 onClick={onClose}
-                className="h-8 w-8 rounded-lg text-content-tertiary transition-colors hover:bg-surface-hover hover:text-content-primary"
+                className="h-8 w-8 rounded-md text-content-tertiary transition-colors hover:bg-surface-hover hover:text-content-primary"
                 aria-label="Close gallery"
               >
                 <svg
@@ -66,25 +69,22 @@ export function WidgetGallery({
               </button>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="min-h-0 overflow-y-auto p-4">
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {WIDGET_ORDER.map((type, index) => {
+                {WIDGET_ORDER.map((type) => {
                   const meta = WIDGET_META[type];
                   const added = activeTypes.has(type);
                   return (
-                    <motion.button
+                    <button
                       key={type}
                       type="button"
                       disabled={added}
                       onClick={() => onAdd(type)}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ ...springs.stagger, delay: index * 0.04 }}
                       className={cn(
-                        "flex flex-col gap-1.5 rounded-xl border p-4 text-left transition-all",
+                        "flex flex-col gap-1.5 rounded-md border p-4 text-left transition-all",
                         added
                           ? "cursor-not-allowed border-edge-default bg-surface-elevated opacity-50"
-                          : "border-edge-default bg-surface-elevated hover:-translate-y-0.5 hover:border-emerald/60 hover:shadow-lg",
+                          : "border-edge-default bg-surface-elevated hover:border-emerald/60 hover:shadow-lg",
                       )}
                     >
                       <div className="flex items-center justify-between">
@@ -99,11 +99,14 @@ export function WidgetGallery({
                       </div>
                       <div className="text-sm font-semibold text-content-primary">{meta.title}</div>
                       <p className="text-xs text-content-tertiary">{meta.description}</p>
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>
             </div>
+            <footer className="border-t border-edge-default bg-surface-primary px-5 py-3 text-[11px] text-content-tertiary">
+              Tap a card to add it. Drag widgets on the dashboard to reorder.
+            </footer>
           </motion.aside>
         </>
       )}

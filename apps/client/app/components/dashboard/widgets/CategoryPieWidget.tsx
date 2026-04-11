@@ -59,8 +59,8 @@ export function CategoryPieWidget() {
       </div>
       {pieData.length > 0 ? (
         <div className="mt-3 flex min-h-0 flex-1 flex-col gap-4 sm:flex-row">
-          <div className="flex flex-1 items-center justify-center min-h-[180px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="flex min-h-0 flex-1 items-center justify-center">
+            <ResponsiveContainer width="100%" height={275}>
               <PieChart tabIndex={-1} style={{ outline: "none" }}>
                 <Pie
                   data={pieData}
@@ -68,9 +68,9 @@ export function CategoryPieWidget() {
                   nameKey="category"
                   cx="50%"
                   cy="50%"
-                  innerRadius="50%"
-                  outerRadius="95%"
-                  paddingAngle={1}
+                  innerRadius="45%"
+                  outerRadius="100%"
+                  paddingAngle={0}
                   strokeWidth={0.5}
                   strokeOpacity={0.65}
                   focusable={false}
@@ -79,9 +79,9 @@ export function CategoryPieWidget() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex min-w-0 shrink-0 flex-col justify-center gap-1.5 sm:w-[180px]">
-            {pieData.slice(0, 6).map((entry) => (
-              <div key={entry.category} className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 shrink-0 flex-col justify-center gap-2 overflow-auto sm:w-[200px]">
+            {pieData.map((entry) => (
+              <div key={entry.category} className="flex min-w-0 items-center gap-2.5">
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: entry.fill }}

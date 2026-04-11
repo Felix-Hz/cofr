@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
+import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import type { Account } from "~/lib/schemas";
 
 interface AccountDeleteModalProps {
@@ -67,6 +68,19 @@ export default function AccountDeleteModal({
       setLoading(false);
     }
   };
+
+  useModalKeyboardShortcuts({
+    isOpen: isOpen && !!account,
+    onEscape: handleClose,
+    onEnter:
+      step === "confirm"
+        ? () => void handleDelete()
+        : targetAccountId
+          ? () => void handleMoveAndDelete()
+          : undefined,
+    disableEscape: loading,
+    disableEnter: loading,
+  });
 
   if (!isOpen || !account) return null;
 
