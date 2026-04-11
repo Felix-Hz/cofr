@@ -11,6 +11,7 @@ export function TransactionsWidget() {
     expensesLimit,
     expensesOffset,
     expensesTotal,
+    onCreateExpense,
     onExpenseEdit,
     onTransactionsPageChange,
     onTransactionsPageSizeChange,
@@ -52,33 +53,57 @@ export function TransactionsWidget() {
           {pageStart}-{pageEnd} of {expensesTotal}
         </span>
       </div>
-      <div className="min-h-0 flex-1 overflow-auto">
-        <table className="min-w-full table-fixed divide-y divide-edge-default">
-          <thead className="sticky top-0 bg-surface-primary">
-            <tr>
-              <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
-                Date
-              </th>
-              <th className="hidden px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-content-tertiary sm:table-cell">
-                Account
-              </th>
-              <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
-                Category
-              </th>
-              <th className="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
-                Amount
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-edge-default">
-            {displayExpenses.length === 0 ? (
+      {displayExpenses.length === 0 ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-8">
+          <div className="flex max-w-md flex-col items-center text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-edge-default bg-surface-elevated text-content-secondary">
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.8}
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </div>
+            <h4 className="mt-4 text-sm font-semibold tracking-tight text-content-heading">
+              No transactions yet
+            </h4>
+            <p className="mt-2 text-sm leading-6 text-content-secondary">
+              Start with one expense or funding entry. This table becomes your working ledger for
+              edits, spot checks, and recent activity.
+            </p>
+            <button
+              type="button"
+              onClick={onCreateExpense}
+              className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-emerald px-4 text-sm font-medium text-white transition-[background-color] duration-200 hover:bg-emerald-hover"
+            >
+              Add first transaction
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-auto">
+          <table className="min-w-full table-fixed divide-y divide-edge-default">
+            <thead className="sticky top-0 bg-surface-primary">
               <tr>
-                <td colSpan={4} className="px-4 py-10 text-center text-xs text-content-tertiary">
-                  No transactions in this range
-                </td>
+                <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
+                  Date
+                </th>
+                <th className="hidden px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-content-tertiary sm:table-cell">
+                  Account
+                </th>
+                <th className="px-4 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
+                  Category
+                </th>
+                <th className="px-4 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-content-tertiary">
+                  Amount
+                </th>
               </tr>
-            ) : (
-              displayExpenses.map((expense) => {
+            </thead>
+            <tbody className="divide-y divide-edge-default">
+              {displayExpenses.map((expense) => {
                 const isPositive = isPositiveType(expense.category_type);
                 const isTransfer = expense.is_transfer;
                 const catColor = isDark
@@ -155,11 +180,11 @@ export function TransactionsWidget() {
                     </td>
                   </tr>
                 );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
       {(expensesTotal > 0 || expensesOffset > 0) && (
         <div className="flex items-center justify-between gap-3 border-t border-edge-default px-4 py-3">
           <button

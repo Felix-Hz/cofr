@@ -27,12 +27,10 @@ ALLOWED_WIDGET_TYPES: frozenset[str] = frozenset(
 
 DEFAULT_LAYOUT: list[dict] = [
     {"widget_type": "period_stats_4up", "col_x": 0, "col_y": 0, "col_span": 12, "row_span": 1},
-    {"widget_type": "net_worth", "col_x": 0, "col_y": 1, "col_span": 6, "row_span": 2},
-    {"widget_type": "savings_investment", "col_x": 6, "col_y": 1, "col_span": 6, "row_span": 2},
-    {"widget_type": "category_pie", "col_x": 0, "col_y": 3, "col_span": 6, "row_span": 3},
-    {"widget_type": "account_balances", "col_x": 6, "col_y": 3, "col_span": 6, "row_span": 2},
-    {"widget_type": "spend_sparkline", "col_x": 6, "col_y": 5, "col_span": 6, "row_span": 1},
-    {"widget_type": "transactions", "col_x": 0, "col_y": 6, "col_span": 12, "row_span": 4},
+    {"widget_type": "net_worth", "col_x": 0, "col_y": 1, "col_span": 4, "row_span": 2},
+    {"widget_type": "savings_investment", "col_x": 4, "col_y": 1, "col_span": 4, "row_span": 2},
+    {"widget_type": "account_balances", "col_x": 8, "col_y": 1, "col_span": 4, "row_span": 2},
+    {"widget_type": "transactions", "col_x": 0, "col_y": 3, "col_span": 12, "row_span": 4},
 ]
 
 
