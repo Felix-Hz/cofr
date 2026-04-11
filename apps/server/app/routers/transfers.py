@@ -96,9 +96,10 @@ async def create_transfer(
         .first()
     )
 
+    service = ExpenseService(db)
     return TransferResponse(
-        from_transaction=ExpenseService._to_schema(from_tx),
-        to_transaction=ExpenseService._to_schema(to_tx),
+        from_transaction=service._to_schema(from_tx),
+        to_transaction=service._to_schema(to_tx),
     )
 
 
@@ -181,9 +182,10 @@ async def update_transfer(
         .first()
     )
 
+    service = ExpenseService(db)
     return TransferResponse(
-        from_transaction=ExpenseService._to_schema(from_tx),
-        to_transaction=ExpenseService._to_schema(to_tx),
+        from_transaction=service._to_schema(from_tx),
+        to_transaction=service._to_schema(to_tx),
     )
 
 

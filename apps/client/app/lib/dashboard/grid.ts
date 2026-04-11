@@ -10,12 +10,11 @@ const MOBILE_ROW_SPANS: Partial<Record<WidgetType, number>> = {
   stat_spent: 1,
   stat_net: 1,
   stat_savings_rate: 1,
-  net_worth: 2,
+  net_worth: 1,
   savings_investment: 2,
   account_balances: 2,
   category_pie: 3,
   spend_sparkline: 2,
-  transactions: 5,
 };
 
 /** Preserve widget order while packing them into non-overlapping grid slots. */
