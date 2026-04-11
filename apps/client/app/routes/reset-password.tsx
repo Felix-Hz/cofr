@@ -76,19 +76,19 @@ export default function ResetPassword() {
           </div>
 
           {tokenError && (
-            <div className="rounded-2xl border border-negative-text/25 bg-negative-bg px-4 py-3 text-sm text-negative-text">
+            <div className="rounded-lg border border-negative-text/25 bg-negative-bg px-4 py-3 text-sm text-negative-text">
               {tokenError}
             </div>
           )}
 
           {success && (
-            <div className="rounded-2xl border border-positive-border bg-positive-bg px-4 py-3 text-sm text-positive-text">
+            <div className="rounded-lg border border-positive-border bg-positive-bg px-4 py-3 text-sm text-positive-text">
               {success}
             </div>
           )}
 
           {error && (
-            <div className="rounded-2xl border border-negative-text/25 bg-negative-bg px-4 py-3 text-sm text-negative-text">
+            <div className="rounded-lg border border-negative-text/25 bg-negative-bg px-4 py-3 text-sm text-negative-text">
               {error}
             </div>
           )}
@@ -108,7 +108,7 @@ export default function ResetPassword() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 8 characters"
-                className="w-full rounded-2xl border border-edge-strong bg-surface-primary px-4 py-3 text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+                className="auth-input"
               />
               <PasswordRequirements password={password} />
             </div>
@@ -116,7 +116,7 @@ export default function ResetPassword() {
             <button
               type="submit"
               disabled={loading || !token || !isPasswordValid(password)}
-              className="w-full rounded-2xl bg-emerald px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-hover disabled:opacity-50"
+              className="auth-submit-button"
             >
               {loading ? "Updating password..." : "Set new password"}
             </button>

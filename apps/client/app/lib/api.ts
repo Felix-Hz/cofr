@@ -34,9 +34,11 @@ import {
   type TransferCreate,
   type TransferResponse,
   TransferResponseSchema,
+  WIDGET_TYPES,
 } from "./schemas";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5173";
+const SUPPORTED_WIDGET_TYPES = new Set<string>(WIDGET_TYPES);
 
 export class ApiError extends Error {
   constructor(
@@ -46,6 +48,32 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+}
+
+function sanitizeDashboardLayoutResponse(json: unknown): unknown {
+  if (!json || typeof json !== "object") return json;
+
+  const layout = json as {
+    spaces?: Array<{
+      widgets?: Array<{ widget_type?: string }>;
+    }>;
+  };
+
+  if (!Array.isArray(layout.spaces)) return json;
+
+  return {
+    ...layout,
+    spaces: layout.spaces.map((space) => ({
+      ...space,
+      widgets: Array.isArray(space.widgets)
+        ? space.widgets.filter(
+            (widget) =>
+              typeof widget?.widget_type === "string" &&
+              SUPPORTED_WIDGET_TYPES.has(widget.widget_type),
+          )
+        : [],
+    })),
+  };
 }
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<Response> {
@@ -526,7 +554,7 @@ export function getExportRecordDownloadUrl(exportId: string): string {
 
 export async function getDashboardLayout(): Promise<DashboardLayoutResponse> {
   const response = await fetchWithAuth("/dashboard/layout");
-  const json = await response.json();
+  const json = sanitizeDashboardLayoutResponse(await response.json());
   return DashboardLayoutResponseSchema.parse(json);
 }
 
@@ -537,7 +565,7 @@ export async function updateDashboardLayout(
     method: "PUT",
     body: JSON.stringify(payload),
   });
-  const json = await response.json();
+  const json = sanitizeDashboardLayoutResponse(await response.json());
   return DashboardLayoutResponseSchema.parse(json);
 }
 

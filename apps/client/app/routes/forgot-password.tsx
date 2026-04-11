@@ -59,13 +59,13 @@ export default function ForgotPassword() {
           </div>
 
           {message && (
-            <div className="rounded-2xl border border-positive-border bg-positive-bg px-4 py-3 text-sm text-positive-text">
+            <div className="rounded-lg border border-positive-border bg-positive-bg px-4 py-3 text-sm text-positive-text">
               {message}
             </div>
           )}
 
           {error && (
-            <div className="rounded-2xl border border-negative-text/25 bg-negative-bg px-4 py-3 text-sm text-negative-text">
+            <div className="rounded-lg border border-negative-text/25 bg-negative-bg px-4 py-3 text-sm text-negative-text">
               {error}
             </div>
           )}
@@ -85,15 +85,11 @@ export default function ForgotPassword() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded-2xl border border-edge-strong bg-surface-primary px-4 py-3 text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+                className="auth-input"
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-2xl bg-emerald px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-hover disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} className="auth-submit-button">
               {loading ? "Sending reset link..." : "Send reset link"}
             </button>
           </form>

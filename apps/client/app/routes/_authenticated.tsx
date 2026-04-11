@@ -25,6 +25,7 @@ export default function AuthenticatedLayout() {
 
   // Session timeout
   const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
     const stored = localStorage.getItem("cofr_session_timeout");
     if (stored !== null && stored !== "") return Number(stored);
     return null;
