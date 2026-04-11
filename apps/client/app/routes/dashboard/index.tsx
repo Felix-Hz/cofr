@@ -403,14 +403,14 @@ export default function Dashboard() {
     [navigate, buildUrl],
   );
 
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
     setSelectedExpense(null);
     setIsFormModalOpen(true);
-  };
-  const handleTransfer = () => {
+  }, []);
+  const handleTransfer = useCallback(() => {
     setSelectedExpense(null);
     setIsTransferModalOpen(true);
-  };
+  }, []);
   const handleExpenseEdit = useCallback((expense: Expense) => {
     if (expense.is_transfer) {
       setSelectedExpense(expense);
@@ -697,29 +697,56 @@ export default function Dashboard() {
   const periodLabel = getPresetLabel(preset, startDate, endDate);
   const showArrows = preset !== "custom";
 
-  const dashboardData = {
-    periodStats: monthlyStats,
-    lifetimeStats,
-    expenses,
-    expensesTotal: total_count,
-    expensesLimit: loaderLimit,
-    expensesOffset: loaderOffset,
-    accountBalances: monthlyStats.account_balances || [],
-    sparkline,
-    startDate,
-    endDate,
-    currency: currentCurrency || null,
-    preferredCurrency: monthlyStats.currency,
-    onExpenseEdit: handleExpenseEdit,
-    onExpenseDelete: handleExpenseDelete,
-    onCreateExpense: handleAdd,
-    onCreateTransfer: handleTransfer,
-    onTransactionsPageChange: handleTransactionsPageChange,
-    onTransactionsPageSizeChange: handleTransactionsPageSizeChange,
-  };
+  const dashboardData = useMemo(
+    () => ({
+      periodStats: monthlyStats,
+      lifetimeStats,
+      expenses,
+      expensesTotal: total_count,
+      expensesLimit: loaderLimit,
+      expensesOffset: loaderOffset,
+      accountBalances: monthlyStats.account_balances || [],
+      sparkline,
+      startDate,
+      endDate,
+      currency: currentCurrency || null,
+      preferredCurrency: monthlyStats.currency,
+    }),
+    [
+      currentCurrency,
+      endDate,
+      expenses,
+      lifetimeStats,
+      loaderLimit,
+      loaderOffset,
+      monthlyStats,
+      sparkline,
+      startDate,
+      total_count,
+    ],
+  );
+
+  const dashboardActions = useMemo(
+    () => ({
+      onExpenseEdit: handleExpenseEdit,
+      onExpenseDelete: handleExpenseDelete,
+      onCreateExpense: handleAdd,
+      onCreateTransfer: handleTransfer,
+      onTransactionsPageChange: handleTransactionsPageChange,
+      onTransactionsPageSizeChange: handleTransactionsPageSizeChange,
+    }),
+    [
+      handleAdd,
+      handleExpenseDelete,
+      handleExpenseEdit,
+      handleTransfer,
+      handleTransactionsPageChange,
+      handleTransactionsPageSizeChange,
+    ],
+  );
 
   return (
-    <DashboardDataProvider value={dashboardData}>
+    <DashboardDataProvider data={dashboardData} actions={dashboardActions}>
       <div className="space-y-6 pb-24">
         {/* ─── Header ─── */}
         <div className="sm:hidden">

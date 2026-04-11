@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { WIDGET_TYPE_DEFS } from "./dashboard/widget-defs";
 
 // ============================================================================
 // Category Schemas
@@ -231,19 +232,11 @@ export const SparklineResponseSchema = z.object({
 // Dashboard Layout Schemas
 // ============================================================================
 
-export const WIDGET_TYPES = [
-  "stat_income",
-  "stat_spent",
-  "stat_net",
-  "stat_savings_rate",
-  "period_stats_4up",
-  "category_pie",
-  "account_balances",
-  "transactions",
-  "net_worth",
-  "savings_investment",
-  "spend_sparkline",
-] as const;
+// Keep the server allow-list aligned with these client definitions.
+export const WIDGET_TYPES = WIDGET_TYPE_DEFS.map((def) => def.type) as [
+  (typeof WIDGET_TYPE_DEFS)[number]["type"],
+  ...(typeof WIDGET_TYPE_DEFS)[number]["type"][],
+];
 
 export const WidgetTypeSchema = z.enum(WIDGET_TYPES);
 

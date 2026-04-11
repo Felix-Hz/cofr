@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    JSON,
     Boolean,
     DateTime,
     Float,
@@ -15,6 +14,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy import Uuid as SaUuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import TypeDecorator
 
@@ -244,7 +244,7 @@ class DashboardWidget(Base):
     col_y: Mapped[int] = mapped_column(Integer, default=0, server_default=text("0"))
     col_span: Mapped[int] = mapped_column(Integer, default=6, server_default=text("6"))
     row_span: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"))
-    config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    config: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     space: Mapped["DashboardSpace"] = relationship(back_populates="widgets")

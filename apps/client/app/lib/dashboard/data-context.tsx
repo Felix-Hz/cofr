@@ -31,24 +31,39 @@ export type DashboardDataActions = {
   onTransactionsPageSizeChange: (nextLimit: number) => void;
 };
 
-export type DashboardContextValue = DashboardData & DashboardDataActions;
-
-const DashboardDataContext = createContext<DashboardContextValue | null>(null);
+const DashboardDataContext = createContext<DashboardData | null>(null);
+const DashboardActionsContext = createContext<DashboardDataActions | null>(null);
 
 export function DashboardDataProvider({
-  value,
+  data,
+  actions,
   children,
 }: {
-  value: DashboardContextValue;
+  data: DashboardData;
+  actions: DashboardDataActions;
   children: ReactNode;
 }) {
-  return <DashboardDataContext.Provider value={value}>{children}</DashboardDataContext.Provider>;
+  return (
+    <DashboardDataContext.Provider value={data}>
+      <DashboardActionsContext.Provider value={actions}>
+        {children}
+      </DashboardActionsContext.Provider>
+    </DashboardDataContext.Provider>
+  );
 }
 
-export function useDashboardData(): DashboardContextValue {
-  const ctx = useContext(DashboardDataContext);
-  if (!ctx) {
+export function useDashboardData(): DashboardData {
+  const data = useContext(DashboardDataContext);
+  if (!data) {
     throw new Error("useDashboardData must be used inside DashboardDataProvider");
   }
-  return ctx;
+  return data;
+}
+
+export function useDashboardActions(): DashboardDataActions {
+  const actions = useContext(DashboardActionsContext);
+  if (!actions) {
+    throw new Error("useDashboardActions must be used inside DashboardDataProvider");
+  }
+  return actions;
 }

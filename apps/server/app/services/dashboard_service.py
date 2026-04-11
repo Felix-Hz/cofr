@@ -9,6 +9,8 @@ from app.db.schemas import (
     DashboardWidgetSchema,
 )
 
+# Keep this allow-list aligned with the client `WIDGET_TYPES`, `WIDGET_META`,
+# and `WIDGET_ORDER` definitions.
 ALLOWED_WIDGET_TYPES: frozenset[str] = frozenset(
     {
         "stat_income",

@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import type { DashboardWidget, WidgetType } from "../schemas";
+import { WIDGET_TYPE_DEFS, type WidgetCategory } from "./widget-defs";
 
 export type WidgetSizeConstraint = {
   minColSpan: number;
@@ -9,8 +10,6 @@ export type WidgetSizeConstraint = {
   defaultColSpan: number;
   defaultRowSpan: number;
 };
-
-export type WidgetCategory = "period" | "wealth" | "activity" | "insights";
 
 export type WidgetMeta = {
   type: WidgetType;
@@ -44,121 +43,17 @@ const size = (
   defaultRowSpan: row,
 });
 
-export const WIDGET_META: Record<WidgetType, WidgetMeta> = {
-  period_stats_4up: {
-    type: "period_stats_4up",
-    title: "Period Stats",
-    description: "Income, spent, net, and savings rate for the selected period.",
-    category: "period",
-    icon: "grid",
-    size: size(12, 1, { minColSpan: 6 }),
-    supportsFilterOverride: true,
-  },
-  stat_income: {
-    type: "stat_income",
-    title: "Income",
-    description: "Total income for the selected period.",
-    category: "period",
-    icon: "trending-up",
-    size: size(3, 1, { minColSpan: 3, maxColSpan: 6 }),
-    supportsFilterOverride: true,
-  },
-  stat_spent: {
-    type: "stat_spent",
-    title: "Spent",
-    description: "Total spend for the selected period.",
-    category: "period",
-    icon: "trending-down",
-    size: size(3, 1, { minColSpan: 3, maxColSpan: 6 }),
-    supportsFilterOverride: true,
-  },
-  stat_net: {
-    type: "stat_net",
-    title: "Net",
-    description: "Income minus spend for the selected period.",
-    category: "period",
-    icon: "scale",
-    size: size(3, 1, { minColSpan: 3, maxColSpan: 6 }),
-    supportsFilterOverride: true,
-  },
-  stat_savings_rate: {
-    type: "stat_savings_rate",
-    title: "Savings rate",
-    description: "Percent of income flowing into savings + investment.",
-    category: "period",
-    icon: "percent",
-    size: size(3, 1, { minColSpan: 3, maxColSpan: 6 }),
-    supportsFilterOverride: true,
-  },
-  category_pie: {
-    type: "category_pie",
-    title: "Category breakdown",
-    description: "Spending by category for the selected period.",
-    category: "insights",
-    icon: "pie-chart",
-    size: size(6, 3, { minColSpan: 4, minRowSpan: 2, maxRowSpan: 4 }),
-    supportsFilterOverride: true,
-  },
-  account_balances: {
-    type: "account_balances",
-    title: "Account balances",
-    description: "Live balance for every account.",
-    category: "wealth",
-    icon: "wallet",
-    size: size(6, 2, { minColSpan: 4, minRowSpan: 1 }),
-    supportsFilterOverride: false,
-  },
-  transactions: {
-    type: "transactions",
-    title: "Transactions",
-    description: "Recent transactions table with inline edit.",
-    category: "activity",
-    icon: "list",
-    size: size(12, 4, { minColSpan: 6, minRowSpan: 2, maxRowSpan: 8 }),
-    supportsFilterOverride: true,
-  },
-  net_worth: {
-    type: "net_worth",
-    title: "Net worth",
-    description: "All-time sum of every account balance.",
-    category: "wealth",
-    icon: "sparkles",
-    size: size(6, 2, { minColSpan: 4, minRowSpan: 2 }),
-    supportsFilterOverride: false,
-  },
-  savings_investment: {
-    type: "savings_investment",
-    title: "Savings and investments",
-    description: "Lifetime savings and investment balances side by side.",
-    category: "wealth",
-    icon: "piggy-bank",
-    size: size(6, 2, { minColSpan: 4, minRowSpan: 2 }),
-    supportsFilterOverride: false,
-  },
-  spend_sparkline: {
-    type: "spend_sparkline",
-    title: "Spend pulse",
-    description: "30-day daily spend sparkline.",
-    category: "insights",
-    icon: "activity",
-    size: size(6, 2, { minColSpan: 4, minRowSpan: 2, maxRowSpan: 3 }),
-    supportsFilterOverride: true,
-  },
-};
+export const WIDGET_ORDER: readonly WidgetType[] = WIDGET_TYPE_DEFS.map((def) => def.type);
 
-export const WIDGET_ORDER: readonly WidgetType[] = [
-  "period_stats_4up",
-  "stat_income",
-  "stat_spent",
-  "stat_net",
-  "stat_savings_rate",
-  "net_worth",
-  "savings_investment",
-  "account_balances",
-  "category_pie",
-  "spend_sparkline",
-  "transactions",
-];
+export const WIDGET_META: Record<WidgetType, WidgetMeta> = Object.fromEntries(
+  WIDGET_TYPE_DEFS.map((def) => [
+    def.type,
+    {
+      ...def,
+      size: size(def.size.col, def.size.row, def.size),
+    },
+  ]),
+) as Record<WidgetType, WidgetMeta>;
 
 type Registry = Record<WidgetType, WidgetDefinition>;
 

@@ -1,4 +1,4 @@
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardActions, useDashboardData } from "~/lib/dashboard/data-context";
 import type { Expense } from "~/lib/schemas";
 import { useTheme } from "~/lib/theme";
 import { formatCurrency, formatDate, isPositiveType, truncateText } from "~/lib/utils";
@@ -6,16 +6,9 @@ import { formatCurrency, formatDate, isPositiveType, truncateText } from "~/lib/
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
 export function TransactionsWidget() {
-  const {
-    expenses,
-    expensesLimit,
-    expensesOffset,
-    expensesTotal,
-    onCreateExpense,
-    onExpenseEdit,
-    onTransactionsPageChange,
-    onTransactionsPageSizeChange,
-  } = useDashboardData();
+  const { expenses, expensesLimit, expensesOffset, expensesTotal } = useDashboardData();
+  const { onCreateExpense, onExpenseEdit, onTransactionsPageChange, onTransactionsPageSizeChange } =
+    useDashboardActions();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 

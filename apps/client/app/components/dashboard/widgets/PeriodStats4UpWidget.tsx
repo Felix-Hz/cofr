@@ -1,45 +1,14 @@
-import { useDashboardData } from "~/lib/dashboard/data-context";
 import type { WidgetRenderProps } from "~/lib/dashboard/registry";
-import { formatCurrency } from "~/lib/utils";
+import { usePeriodStatCells } from "./usePeriodStatCells";
 
 export function PeriodStats4UpWidget({ widget }: WidgetRenderProps) {
-  const { periodStats } = useDashboardData();
-  const net = periodStats.total_income - periodStats.total_spent;
-  const netPct =
-    periodStats.total_income > 0 ? Math.round((net / periodStats.total_income) * 100) : 0;
-  const savingsRate =
-    periodStats.total_income > 0
-      ? (periodStats.savings_net_change / periodStats.total_income) * 100
-      : 0;
+  const cellsByType = usePeriodStatCells();
   const isCompact = widget.row_span <= 1;
-  const cells: Array<{
-    label: string;
-    value: string;
-    trailing?: string;
-    tone: "positive" | "negative" | "accent" | "neutral";
-  }> = [
-    {
-      label: "Income",
-      value: formatCurrency(periodStats.total_income, periodStats.currency, true, 0),
-      tone: "positive",
-    },
-    {
-      label: "Spent",
-      value: formatCurrency(periodStats.total_spent, periodStats.currency, true, 0),
-      tone: "negative",
-    },
-    {
-      label: "Net",
-      value: formatCurrency(net, periodStats.currency, true, 0),
-      trailing: `${netPct >= 0 ? "+" : ""}${netPct}%`,
-      tone: net >= 0 ? "accent" : "negative",
-    },
-    {
-      label: "Savings",
-      value: `${savingsRate.toFixed(1)}%`,
-      trailing: formatCurrency(periodStats.savings_net_change, periodStats.currency, true, 0),
-      tone: savingsRate >= 0 ? "positive" : "negative",
-    },
+  const cells = [
+    cellsByType.stat_income,
+    cellsByType.stat_spent,
+    cellsByType.stat_net,
+    cellsByType.stat_savings_rate,
   ];
   const toneLabel = {
     positive: "text-positive-text-strong/70",
@@ -57,7 +26,7 @@ export function PeriodStats4UpWidget({ widget }: WidgetRenderProps) {
           <span
             className={`text-[11px] font-semibold uppercase tracking-wider ${toneLabel[cell.tone]}`}
           >
-            {cell.label}
+            {cell.widgetType === "stat_savings_rate" ? "Savings" : cell.label}
           </span>
           <div
             className={`flex ${isCompact ? "flex-col items-start gap-0.5" : "items-baseline gap-2"}`}
