@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
+import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { useAccounts } from "~/lib/accounts";
 import { getAccountBalances } from "~/lib/api";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
@@ -112,6 +113,19 @@ export default function TransferFormModal({
   };
 
   useBodyScrollLock(isOpen);
+  useModalKeyboardShortcuts({
+    isOpen,
+    onEscape: onClose,
+    onEnter:
+      showDeleteConfirm && onDelete
+        ? () => {
+            setShowDeleteConfirm(false);
+            void onDelete();
+          }
+        : undefined,
+    disableEscape: isLoading,
+    disableEnter: isLoading,
+  });
 
   if (!isOpen) return null;
 

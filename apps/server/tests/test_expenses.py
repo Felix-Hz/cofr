@@ -125,6 +125,34 @@ def test_get_expenses_pagination(client, auth_headers, system_categories):
     assert len(resp2.json()["expenses"]) == 2
 
 
+def test_get_expenses_can_collapse_transfer_pairs(client, auth_headers):
+    headers, _ = auth_headers
+    accounts_resp = client.get("/accounts/", headers=headers)
+    assert accounts_resp.status_code == 200
+    accounts = accounts_resp.json()
+
+    transfer_resp = client.post(
+        "/transfers/",
+        json={
+            "amount": 125,
+            "from_account_id": accounts[0]["id"],
+            "to_account_id": accounts[1]["id"],
+            "currency": "NZD",
+        },
+        headers=headers,
+    )
+    assert transfer_resp.status_code == 201
+
+    resp = client.get("/expenses/?collapse_transfer_pairs=true", headers=headers)
+    assert resp.status_code == 200
+    body = resp.json()
+
+    assert body["total_count"] == 1
+    assert len(body["expenses"]) == 1
+    assert body["expenses"][0]["transfer_direction"] == "from"
+    assert body["expenses"][0]["linked_account_name"] == accounts[1]["name"]
+
+
 # ── Update ──
 
 

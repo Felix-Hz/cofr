@@ -1,4 +1,5 @@
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
+import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
@@ -20,6 +21,13 @@ export default function DeleteConfirmModal({
   error = null,
 }: DeleteConfirmModalProps) {
   useBodyScrollLock(isOpen);
+  useModalKeyboardShortcuts({
+    isOpen,
+    onEscape: onClose,
+    onEnter: () => void onConfirm(),
+    disableEscape: isLoading,
+    disableEnter: isLoading,
+  });
 
   if (!isOpen) return null;
 
@@ -30,8 +38,15 @@ export default function DeleteConfirmModal({
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
 
         {/* Modal */}
-        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-sm p-6">
-          <h3 className="text-lg font-semibold text-content-primary mb-2">{title}</h3>
+        <div
+          className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-sm p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-confirm-title"
+        >
+          <h3 id="delete-confirm-title" className="text-lg font-semibold text-content-primary mb-2">
+            {title}
+          </h3>
           <p className="text-sm text-content-secondary mb-6">{message}</p>
 
           {error && (

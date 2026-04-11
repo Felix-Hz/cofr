@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
+import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { useAccounts } from "~/lib/accounts";
 import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
@@ -33,6 +34,7 @@ export default function ExpenseFormModal({
   const [date, setDate] = useState("");
   const [isOpeningBalance, setIsOpeningBalance] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const isEditMode = !!expense;
 
@@ -110,6 +112,20 @@ export default function ExpenseFormModal({
   };
 
   useBodyScrollLock(isOpen);
+  useModalKeyboardShortcuts({
+    isOpen,
+    onEscape: onClose,
+    onEnter:
+      showDeleteConfirm && onDelete
+        ? () => {
+            setShowDeleteConfirm(false);
+            void onDelete();
+          }
+        : () => formRef.current?.requestSubmit(),
+    disableEscape: isLoading,
+    disableEnter: isLoading,
+    allowEnterFromEditable: true,
+  });
 
   if (!isOpen) return null;
 
@@ -120,8 +136,16 @@ export default function ExpenseFormModal({
         <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose} />
 
         {/* Modal */}
-        <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 max-h-[85vh] flex flex-col overflow-hidden">
-          <h3 className="hidden sm:block text-lg font-semibold mb-3 shrink-0">
+        <div
+          className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-md p-4 sm:p-6 max-h-[85vh] flex flex-col overflow-hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="expense-form-title"
+        >
+          <h3
+            id="expense-form-title"
+            className="hidden sm:block text-lg font-semibold mb-3 shrink-0"
+          >
             {isEditMode
               ? mode === "fund"
                 ? "Edit Funding"
@@ -157,7 +181,7 @@ export default function ExpenseFormModal({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
             <div className="overflow-y-auto overflow-x-hidden overscroll-contain touch-auto flex-1 min-h-0 space-y-2 sm:space-y-4 px-0.5">
               {/* Account */}
               {accounts.length > 0 && (

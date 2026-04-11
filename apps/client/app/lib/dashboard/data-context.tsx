@@ -7,13 +7,6 @@ import type {
   SparklineResponse,
 } from "../schemas";
 
-/**
- * Shared data delivered to every widget.
- *
- * Widgets read from this context instead of firing their own network requests,
- * so one period change = one loader round trip. Future widgets can subscribe
- * to additional slices by extending this interface and the dashboard loader.
- */
 export type DashboardData = {
   periodStats: MonthlyStats;
   lifetimeStats: LifetimeStats;
@@ -34,26 +27,43 @@ export type DashboardDataActions = {
   onExpenseDelete: (expense: Expense) => void;
   onCreateExpense: () => void;
   onCreateTransfer: () => void;
+  onTransactionsPageChange: (nextOffset: number) => void;
+  onTransactionsPageSizeChange: (nextLimit: number) => void;
 };
 
-export type DashboardContextValue = DashboardData & DashboardDataActions;
-
-const DashboardDataContext = createContext<DashboardContextValue | null>(null);
+const DashboardDataContext = createContext<DashboardData | null>(null);
+const DashboardActionsContext = createContext<DashboardDataActions | null>(null);
 
 export function DashboardDataProvider({
-  value,
+  data,
+  actions,
   children,
 }: {
-  value: DashboardContextValue;
+  data: DashboardData;
+  actions: DashboardDataActions;
   children: ReactNode;
 }) {
-  return <DashboardDataContext.Provider value={value}>{children}</DashboardDataContext.Provider>;
+  return (
+    <DashboardDataContext.Provider value={data}>
+      <DashboardActionsContext.Provider value={actions}>
+        {children}
+      </DashboardActionsContext.Provider>
+    </DashboardDataContext.Provider>
+  );
 }
 
-export function useDashboardData(): DashboardContextValue {
-  const ctx = useContext(DashboardDataContext);
-  if (!ctx) {
+export function useDashboardData(): DashboardData {
+  const data = useContext(DashboardDataContext);
+  if (!data) {
     throw new Error("useDashboardData must be used inside DashboardDataProvider");
   }
-  return ctx;
+  return data;
+}
+
+export function useDashboardActions(): DashboardDataActions {
+  const actions = useContext(DashboardActionsContext);
+  if (!actions) {
+    throw new Error("useDashboardActions must be used inside DashboardDataProvider");
+  }
+  return actions;
 }

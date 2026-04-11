@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy import false as sa_false
 from sqlalchemy.orm import Session, joinedload
 
@@ -56,6 +56,7 @@ class ExpenseService:
         category: str | None = None,
         min_amount: float | None = None,
         max_amount: float | None = None,
+        collapse_transfer_pairs: bool = False,
     ) -> tuple[list[ExpenseSchema], int]:
         """Get paginated expenses for a user with optional filters"""
         filters = [Transaction.user_id == user_id]
@@ -70,6 +71,14 @@ class ExpenseService:
             filters.append(Transaction.amount >= min_amount)
         if max_amount is not None:
             filters.append(Transaction.amount <= max_amount)
+        if collapse_transfer_pairs:
+            filters.append(
+                or_(
+                    Transaction.is_transfer == sa_false(),
+                    Transaction.transfer_direction == "from",
+                    Transaction.transfer_direction.is_(None),
+                )
+            )
 
         return self._paginated_query(filters, limit, offset)
 
@@ -691,11 +700,18 @@ class ExpenseService:
         self.db.commit()
         return True
 
-    @staticmethod
-    def _to_schema(transaction: Transaction) -> ExpenseSchema:
+    def _to_schema(self, transaction: Transaction) -> ExpenseSchema:
         """Convert a Transaction ORM object to ExpenseSchema"""
         cat = transaction.category_rel
         account = transaction.account_rel
+        linked_account_name = None
+        if transaction.is_transfer and transaction.transfer_direction == "from":
+            linked_account_name = (
+                self.db.query(Account.name)
+                .join(Transaction, Transaction.account_id == Account.id)
+                .filter(Transaction.id == transaction.linked_transaction_id)
+                .scalar()
+            )
         return ExpenseSchema(
             id=str(transaction.id),
             amount=transaction.amount,
@@ -714,5 +730,6 @@ class ExpenseService:
             linked_transaction_id=str(transaction.linked_transaction_id)
             if transaction.linked_transaction_id
             else None,
+            linked_account_name=linked_account_name,
             transfer_direction=transaction.transfer_direction,
         )

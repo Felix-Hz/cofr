@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
 
 export type Preset = "thisMonth" | "last7Days" | "lastYear" | "custom";
@@ -6,7 +7,6 @@ export type Preset = "thisMonth" | "last7Days" | "lastYear" | "custom";
 interface ControlsPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  toggleRef?: React.RefObject<HTMLElement | null>;
   preset: Preset;
   onPresetChange: (preset: Preset) => void;
   currency: string;
@@ -37,7 +37,6 @@ const PRESETS: { value: Preset; label: string }[] = [
 export default function ControlsPanel({
   isOpen,
   onClose,
-  toggleRef,
   preset,
   onPresetChange,
   currency,
@@ -60,7 +59,9 @@ export default function ControlsPanel({
   const panelRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const isDragging = useRef(false);
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
   // Local state for amount inputs (navigate only on blur)
   const [localMin, setLocalMin] = useState(minAmount);
@@ -74,6 +75,11 @@ export default function ControlsPanel({
   useEffect(() => {
     if (!isOpen) setDragOffset(0);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setPortalTarget(document.body);
+  }, []);
 
   // Swipe down to close on mobile — follows finger
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -113,24 +119,6 @@ export default function ControlsPanel({
     return () => el.removeEventListener("touchmove", onTouchMove);
   }, [isOpen]);
 
-  // Close on click outside
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (panelRef.current && !panelRef.current.contains(target)) {
-        if (toggleRef?.current?.contains(target)) return;
-        onClose();
-      }
-    };
-    // Delay listener so the opening click doesn't immediately close
-    const id = setTimeout(() => document.addEventListener("mousedown", handleClick), 0);
-    return () => {
-      clearTimeout(id);
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [isOpen, onClose, toggleRef?.current?.contains]);
-
   // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
@@ -141,198 +129,238 @@ export default function ControlsPanel({
     return () => document.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
-  // Lock body scroll on mobile only (desktop uses dropdown, not bottom sheet)
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   useBodyScrollLock(isOpen && isMobile);
 
   if (!isOpen) return null;
 
-  return (
+  const panel = (
+    <div
+      ref={panelRef}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className={
+        isMobile
+          ? `
+            w-full max-h-[88dvh] overflow-y-auto overflow-x-hidden overscroll-contain
+            rounded-t-2xl border border-edge-default bg-surface-primary p-5 pb-8 shadow-xl
+          `
+          : `
+            absolute right-0 top-full z-50 mt-2 w-80 max-h-[80vh] overflow-y-auto overflow-x-hidden
+            rounded-xl border border-edge-default bg-surface-primary p-5 shadow-xl
+          `
+      }
+      style={
+        isMobile
+          ? {
+              animation: dragOffset === 0 ? "slideUp 0.2s ease-out" : "none",
+              transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
+              transition: isDragging.current ? "none" : "transform 0.2s ease-out",
+            }
+          : undefined
+      }
+    >
+      {/* Drag handle — mobile */}
+      <div className="flex justify-center sm:hidden -mx-5 -mt-5 pt-3 pb-1">
+        <div className="h-1 w-10 rounded-full bg-edge-strong" />
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-start justify-between gap-4 border-b border-edge-default pb-4 sm:hidden">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-content-tertiary">
+              Filters
+            </div>
+            <p className="mt-1 text-sm text-content-secondary">
+              Refine the dashboard without leaving this view.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-edge-default bg-surface-elevated text-content-secondary transition-colors hover:bg-surface-hover hover:text-content-primary"
+            aria-label="Close filters"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Period presets */}
+        <div>
+          <label className="mb-2 block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+            Period
+          </label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {PRESETS.map((p) => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => onPresetChange(p.value)}
+                className={`rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
+                  preset === p.value
+                    ? "bg-emerald text-white"
+                    : "bg-surface-elevated text-content-secondary hover:bg-surface-hover"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom range inputs */}
+        {preset === "custom" && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <label
+                htmlFor="ctrl-start"
+                className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary"
+              >
+                Start
+              </label>
+              <input
+                id="ctrl-start"
+                type="date"
+                value={customStart}
+                onChange={(e) => onCustomStartChange(e.target.value)}
+                className="h-9 w-full min-w-0 rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              />
+            </div>
+            <div className="min-w-0">
+              <label
+                htmlFor="ctrl-end"
+                className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary"
+              >
+                End
+              </label>
+              <input
+                id="ctrl-end"
+                type="date"
+                value={customEnd}
+                onChange={(e) => onCustomEndChange(e.target.value)}
+                className="h-9 w-full min-w-0 rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Currency & Category */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label
+              htmlFor="ctrl-currency"
+              className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary"
+            >
+              Currency
+            </label>
+            <select
+              id="ctrl-currency"
+              value={currency}
+              onChange={(e) => onCurrencyChange(e.target.value)}
+              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs font-medium text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+            >
+              <option value="">All</option>
+              {currencies.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="ctrl-category"
+              className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary"
+            >
+              Category
+            </label>
+            <select
+              id="ctrl-category"
+              value={category}
+              onChange={(e) => onCategoryChange(e.target.value)}
+              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs font-medium text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+            >
+              <option value="">All</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Amount range */}
+        <div>
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+            Amount Range
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <input
+              type="number"
+              placeholder="Min"
+              value={localMin}
+              onChange={(e) => setLocalMin(e.target.value)}
+              onBlur={() => {
+                if (localMin !== minAmount) onMinAmountChange(localMin);
+              }}
+              min="0"
+              step="0.01"
+              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs tabular-nums text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+            />
+            <input
+              type="number"
+              placeholder="Max"
+              value={localMax}
+              onChange={(e) => setLocalMax(e.target.value)}
+              onBlur={() => {
+                if (localMax !== maxAmount) onMaxAmountChange(localMax);
+              }}
+              min="0"
+              step="0.01"
+              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs tabular-nums text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+            />
+          </div>
+        </div>
+
+        {/* Clear filters */}
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="w-full py-1.5 text-xs font-medium text-negative-text transition-colors hover:text-negative-text-strong"
+          >
+            Clear Filters
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  if (!isMobile) {
+    return panel;
+  }
+
+  if (!portalTarget) return null;
+
+  return createPortal(
     <>
-      {/* Mobile backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 z-40 sm:hidden transition-opacity"
+        className="fixed inset-0 z-[70] bg-black/40 transition-opacity"
         style={{ opacity: dragOffset > 0 ? Math.max(0, 1 - dragOffset / 200) : 1 }}
         onClick={onClose}
       />
 
-      {/* Wrapper — full-viewport flex on mobile, vanishes on desktop */}
-      <div className="fixed inset-0 z-50 flex items-end sm:contents">
-        {/* Panel — bottom sheet on mobile, dropdown on desktop */}
-        <div
-          ref={panelRef}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          className="
-            w-full max-h-[85dvh] overflow-y-auto overflow-x-hidden overscroll-contain
-            sm:absolute sm:top-full sm:right-0 sm:z-50 sm:mt-2 sm:w-80 sm:max-h-[80vh] sm:overflow-y-auto
-            bg-surface-primary border border-edge-default rounded-t-2xl sm:rounded-xl
-            shadow-xl p-5 pb-8 sm:pb-5
-          "
-          style={{
-            animation: dragOffset === 0 ? "slideUp 0.2s ease-out" : "none",
-            transform: dragOffset > 0 ? `translateY(${dragOffset}px)` : undefined,
-            transition: isDragging.current ? "none" : "transform 0.2s ease-out",
-          }}
-        >
-          {/* Drag handle — mobile */}
-          <div className="flex justify-center sm:hidden -mx-5 -mt-5 pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-edge-strong" />
-          </div>
-
-          <div className="space-y-4">
-            {/* Period presets */}
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-2">
-                Period
-              </label>
-              <div className="grid grid-cols-2 gap-1.5">
-                {PRESETS.map((p) => (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => onPresetChange(p.value)}
-                    className={`px-2 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                      preset === p.value
-                        ? "bg-emerald text-white"
-                        : "bg-surface-elevated text-content-secondary hover:bg-surface-hover"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom range inputs */}
-            {preset === "custom" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="min-w-0">
-                  <label
-                    htmlFor="ctrl-start"
-                    className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
-                  >
-                    Start
-                  </label>
-                  <input
-                    id="ctrl-start"
-                    type="date"
-                    value={customStart}
-                    onChange={(e) => onCustomStartChange(e.target.value)}
-                    className="w-full min-w-0 h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <label
-                    htmlFor="ctrl-end"
-                    className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
-                  >
-                    End
-                  </label>
-                  <input
-                    id="ctrl-end"
-                    type="date"
-                    value={customEnd}
-                    onChange={(e) => onCustomEndChange(e.target.value)}
-                    className="w-full min-w-0 h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Currency & Category */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label
-                  htmlFor="ctrl-currency"
-                  className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
-                >
-                  Currency
-                </label>
-                <select
-                  id="ctrl-currency"
-                  value={currency}
-                  onChange={(e) => onCurrencyChange(e.target.value)}
-                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs font-medium bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
-                >
-                  <option value="">All</option>
-                  {currencies.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor="ctrl-category"
-                  className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5"
-                >
-                  Category
-                </label>
-                <select
-                  id="ctrl-category"
-                  value={category}
-                  onChange={(e) => onCategoryChange(e.target.value)}
-                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs font-medium bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
-                >
-                  <option value="">All</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Amount range */}
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-content-tertiary mb-1.5">
-                Amount Range
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <input
-                  type="number"
-                  placeholder="Min"
-                  value={localMin}
-                  onChange={(e) => setLocalMin(e.target.value)}
-                  onBlur={() => {
-                    if (localMin !== minAmount) onMinAmountChange(localMin);
-                  }}
-                  min="0"
-                  step="0.01"
-                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40 tabular-nums"
-                />
-                <input
-                  type="number"
-                  placeholder="Max"
-                  value={localMax}
-                  onChange={(e) => setLocalMax(e.target.value)}
-                  onBlur={() => {
-                    if (localMax !== maxAmount) onMaxAmountChange(localMax);
-                  }}
-                  min="0"
-                  step="0.01"
-                  className="w-full h-9 px-2.5 border border-edge-strong rounded-lg text-xs bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40 tabular-nums"
-                />
-              </div>
-            </div>
-
-            {/* Clear filters */}
-            {hasActiveFilters && (
-              <button
-                type="button"
-                onClick={onClearFilters}
-                className="w-full text-xs text-negative-text hover:text-negative-text-strong font-medium py-1.5 transition-colors"
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </>
+      <div className="fixed inset-0 z-[71] flex items-end">{panel}</div>
+    </>,
+    portalTarget,
   );
 }
 

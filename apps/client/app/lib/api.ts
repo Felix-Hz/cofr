@@ -183,6 +183,7 @@ export async function getExpenses(
     category?: string;
     minAmount?: number;
     maxAmount?: number;
+    collapseTransferPairs?: boolean;
   } = {},
 ): Promise<ExpensesResponse> {
   const params = new URLSearchParams({
@@ -195,6 +196,7 @@ export async function getExpenses(
   if (options.category) params.set("category", options.category);
   if (options.minAmount !== undefined) params.set("min_amount", options.minAmount.toString());
   if (options.maxAmount !== undefined) params.set("max_amount", options.maxAmount.toString());
+  if (options.collapseTransferPairs) params.set("collapse_transfer_pairs", "true");
 
   const response = await fetchWithAuth(`/expenses/?${params}`);
   const json = await response.json();
