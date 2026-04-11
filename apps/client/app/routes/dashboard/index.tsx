@@ -1,7 +1,5 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLoaderData, useNavigate, useRevalidator } from "react-router";
-import { Pie, PieChart, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
-import CategoryPieTooltip from "~/components/CategoryPieTooltip";
 import ControlsPanel, {
   getPresetDates,
   getPresetLabel,
@@ -9,6 +7,10 @@ import ControlsPanel, {
   shiftPreset,
 } from "~/components/ControlsPanel";
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
+import { DashboardGrid } from "~/components/dashboard/DashboardGrid";
+import { EditModeToolbar } from "~/components/dashboard/EditModeToolbar";
+import { WidgetGallery } from "~/components/dashboard/WidgetGallery";
+import { ensureWidgetsRegistered } from "~/components/dashboard/widgets/registerAll";
 import ExchangeRatesModal from "~/components/ExchangeRatesModal";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
 import ExportModal from "~/components/ExportModal";
@@ -19,18 +21,32 @@ import {
   createTransfer,
   deleteExpense,
   deleteTransfer,
+  getDashboardLayout,
   getExpenses,
+  getLifetimeStats,
   getRangeStats,
+  getSpendSparkline,
+  updateDashboardLayout,
   updateExpense,
   updateTransfer,
 } from "~/lib/api";
 import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
-import type { Expense, ExpenseCreate, TransferCreate } from "~/lib/schemas";
-import { useTheme } from "~/lib/theme";
-import { formatCurrency, formatDate, isPositiveType, truncateText } from "~/lib/utils";
+import { DashboardDataProvider } from "~/lib/dashboard/data-context";
+import { repackWidgets } from "~/lib/dashboard/grid";
+import { WIDGET_META } from "~/lib/dashboard/registry";
+import type {
+  DashboardSpace,
+  DashboardWidget,
+  Expense,
+  ExpenseCreate,
+  TransferCreate,
+  WidgetType,
+} from "~/lib/schemas";
 
 const CURRENCIES = [...SUPPORTED_CURRENCIES];
+
+ensureWidgetsRegistered();
 
 export function meta() {
   return [{ title: "cofr — Dashboard" }];
@@ -39,7 +55,6 @@ export function meta() {
 export async function clientLoader({ request }: { request: Request }) {
   const url = new URL(request.url);
 
-  // Date range params (default to current month)
   const now = new Date();
   const defaultStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -50,14 +65,13 @@ export async function clientLoader({ request }: { request: Request }) {
   const preset = (url.searchParams.get("preset") || "thisMonth") as Preset;
   const currency = url.searchParams.get("currency") || undefined;
 
-  // Transaction params
   const limit = Number(url.searchParams.get("limit")) || 10;
   const offset = Number(url.searchParams.get("offset")) || 0;
   const category = url.searchParams.get("category") || "";
   const minAmount = url.searchParams.get("minAmount");
   const maxAmount = url.searchParams.get("maxAmount");
 
-  const [expenseData, rangeStats] = await Promise.all([
+  const [expenseData, rangeStats, lifetimeStats, sparkline, layout] = await Promise.all([
     getExpenses({
       limit,
       offset,
@@ -68,11 +82,17 @@ export async function clientLoader({ request }: { request: Request }) {
       maxAmount: maxAmount ? Number(maxAmount) : undefined,
     }),
     getRangeStats(startDate + "T00:00:00", endDate + "T23:59:59", currency),
+    getLifetimeStats(currency),
+    getSpendSparkline(startDate + "T00:00:00", endDate + "T23:59:59", currency),
+    getDashboardLayout(),
   ]);
 
   return {
     ...expenseData,
     monthlyStats: rangeStats,
+    lifetimeStats,
+    sparkline,
+    layout,
     startDate,
     endDate,
     preset,
@@ -85,56 +105,39 @@ export async function clientLoader({ request }: { request: Request }) {
   };
 }
 
-function TransferButton({
+function ToolbarButton({
+  label,
   onClick,
+  tone = "default",
+  icon,
+  active = false,
   className,
-  showLabel = false,
 }: {
+  label: string;
   onClick: () => void;
+  tone?: "default" | "accent" | "emerald";
+  icon: React.ReactNode;
+  active?: boolean;
   className?: string;
-  showLabel?: boolean;
 }) {
+  const base = "h-9 w-9 flex items-center justify-center rounded-lg transition-colors shrink-0";
+  const toneStyles =
+    tone === "emerald"
+      ? "bg-emerald text-white hover:bg-emerald-hover"
+      : tone === "accent"
+        ? "border border-accent/30 text-accent hover:bg-accent-soft-bg"
+        : active
+          ? "bg-emerald text-white"
+          : "border border-edge-strong text-content-tertiary hover:bg-surface-hover hover:text-content-primary";
   return (
-    <Tooltip content="Transfer between accounts" position={showLabel ? "top" : "bottom"}>
+    <Tooltip content={label}>
       <button
+        type="button"
+        aria-label={label}
         onClick={onClick}
-        className={`h-9 sm:h-8 w-9 sm:w-auto sm:px-3 sm:gap-1.5 items-center justify-center rounded-lg border border-accent/30 text-accent hover:bg-accent-soft-bg transition-colors ${className ?? "flex"}`}
-        aria-label="New transfer"
+        className={`${base} ${toneStyles} ${className ?? ""}`}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
-          />
-        </svg>
-        {showLabel && <span className="hidden sm:inline text-xs font-medium">Transfer</span>}
-      </button>
-    </Tooltip>
-  );
-}
-
-function AddButton({
-  onClick,
-  className,
-  showLabel = false,
-}: {
-  onClick: () => void;
-  className?: string;
-  showLabel?: boolean;
-}) {
-  return (
-    <Tooltip content="Add an expense or fund an account" position={showLabel ? "top" : "bottom"}>
-      <button
-        onClick={onClick}
-        className={`h-9 sm:h-8 w-9 sm:w-auto sm:px-3.5 sm:gap-1.5 items-center justify-center bg-emerald text-white rounded-lg hover:bg-emerald-hover transition-colors ${className ?? "flex"}`}
-        aria-label="Add an expense or fund an account"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-        {showLabel && <span className="hidden sm:inline text-xs font-medium">Add</span>}
+        {icon}
       </button>
     </Tooltip>
   );
@@ -147,7 +150,12 @@ export default function Dashboard() {
   const {
     expenses,
     total_count,
+    limit: loaderLimit,
+    offset: loaderOffset,
     monthlyStats,
+    lifetimeStats,
+    sparkline,
+    layout,
     startDate,
     endDate,
     preset,
@@ -158,9 +166,21 @@ export default function Dashboard() {
     currentMinAmount,
     currentMaxAmount,
   } = useLoaderData<typeof clientLoader>();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
   const { categories } = useCategories();
+
+  // --- Layout state (locally mutable so drag/drop feels instant) ---
+  const [spaces, setSpaces] = useState<DashboardSpace[]>(layout.spaces);
+  useEffect(() => {
+    setSpaces(layout.spaces);
+  }, [layout]);
+
+  const activeSpace = spaces.find((s) => s.is_default) ?? spaces[0];
+  const widgets = activeSpace?.widgets ?? [];
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -172,32 +192,8 @@ export default function Dashboard() {
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Custom range local state (for ControlsPanel inputs)
   const [customStart, setCustomStart] = useState(startDate);
   const [customEnd, setCustomEnd] = useState(endDate);
-
-  const totalPages = Math.ceil(total_count / currentLimit) || 1;
-  const currentPage = Math.floor(currentOffset / currentLimit) + 1;
-
-  // Stats calculations
-  const netBalance = monthlyStats.total_income - monthlyStats.total_spent;
-
-  // Savings Rate & Spending Pulse
-  const periodDays = Math.max(
-    1,
-    Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1,
-  );
-  const dailyAverage = monthlyStats.total_spent / periodDays;
-  const savingsRate =
-    monthlyStats.total_income > 0
-      ? (monthlyStats.savings_net_change / monthlyStats.total_income) * 100
-      : 0;
-  const netBalancePct =
-    monthlyStats.total_income > 0 ? (netBalance / monthlyStats.total_income) * 100 : 0;
-
-  // Account balances
-  const accountBalances = monthlyStats.account_balances || [];
-  const totalNetWorth = accountBalances.reduce((sum, ab) => sum + ab.balance, 0);
 
   // --- URL helpers ---
   const buildUrl = (overrides: Record<string, string | number | undefined>) => {
@@ -242,14 +238,12 @@ export default function Dashboard() {
       navigate(buildUrl({ preset: "custom", startDate: value, endDate: customEnd, offset: 0 }));
     }
   };
-
   const handleCustomEndChange = (value: string) => {
     setCustomEnd(value);
     if (customStart && value) {
       navigate(buildUrl({ preset: "custom", startDate: customStart, endDate: value, offset: 0 }));
     }
   };
-
   const handleCurrencyChange = (c: string) => navigate(buildUrl({ currency: c }));
 
   const goToPrev = () => {
@@ -259,7 +253,6 @@ export default function Dashboard() {
     setCustomEnd(ed);
     navigate(buildUrl({ startDate: sd, endDate: ed, offset: 0 }));
   };
-
   const goToNext = () => {
     if (preset === "custom") return;
     const { startDate: sd, endDate: ed } = shiftPreset(preset, startDate, 1);
@@ -268,57 +261,13 @@ export default function Dashboard() {
     navigate(buildUrl({ startDate: sd, endDate: ed, offset: 0 }));
   };
 
-  const goToPage = (page: number) => {
-    navigate(buildUrl({ offset: (page - 1) * currentLimit }));
-  };
-
-  const handleCategoryFilterChange = (value: string) => {
-    navigate(buildUrl({ offset: 0, category: value }));
-  };
-
-  const handleMinAmountChange = (value: string) => {
-    navigate(buildUrl({ offset: 0, minAmount: value }));
-  };
-
-  const handleMaxAmountChange = (value: string) => {
-    navigate(buildUrl({ offset: 0, maxAmount: value }));
-  };
-
-  const clearFilters = () => {
+  const handleCategoryFilterChange = (v: string) => navigate(buildUrl({ offset: 0, category: v }));
+  const handleMinAmountChange = (v: string) => navigate(buildUrl({ offset: 0, minAmount: v }));
+  const handleMaxAmountChange = (v: string) => navigate(buildUrl({ offset: 0, maxAmount: v }));
+  const clearFilters = () =>
     navigate(buildUrl({ offset: 0, category: "", minAmount: "", maxAmount: "" }));
-  };
 
-  // Percentage helper
-  const getPercentageDisplay = (_catType: string, total: number): string => {
-    return monthlyStats.total_spent > 0
-      ? `${((total / monthlyStats.total_spent) * 100).toFixed(1)}%`
-      : "0.0%";
-  };
-
-  // Pie data — exclude income type and transfers
-  const pieData = monthlyStats.category_breakdown
-    .filter((cat) => cat.category_type !== "income")
-    .map((cat) => ({
-      category: cat.category,
-      total: cat.total,
-      count: cat.count,
-      percentage: getPercentageDisplay(cat.category_type, cat.total),
-      fill: isDark ? cat.category_color_dark : cat.category_color_light,
-      formatted: new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: monthlyStats.currency,
-        maximumFractionDigits: 0,
-      }).format(cat.total),
-    }))
-    .sort((a, b) => b.total - a.total);
-  const topExpenseCategories = pieData.slice(0, 5);
-
-  // Filter out 'to' side of transfers from the display list
-  const displayExpenses = expenses.filter(
-    (e: Expense) => !(e.is_transfer && e.transfer_direction === "to"),
-  );
-
-  // CRUD
+  // --- CRUD ---
   const handleAdd = () => {
     setSelectedExpense(null);
     setIsFormModalOpen(true);
@@ -327,7 +276,7 @@ export default function Dashboard() {
     setSelectedExpense(null);
     setIsTransferModalOpen(true);
   };
-  const handleRowClick = (expense: Expense) => {
+  const handleExpenseEdit = useCallback((expense: Expense) => {
     if (expense.is_transfer) {
       setSelectedExpense(expense);
       setIsTransferModalOpen(true);
@@ -335,7 +284,11 @@ export default function Dashboard() {
       setSelectedExpense(expense);
       setIsFormModalOpen(true);
     }
-  };
+  }, []);
+  const handleExpenseDelete = useCallback((expense: Expense) => {
+    setSelectedExpense(expense);
+    setIsDeleteModalOpen(true);
+  }, []);
 
   const handleFormSubmit = async (data: ExpenseCreate) => {
     setIsLoading(true);
@@ -348,7 +301,6 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
-
   const handleTransferSubmit = async (data: TransferCreate) => {
     setIsLoading(true);
     try {
@@ -360,7 +312,6 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
-
   const handleDeleteFromModal = async () => {
     if (!selectedExpense) return;
     setIsLoading(true);
@@ -372,7 +323,6 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
-
   const handleTransferDelete = async () => {
     if (!selectedExpense) return;
     setIsLoading(true);
@@ -384,7 +334,6 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
-
   const handleDeleteConfirm = async () => {
     if (!selectedExpense) return;
     setIsLoading(true);
@@ -397,790 +346,395 @@ export default function Dashboard() {
     }
   };
 
+  // --- Layout mutation ---
+  const persistLayout = useCallback(
+    async (next: DashboardWidget[]) => {
+      if (!activeSpace) return;
+      setIsSaving(true);
+      try {
+        const updated = await updateDashboardLayout({
+          spaces: spaces.map((s) =>
+            s.id === activeSpace.id
+              ? {
+                  id: s.id,
+                  name: s.name,
+                  position: s.position,
+                  is_default: s.is_default,
+                  widgets: next.map((w) => ({
+                    widget_type: w.widget_type,
+                    col_x: w.col_x,
+                    col_y: w.col_y,
+                    col_span: w.col_span,
+                    row_span: w.row_span,
+                    config: w.config ?? null,
+                  })),
+                }
+              : {
+                  id: s.id,
+                  name: s.name,
+                  position: s.position,
+                  is_default: s.is_default,
+                  widgets: s.widgets.map((w) => ({
+                    widget_type: w.widget_type,
+                    col_x: w.col_x,
+                    col_y: w.col_y,
+                    col_span: w.col_span,
+                    row_span: w.row_span,
+                    config: w.config ?? null,
+                  })),
+                },
+          ),
+        });
+        setSpaces(updated.spaces);
+        setIsDirty(false);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [activeSpace, spaces],
+  );
+
+  const handleReorder = useCallback(
+    (next: DashboardWidget[]) => {
+      if (!activeSpace) return;
+      setSpaces((prev) => prev.map((s) => (s.id === activeSpace.id ? { ...s, widgets: next } : s)));
+      setIsDirty(true);
+      void persistLayout(next);
+    },
+    [activeSpace, persistLayout],
+  );
+
+  const handleAddWidget = useCallback(
+    (type: WidgetType) => {
+      if (!activeSpace) return;
+      const meta = WIDGET_META[type];
+      const tempId = `pending-${type}-${Date.now()}`;
+      const next = repackWidgets([
+        ...widgets,
+        {
+          id: tempId,
+          widget_type: type,
+          col_x: 0,
+          col_y: Number.POSITIVE_INFINITY,
+          col_span: meta.size.defaultColSpan,
+          row_span: meta.size.defaultRowSpan,
+          config: null,
+        } as DashboardWidget,
+      ]);
+      setSpaces((prev) => prev.map((s) => (s.id === activeSpace.id ? { ...s, widgets: next } : s)));
+      setIsDirty(true);
+      setIsGalleryOpen(false);
+      void persistLayout(next);
+    },
+    [activeSpace, widgets, persistLayout],
+  );
+
+  const activeTypes = useMemo(() => new Set(widgets.map((w) => w.widget_type)), [widgets]);
+
   const hasActiveFilters = !!(currentCategory || currentMinAmount || currentMaxAmount);
   const periodLabel = getPresetLabel(preset, startDate, endDate);
   const showArrows = preset !== "custom";
 
-  // Find category name for active filter display
-  const activeCategoryName = currentCategory
-    ? categories.find((c) => c.id === currentCategory)?.name
-    : null;
-
-  // Helper: get account name for transfer display
-  const getTransferLabel = (expense: Expense, short = false): string => {
-    // expense is the 'from' side; we need to look through all expenses to find the linked 'to' side
-    const linkedTo = expenses.find(
-      (e: Expense) => e.id === expense.linked_transaction_id && e.transfer_direction === "to",
-    );
-    const fromName = expense.account_name;
-    const toName = linkedTo?.account_name || "?";
-    if (short) {
-      const abbr = (name: string) => (name.length > 5 ? name.slice(0, 3) : name);
-      return `${abbr(fromName)} → ${abbr(toName)}`;
-    }
-    return `${fromName} → ${toName}`;
+  const dashboardData = {
+    periodStats: monthlyStats,
+    lifetimeStats,
+    expenses,
+    expensesTotal: total_count,
+    expensesLimit: loaderLimit,
+    expensesOffset: loaderOffset,
+    accountBalances: monthlyStats.account_balances || [],
+    sparkline,
+    startDate,
+    endDate,
+    currency: currentCurrency || null,
+    preferredCurrency: monthlyStats.currency,
+    onExpenseEdit: handleExpenseEdit,
+    onExpenseDelete: handleExpenseDelete,
+    onCreateExpense: handleAdd,
+    onCreateTransfer: handleTransfer,
   };
 
   return (
-    <div className="space-y-6 pb-16">
-      {/* ─── Header ─── */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          {/* Prev arrow */}
-          {showArrows && (
-            <Tooltip content="Previous period">
-              <button
+    <DashboardDataProvider value={dashboardData}>
+      <div className="space-y-6 pb-24">
+        {/* ─── Header ─── */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            {showArrows && (
+              <ToolbarButton
+                label="Previous period"
                 onClick={goToPrev}
-                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary shrink-0"
-                aria-label="Previous period"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-            </Tooltip>
-          )}
+                icon={
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                }
+              />
+            )}
 
-          <div className="min-w-0">
-            <h2
-              className={`font-bold tracking-tight text-content-heading truncate sm:text-2xl ${periodLabel.length > (showArrows ? 16 : 22) ? "text-base" : "text-xl"}`}
-            >
-              {periodLabel}
-            </h2>
-            <p className="text-sm text-content-tertiary mt-0.5 hidden sm:block">
-              Financial overview
-            </p>
+            <div className="min-w-0">
+              <h2
+                className={`truncate font-bold tracking-tight text-content-heading sm:text-2xl ${
+                  periodLabel.length > (showArrows ? 16 : 22) ? "text-base" : "text-xl"
+                }`}
+              >
+                {periodLabel}
+              </h2>
+              <p className="mt-0.5 hidden text-sm text-content-tertiary sm:block">
+                Financial overview
+              </p>
+            </div>
+
+            {showArrows && (
+              <ToolbarButton
+                label="Next period"
+                onClick={goToNext}
+                icon={
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                }
+              />
+            )}
           </div>
 
-          {/* Next arrow */}
-          {showArrows && (
-            <Tooltip content="Next period">
-              <button
-                onClick={goToNext}
-                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors text-content-tertiary hover:text-content-primary shrink-0"
-                aria-label="Next period"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="hidden h-7 items-center rounded-full bg-accent-soft-bg px-2.5 text-[11px] font-medium text-accent-soft-text sm:flex">
+              {
+                {
+                  thisMonth: "Monthly",
+                  last7Days: "Weekly",
+                  lastYear: "Yearly",
+                  custom: "Custom",
+                }[preset]
+              }
+            </span>
+            <span className="hidden h-7 items-center rounded-full bg-accent-soft-bg px-2.5 text-[11px] font-medium text-accent-soft-text sm:flex">
+              {currentCurrency || "All"}
+            </span>
+
+            <ToolbarButton
+              label={isEditMode ? "Exit edit mode" : "Edit dashboard"}
+              onClick={() => setIsEditMode((v) => !v)}
+              active={isEditMode}
+              icon={
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 5l7 7-7 7"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                   />
                 </svg>
-              </button>
-            </Tooltip>
-          )}
+              }
+            />
+
+            <ToolbarButton
+              label="Export data"
+              onClick={() => setIsExportModalOpen(true)}
+              icon={
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              }
+            />
+
+            <div className="relative">
+              <Tooltip content="Filters & controls">
+                <button
+                  type="button"
+                  ref={controlsToggleRef}
+                  onClick={() => setIsControlsOpen(!isControlsOpen)}
+                  className={`relative flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+                    isControlsOpen
+                      ? "bg-emerald text-white"
+                      : "border border-edge-strong text-content-tertiary hover:bg-surface-hover hover:text-content-primary"
+                  }`}
+                  aria-label="Filters & controls"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="4" y1="7" x2="20" y2="7" />
+                    <line x1="4" y1="12" x2="20" y2="12" />
+                    <line x1="4" y1="17" x2="20" y2="17" />
+                    <circle cx="8" cy="7" r="2" fill="currentColor" />
+                    <circle cx="16" cy="12" r="2" fill="currentColor" />
+                    <circle cx="10" cy="17" r="2" fill="currentColor" />
+                  </svg>
+                  {hasActiveFilters && (
+                    <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-accent" />
+                  )}
+                </button>
+              </Tooltip>
+
+              <ControlsPanel
+                isOpen={isControlsOpen}
+                onClose={() => setIsControlsOpen(false)}
+                toggleRef={controlsToggleRef}
+                preset={preset}
+                onPresetChange={handlePresetChange}
+                currency={currentCurrency}
+                onCurrencyChange={handleCurrencyChange}
+                customStart={customStart}
+                customEnd={customEnd}
+                onCustomStartChange={handleCustomStartChange}
+                onCustomEndChange={handleCustomEndChange}
+                currencies={CURRENCIES}
+                categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+                category={currentCategory}
+                onCategoryChange={handleCategoryFilterChange}
+                minAmount={currentMinAmount}
+                onMinAmountChange={handleMinAmountChange}
+                maxAmount={currentMaxAmount}
+                onMaxAmountChange={handleMaxAmountChange}
+                hasActiveFilters={hasActiveFilters}
+                onClearFilters={clearFilters}
+              />
+            </div>
+
+            <ToolbarButton
+              label="Transfer between accounts"
+              onClick={handleTransfer}
+              tone="accent"
+              icon={
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
+                  />
+                </svg>
+              }
+            />
+            <ToolbarButton
+              label="Add an expense"
+              onClick={handleAdd}
+              tone="emerald"
+              icon={
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+              }
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Always-visible badges */}
-          <span className="hidden sm:flex h-7 px-2.5 items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
-            {
-              { thisMonth: "Monthly", last7Days: "Weekly", lastYear: "Yearly", custom: "Custom" }[
-                preset
-              ]
-            }
-          </span>
-          <span className="hidden sm:flex h-7 px-2.5 items-center text-[11px] font-medium text-accent-soft-text bg-accent-soft-bg rounded-full">
-            {currentCurrency || "All"}
-          </span>
-
-          {/* Export */}
-          <Tooltip content="Export data">
-            <button
-              onClick={() => setIsExportModalOpen(true)}
-              className="h-9 w-9 flex items-center justify-center rounded-lg border border-edge-strong hover:bg-surface-hover text-content-tertiary hover:text-content-primary transition-colors"
-              aria-label="Export data"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
+        {/* ─── Currency info ─── */}
+        {!currentCurrency && monthlyStats.is_converted && (
+          <div className="hidden items-center gap-2.5 rounded-lg border border-accent/20 bg-accent-soft-bg px-4 py-2.5 text-xs text-accent-soft-text sm:flex">
+            <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-              >
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-            </button>
-          </Tooltip>
-
-          {/* Controls toggle */}
-          <div className="relative">
-            <Tooltip content="Filters & controls">
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>
+              Totals converted to {monthlyStats.currency} at approximate rates. Select a specific
+              currency to view only those transactions, or{" "}
               <button
-                ref={controlsToggleRef}
-                onClick={() => setIsControlsOpen(!isControlsOpen)}
-                className={`relative h-9 w-9 flex items-center justify-center rounded-lg transition-colors ${
-                  isControlsOpen
-                    ? "bg-emerald text-white"
-                    : "border border-edge-strong hover:bg-surface-hover text-content-tertiary hover:text-content-primary"
-                }`}
-                aria-label="Filters & controls"
+                type="button"
+                onClick={() => setIsRatesModalOpen(true)}
+                className="cursor-pointer font-medium underline hover:text-accent"
               >
-                {/* Sliders icon */}
-                <svg
-                  className="w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="4" y1="7" x2="20" y2="7" />
-                  <line x1="4" y1="12" x2="20" y2="12" />
-                  <line x1="4" y1="17" x2="20" y2="17" />
-                  <circle cx="8" cy="7" r="2" fill="currentColor" />
-                  <circle cx="16" cy="12" r="2" fill="currentColor" />
-                  <circle cx="10" cy="17" r="2" fill="currentColor" />
-                </svg>
-                {hasActiveFilters && (
-                  <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-accent" />
-                )}
+                view daily rates
               </button>
-            </Tooltip>
-
-            <ControlsPanel
-              isOpen={isControlsOpen}
-              onClose={() => setIsControlsOpen(false)}
-              toggleRef={controlsToggleRef}
-              preset={preset}
-              onPresetChange={handlePresetChange}
-              currency={currentCurrency}
-              onCurrencyChange={handleCurrencyChange}
-              customStart={customStart}
-              customEnd={customEnd}
-              onCustomStartChange={handleCustomStartChange}
-              onCustomEndChange={handleCustomEndChange}
-              currencies={CURRENCIES}
-              categories={categories.map((c) => ({ id: c.id, name: c.name }))}
-              category={currentCategory}
-              onCategoryChange={handleCategoryFilterChange}
-              minAmount={currentMinAmount}
-              onMinAmountChange={handleMinAmountChange}
-              maxAmount={currentMaxAmount}
-              onMaxAmountChange={handleMaxAmountChange}
-              hasActiveFilters={hasActiveFilters}
-              onClearFilters={clearFilters}
-            />
-          </div>
-
-          <TransferButton onClick={handleTransfer} className="flex sm:hidden" />
-          <AddButton onClick={handleAdd} className="flex sm:hidden" />
-        </div>
-      </div>
-
-      {/* ─── Currency info ─── */}
-      {!currentCurrency && monthlyStats.is_converted && (
-        <div className="hidden sm:flex items-center gap-2.5 bg-accent-soft-bg border border-accent/20 text-accent-soft-text px-4 py-2.5 rounded-lg text-xs">
-          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>
-            Totals converted to {monthlyStats.currency} at approximate rates. Select a specific
-            currency to view only those transactions, or{" "}
-            <button
-              type="button"
-              onClick={() => setIsRatesModalOpen(true)}
-              className="underline font-medium hover:text-accent cursor-pointer"
-            >
-              view daily rates
-            </button>
-            .
-          </span>
-        </div>
-      )}
-
-      {/* ─── Summary + Chart ─── */}
-      <div className="grid gap-4 lg:grid-cols-[2fr_3fr]">
-        {/* Cards — 2x2 */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Savings Rate */}
-          <div
-            className={`rounded-xl border p-4 sm:p-5 ${
-              savingsRate >= 0
-                ? "border-positive-border bg-positive-bg"
-                : "border-negative-border bg-negative-bg"
-            }`}
-          >
-            <div
-              className={`flex items-center gap-2 text-xs font-medium uppercase tracking-wider ${
-                savingsRate >= 0 ? "text-positive-text-strong/70" : "text-negative-text/70"
-              }`}
-            >
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                />
-              </svg>
-              Savings Rate
-            </div>
-            <div
-              className={`mt-2 text-xl sm:text-2xl font-bold tabular-nums ${
-                savingsRate >= 0 ? "text-positive-text-strong" : "text-negative-text"
-              }`}
-            >
-              {savingsRate.toFixed(1)}%
-            </div>
-            <p
-              className={`mt-1 text-[11px] ${
-                savingsRate >= 0 ? "text-positive-text" : "text-negative-text/70"
-              }`}
-            >
-              {formatCurrency(monthlyStats.savings_net_change, monthlyStats.currency, true, 0)}{" "}
-              saved
-            </p>
-          </div>
-
-          {/* Spending Pulse */}
-          <div className="rounded-xl border border-edge-default bg-surface-primary p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
-                />
-              </svg>
-              Spending Pulse
-            </div>
-            <div className="mt-2 text-xl sm:text-2xl font-bold text-content-primary tabular-nums">
-              {formatCurrency(dailyAverage, monthlyStats.currency, true)}
-              <span className="text-sm font-medium text-content-tertiary">/day</span>
-            </div>
-            <p className="mt-1 text-[11px] text-content-tertiary">
-              {monthlyStats.expense_count} transactions
-            </p>
-          </div>
-
-          {/* Top Categories */}
-          <div className="hidden sm:block rounded-xl border border-edge-default bg-surface-primary p-4 sm:p-5 shadow-sm">
-            <div className="flex min-w-0 items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
-              <svg
-                className="h-3.5 w-3.5 shrink-0"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 20V10m5 10V4m5 16v-7" />
-              </svg>
-              <span className="leading-tight">Top Categories</span>
-            </div>
-            {topExpenseCategories.length > 0 ? (
-              <div className="mt-3 space-y-1">
-                {topExpenseCategories.map((entry) => (
-                  <div key={entry.category} className="flex items-center gap-2 py-1">
-                    <span
-                      className="h-2 w-2 rounded-full shrink-0"
-                      style={{ backgroundColor: entry.fill }}
-                    />
-                    <span className="min-w-0 flex-1 truncate text-sm text-content-primary">
-                      {entry.category}
-                    </span>
-                    <span className="shrink-0 text-xs text-content-tertiary tabular-nums">
-                      {entry.percentage}
-                    </span>
-                    <span className="shrink-0 text-sm font-medium text-content-primary tabular-nums">
-                      {entry.formatted}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="mt-3 rounded-lg border border-dashed border-edge-default px-3 py-3 text-center text-xs text-content-muted">
-                No expense categories yet for this period
-              </div>
-            )}
-          </div>
-
-          {/* Cash Flow */}
-          <div
-            className={`col-span-2 sm:col-span-1 rounded-xl border p-4 sm:p-5 ${
-              netBalance >= 0
-                ? "border-edge-default bg-accent-soft-bg"
-                : "border-negative-border bg-negative-bg"
-            }`}
-          >
-            <div
-              className={`flex items-center gap-2 text-xs font-medium uppercase tracking-wider ${
-                netBalance >= 0 ? "text-accent-soft-text/70" : "text-negative-text/70"
-              }`}
-            >
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 19h16M7 15l3-3 2 2 5-6" />
-              </svg>
-              Cash Flow
-            </div>
-            <div className="mt-3 flex items-end justify-between gap-4 sm:flex-col sm:items-start sm:gap-0">
-              <div>
-                <div className="flex items-center gap-2 text-xl font-bold text-content-primary tabular-nums sm:text-2xl">
-                  {formatCurrency(netBalance, monthlyStats.currency, true, 0)}
-                  <span
-                    className={`inline-flex shrink-0 items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      netBalancePct >= 0
-                        ? "bg-positive-bg text-positive-text-strong"
-                        : "bg-negative-bg text-negative-text"
-                    }`}
-                  >
-                    {netBalancePct >= 0 ? "+" : ""}
-                    {Math.round(netBalancePct)}%
-                  </span>
-                </div>
-                <p className="mt-1 text-[11px] text-content-tertiary">
-                  Net balance for {periodLabel.toLowerCase()}
-                </p>
-              </div>
-              <div className="flex flex-col gap-1.5 sm:gap-2.5 sm:mt-4 sm:w-full">
-                <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-primary/65 px-3 py-1.5 sm:py-2 backdrop-blur-sm">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
-                    In
-                  </span>
-                  <span className="text-xs sm:text-sm font-semibold text-positive-text-strong tabular-nums">
-                    {formatCurrency(monthlyStats.total_income, monthlyStats.currency, true, 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-primary/65 px-3 py-1.5 sm:py-2 backdrop-blur-sm">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-content-tertiary">
-                    Out
-                  </span>
-                  <span className="text-xs sm:text-sm font-semibold text-content-primary tabular-nums">
-                    {formatCurrency(monthlyStats.total_spent, monthlyStats.currency, true, 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pie chart + legend */}
-        <div className="rounded-xl border border-edge-default bg-surface-primary shadow-sm overflow-hidden p-2 sm:p-4">
-          {pieData.length > 0 ? (
-            <div className="flex flex-col h-full">
-              <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
-                <svg
-                  className="w-3.5 h-3.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z"
-                  />
-                </svg>
-                Category Breakdown
-              </div>
-
-              <div className="flex flex-col sm:flex-row flex-1 mt-3 gap-4">
-                <div className="flex items-center justify-center flex-1 min-h-0">
-                  <ResponsiveContainer width="100%" height={275}>
-                    <PieChart tabIndex={-1} style={{ outline: "none" }}>
-                      <Pie
-                        data={pieData}
-                        dataKey="total"
-                        nameKey="category"
-                        cx="50%"
-                        cy="50%"
-                        innerRadius="45%"
-                        outerRadius="100%"
-                        paddingAngle={0}
-                        strokeWidth={0.5}
-                        strokeOpacity={0.65}
-                        focusable={false}
-                      />
-                      <RechartsTooltip content={<CategoryPieTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="flex flex-col justify-center gap-2 sm:w-[200px] shrink-0">
-                  {pieData.map((entry) => (
-                    <div key={entry.category} className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: entry.fill }}
-                      />
-                      <span className="text-xs text-content-secondary truncate flex-1">
-                        {entry.category}
-                      </span>
-                      <span className="text-[11px] font-medium text-content-primary tabular-nums shrink-0">
-                        {entry.formatted}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full min-h-[200px] gap-3 px-6">
-              <div className="w-20 h-20 rounded-full border-[6px] border-edge-default" />
-              <p className="text-xs text-content-muted text-center">No spending data this period</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ─── Account Balances Strip ─── */}
-      {accountBalances.length > 0 && (
-        <div className="rounded-xl border border-edge-default bg-surface-primary shadow-sm p-3 sm:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-content-tertiary">
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 7.5h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"
-                />
-              </svg>
-              Accounts
-            </div>
-            <span className="text-sm font-semibold text-content-primary tabular-nums">
-              {formatCurrency(totalNetWorth, monthlyStats.currency)}
+              .
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-            {accountBalances.map((ab) => (
-              <div
-                key={ab.account_id}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-edge-default bg-surface-elevated min-w-0"
-              >
-                <svg
-                  className="w-3.5 h-3.5 shrink-0 text-content-tertiary"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  {ab.account_type === "checking" && (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
-                    />
-                  )}
-                  {ab.account_type === "savings" && (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                    />
-                  )}
-                  {ab.account_type === "investment" && (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"
-                    />
-                  )}
-                  {!["checking", "savings", "investment"].includes(ab.account_type) && (
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 7.5h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"
-                    />
-                  )}
-                </svg>
-                <span className="text-xs font-medium text-content-primary truncate">
-                  {ab.account_name}
-                </span>
-                <span
-                  className={`text-xs font-semibold tabular-nums shrink-0 ml-auto ${
-                    ab.balance > 0
-                      ? "text-positive-text-strong"
-                      : ab.balance < 0
-                        ? "text-negative-text"
-                        : "text-content-tertiary"
-                  }`}
-                >
-                  {formatCurrency(ab.balance, monthlyStats.currency)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ─── Transactions ─── */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-semibold text-content-heading">Transactions</h3>
-            <p className="text-xs text-content-tertiary mt-0.5">
-              {total_count} total
-              {hasActiveFilters
-                ? ` (filtered${activeCategoryName ? `: ${activeCategoryName}` : ""})`
-                : ""}
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="h-8 px-2.5 text-xs text-content-tertiary hover:text-negative-text hover:bg-negative-bg rounded-lg transition-colors"
-              >
-                Clear
-              </button>
-            )}
-            <TransferButton onClick={handleTransfer} showLabel />
-            <AddButton onClick={handleAdd} showLabel />
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="rounded-xl border border-edge-default bg-surface-primary shadow-sm overflow-hidden">
-          <table className="min-w-full table-fixed divide-y divide-edge-default">
-            <thead>
-              <tr className="bg-surface-elevated">
-                <th className="w-[72px] sm:w-auto px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
-                  Date
-                </th>
-                <th className="hidden sm:table-cell px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
-                  Account
-                </th>
-                <th className="hidden sm:table-cell px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
-                  Description
-                </th>
-                <th className="px-3 sm:px-5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
-                  Category
-                </th>
-                <th className="w-[90px] sm:w-auto px-3 sm:px-5 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
-                  Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-edge-default">
-              {displayExpenses.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-sm text-content-tertiary">
-                    No transactions found
-                  </td>
-                </tr>
-              ) : (
-                displayExpenses.map((expense: Expense) => {
-                  const isPositive = isPositiveType(expense.category_type);
-                  const isTransfer = expense.is_transfer;
-                  const catColor = isDark
-                    ? expense.category_color_dark
-                    : expense.category_color_light;
-                  return (
-                    <tr
-                      key={expense.id}
-                      onClick={() => handleRowClick(expense)}
-                      className={`cursor-pointer transition-colors ${
-                        isTransfer
-                          ? "bg-accent-soft-bg/30 hover:bg-accent-soft-bg/50"
-                          : isPositive
-                            ? "bg-positive-bg/50 hover:bg-positive-bg"
-                            : "hover:bg-surface-hover"
-                      }`}
-                    >
-                      <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-xs text-content-tertiary tabular-nums">
-                        <span className="sm:hidden">
-                          {formatDate(expense.created_at, "mobile")}
-                        </span>
-                        <span className="hidden sm:inline">{formatDate(expense.created_at)}</span>
-                      </td>
-                      <td className="hidden sm:table-cell px-5 py-3 whitespace-nowrap text-xs text-content-tertiary">
-                        {expense.account_name}
-                      </td>
-                      <td className="hidden sm:table-cell px-5 py-3 whitespace-nowrap text-sm text-content-primary">
-                        {expense.description ? (
-                          truncateText(expense.description, 40)
-                        ) : (
-                          <span className="text-content-muted">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 sm:px-5 py-3 sm:whitespace-nowrap max-w-0 sm:max-w-none overflow-hidden text-ellipsis">
-                        {isTransfer ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-accent-soft-text truncate">
-                            <svg
-                              className="w-3 h-3 shrink-0"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
-                              />
-                            </svg>
-                            <span className="sm:hidden truncate">
-                              {getTransferLabel(expense, true)}
-                            </span>
-                            <span className="hidden sm:inline truncate">
-                              {getTransferLabel(expense)}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-content-primary truncate">
-                            <span
-                              className="w-1.5 h-1.5 rounded-full shrink-0"
-                              style={{ backgroundColor: catColor }}
-                            />
-                            <span className="truncate">{expense.category_name}</span>
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 sm:px-5 py-3 whitespace-nowrap text-xs sm:text-sm font-medium text-content-primary text-right tabular-nums">
-                        <span className="inline-flex items-center gap-1.5 justify-end">
-                          {expense.is_opening_balance && (
-                            <span
-                              className="text-[9px] font-semibold leading-none px-1 py-0.5 rounded bg-accent-soft-bg text-accent-soft-text"
-                              title="Opening balance — excluded from stats"
-                            >
-                              OB
-                            </span>
-                          )}
-                          {isTransfer && (
-                            <span className="hidden sm:inline-flex text-[9px] font-semibold leading-none px-1 py-0.5 rounded bg-accent-soft-bg text-accent-soft-text">
-                              TR
-                            </span>
-                          )}
-                          {isPositive && !expense.is_opening_balance && !isTransfer && (
-                            <span className="text-[9px] font-semibold leading-none px-1 py-0.5 rounded bg-positive-bg text-positive-text-strong">
-                              IN
-                            </span>
-                          )}
-                          {formatCurrency(expense.amount, expense.currency)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {total_count >= 10 && (
-          <div className="flex items-center justify-between pt-1">
-            <button
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="h-8 px-3 border border-edge-strong rounded-lg text-xs font-medium text-content-primary disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-hover transition-colors"
-            >
-              Previous
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-content-tertiary tabular-nums">
-                {currentPage} / {totalPages}
-              </span>
-              <select
-                value={currentLimit}
-                onChange={(e) => navigate(buildUrl({ limit: Number(e.target.value), offset: 0 }))}
-                className="h-7 px-1.5 border border-edge-strong rounded-md text-xs text-content-tertiary bg-surface-primary focus:outline-none focus:ring-2 focus:ring-emerald/40 transition-shadow"
-              >
-                {[10, 25, 50].map((n) => (
-                  <option key={n} value={n}>
-                    {n} / page
-                  </option>
-                ))}
-              </select>
-            </div>
-            <button
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="h-8 px-3 border border-edge-strong rounded-lg text-xs font-medium text-content-primary disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-hover transition-colors"
-            >
-              Next
-            </button>
-          </div>
         )}
+
+        {/* ─── Composable widget grid ─── */}
+        <DashboardGrid widgets={widgets} isEditMode={isEditMode} onReorder={handleReorder} />
+
+        {/* ─── Modals & floating surfaces ─── */}
+        <EditModeToolbar
+          isEditMode={isEditMode}
+          onExit={() => setIsEditMode(false)}
+          onOpenGallery={() => setIsGalleryOpen(true)}
+          isDirty={isDirty}
+          isSaving={isSaving}
+        />
+        <WidgetGallery
+          isOpen={isGalleryOpen}
+          onClose={() => setIsGalleryOpen(false)}
+          onAdd={handleAddWidget}
+          activeTypes={activeTypes}
+        />
+
+        <ExpenseFormModal
+          isOpen={isFormModalOpen}
+          onClose={() => setIsFormModalOpen(false)}
+          onSubmit={handleFormSubmit}
+          onDelete={handleDeleteFromModal}
+          expense={selectedExpense}
+          isLoading={isLoading}
+        />
+        <TransferFormModal
+          isOpen={isTransferModalOpen}
+          onClose={() => setIsTransferModalOpen(false)}
+          onSubmit={handleTransferSubmit}
+          onDelete={handleTransferDelete}
+          expense={selectedExpense}
+          isLoading={isLoading}
+        />
+        <DeleteConfirmModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleDeleteConfirm}
+          isLoading={isLoading}
+        />
+        <ExchangeRatesModal
+          isOpen={isRatesModalOpen}
+          onClose={() => setIsRatesModalOpen(false)}
+          preferredCurrency={monthlyStats.currency}
+        />
+        <ExportModal
+          isOpen={isExportModalOpen}
+          onClose={() => setIsExportModalOpen(false)}
+          transactionCount={total_count}
+          defaultFilters={{
+            startDate: startDate,
+            endDate: endDate,
+            categoryId: currentCategory || undefined,
+            currency: currentCurrency || undefined,
+          }}
+        />
       </div>
-
-      {/* ─── Modals ─── */}
-      <ExpenseFormModal
-        isOpen={isFormModalOpen}
-        onClose={() => setIsFormModalOpen(false)}
-        onSubmit={handleFormSubmit}
-        onDelete={handleDeleteFromModal}
-        expense={selectedExpense}
-        isLoading={isLoading}
-      />
-      <TransferFormModal
-        isOpen={isTransferModalOpen}
-        onClose={() => setIsTransferModalOpen(false)}
-        onSubmit={handleTransferSubmit}
-        onDelete={handleTransferDelete}
-        expense={selectedExpense}
-        isLoading={isLoading}
-      />
-      <DeleteConfirmModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDeleteConfirm}
-        isLoading={isLoading}
-      />
-
-      <ExchangeRatesModal
-        isOpen={isRatesModalOpen}
-        onClose={() => setIsRatesModalOpen(false)}
-        preferredCurrency={monthlyStats.currency}
-      />
-
-      <ExportModal
-        isOpen={isExportModalOpen}
-        onClose={() => setIsExportModalOpen(false)}
-        transactionCount={total_count}
-        defaultFilters={{
-          startDate: startDate,
-          endDate: endDate,
-          categoryId: currentCategory || undefined,
-          currency: currentCurrency || undefined,
-        }}
-      />
-    </div>
+    </DashboardDataProvider>
   );
 }
