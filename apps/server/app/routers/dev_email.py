@@ -10,7 +10,8 @@ from app.email.templates import render_template
 router = APIRouter(prefix="/dev/email-preview", tags=["Dev Email Preview"])
 
 _ALLOWED_ENVS = {"local", "development", "dev", "test"}
-_TemplateName = Literal["verification", "welcome"]
+_TemplateName = Literal["verification", "welcome", "password_reset"]
+_SAMPLE_PERSON = "alice"
 
 
 def _ensure_preview_enabled() -> None:
@@ -18,37 +19,36 @@ def _ensure_preview_enabled() -> None:
         raise HTTPException(status_code=404, detail="Not found")
 
 
-def _render_email(template_name: _TemplateName, person: Literal["alice", "bob"]) -> str:
+def _render_email(template_name: _TemplateName) -> str:
     if template_name == "verification":
-        verify_url = f"{settings.FRONTEND_URL}/verify-email?token=preview-{person}-token"
+        verify_url = f"{settings.FRONTEND_URL}/verify-email?token=preview-{_SAMPLE_PERSON}-token"
         return render_template("verification", verify_url=verify_url)
 
-    display_name = "Alice" if person == "alice" else "Bob"
-    return render_template("welcome", name=display_name)
+    if template_name == "password_reset":
+        reset_url = f"{settings.FRONTEND_URL}/reset-password?token=preview-{_SAMPLE_PERSON}-token"
+        return render_template("password_reset", reset_url=reset_url)
+
+    return render_template("welcome", name="Alice")
 
 
 @router.get("", response_class=HTMLResponse)
 async def email_preview(
     template: _TemplateName = Query(default="verification"),
-    person: Literal["alice", "bob"] = Query(default="alice"),
 ) -> HTMLResponse:
     """Single-route local gallery for rendered email templates."""
     _ensure_preview_enabled()
 
-    selected_html = _render_email(template, person)
+    selected_html = _render_email(template)
     preview_srcdoc = escape(selected_html, quote=True)
 
-    def preview_link(
-        label: str, template_name: _TemplateName, person_name: Literal["alice", "bob"]
-    ):
-        is_active = template == template_name and person == person_name
-        href = f"/dev/email-preview?template={template_name}&person={person_name}"
+    def preview_link(label: str, template_name: _TemplateName):
+        is_active = template == template_name
+        href = f"/dev/email-preview?template={template_name}"
         class_name = "preview-link active" if is_active else "preview-link"
-        sample_name = "Alice" if person_name == "alice" else "Bob"
         return (
             f'<a href="{href}" class="{class_name}">'
             f"<strong>{label}</strong>"
-            f"<small>Sample data: {sample_name}</small>"
+            f"<small>Sample data: Alice</small>"
             f"</a>"
         )
 
@@ -65,7 +65,7 @@ async def email_preview(
     body {{
       margin: 0;
       font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #edf2f4;
+      background: #f6f8fa;
       color: #4b5563;
     }}
     .page {{
@@ -150,7 +150,7 @@ async def email_preview(
     }}
     .viewer {{
       overflow: hidden;
-      background: #f3f5f7;
+      background: #ffffff;
     }}
     .viewer-head {{
       display: flex;
@@ -173,7 +173,7 @@ async def email_preview(
     iframe {{
       display: block;
       width: 100%;
-      min-height: calc(100vh - 140px);
+      height: 0;
       border: 0;
       background: #ffffff;
     }}
@@ -189,9 +189,6 @@ async def email_preview(
       .sidebar {{
         position: static;
       }}
-      iframe {{
-        min-height: 980px;
-      }}
     }}
   </style>
 </head>
@@ -201,13 +198,12 @@ async def email_preview(
       <aside class="panel sidebar">
         <p class="eyebrow">cofr mail</p>
         <h1>Email preview</h1>
-        <p>This page imports the same Jinja templates the email sender uses. No duplicate preview markup, no outbound send.</p>
-        <p>Current selection: <code>{template}</code> with <code>{person}</code> sample data.</p>
+        <p>This page imports the same Jinja templates the email sender uses.</p>
+        <p>Current selection: <code>{template}</code> with fixed <code>Alice</code> sample data.</p>
         <div class="list">
-          {preview_link("Verification email", "verification", "alice")}
-          {preview_link("Verification email", "verification", "bob")}
-          {preview_link("Welcome email", "welcome", "alice")}
-          {preview_link("Welcome email", "welcome", "bob")}
+          {preview_link("Verification email", "verification")}
+          {preview_link("Welcome email", "welcome")}
+          {preview_link("Password reset email", "password_reset")}
         </div>
       </aside>
       <section class="panel viewer">
@@ -219,6 +215,38 @@ async def email_preview(
       </section>
     </div>
   </div>
+  <script>
+    const iframe = document.querySelector('iframe[title="cofr email preview"]');
+
+    function resizeIframe() {{
+      if (!iframe) {{
+        return;
+      }}
+
+      const doc = iframe.contentDocument;
+      if (!doc) {{
+        return;
+      }}
+
+      const root = doc.documentElement;
+      const body = doc.body;
+      const height = Math.max(
+        root ? root.scrollHeight : 0,
+        root ? root.offsetHeight : 0,
+        body ? body.scrollHeight : 0,
+        body ? body.offsetHeight : 0
+      );
+
+      iframe.style.height = `${{Math.max(420, height)}}px`;
+    }}
+
+    if (iframe) {{
+      iframe.addEventListener("load", function () {{
+        resizeIframe();
+        setTimeout(resizeIframe, 0);
+      }});
+    }}
+  </script>
 </body>
 </html>"""
     return HTMLResponse(content=html)

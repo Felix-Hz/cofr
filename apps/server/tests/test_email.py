@@ -54,22 +54,32 @@ def test_dev_email_preview_index_available_in_local_env(client, monkeypatch):
     assert response.status_code == 200
     assert "Email preview" in response.text
     assert "render_template" in response.text
-    assert "template=verification&person=alice" in response.text
+    assert "template=verification" in response.text
+    assert "template=password_reset" in response.text
+    assert "Sample data: Alice" in response.text
 
 
 def test_dev_email_preview_verification_renders_html(client, monkeypatch):
     monkeypatch.setattr(settings, "ENV", "local")
-    response = client.get("/dev/email-preview?template=verification&person=bob")
+    response = client.get("/dev/email-preview?template=verification")
     assert response.status_code == 200
     assert "srcdoc=" in response.text
-    assert "preview-bob-token" in response.text
+    assert "preview-alice-token" in response.text
 
 
 def test_dev_email_preview_welcome_uses_sample_name(client, monkeypatch):
     monkeypatch.setattr(settings, "ENV", "local")
-    response = client.get("/dev/email-preview?template=welcome&person=alice")
+    response = client.get("/dev/email-preview?template=welcome")
     assert response.status_code == 200
     assert "Hi Alice," in response.text
+
+
+def test_dev_email_preview_password_reset_renders_html(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "local")
+    response = client.get("/dev/email-preview?template=password_reset")
+    assert response.status_code == 200
+    assert "Reset password" in response.text
+    assert "preview-alice-token" in response.text
 
 
 def test_dev_email_preview_hidden_in_production(client, monkeypatch):
