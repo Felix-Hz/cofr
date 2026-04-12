@@ -5,13 +5,20 @@ import time
 import pytest
 from itsdangerous import BadSignature, SignatureExpired
 
+from app.config import settings
 from app.db.models import EmailSuppression
 from app.email import get_email_provider
 from app.email.provider import ConsoleProvider
 from app.email.rate_limit import RateLimiter
 from app.email.service import _hash_email, is_suppressed
 from app.email.templates import render_template
-from app.email.tokens import generate_verification_token, validate_verification_token
+from app.email.tokens import (
+    generate_password_reset_token,
+    generate_verification_token,
+    password_reset_token_matches,
+    validate_password_reset_token,
+    validate_verification_token,
+)
 
 # ── Template rendering ──
 
@@ -29,9 +36,56 @@ def test_welcome_template_contains_name():
     assert "Welcome" in html
 
 
+def test_password_reset_template_contains_link():
+    html = render_template("password_reset", reset_url="https://cofr.cash/reset?token=abc123")
+    assert "https://cofr.cash/reset?token=abc123" in html
+    assert "Reset password" in html
+    assert "1 hour" in html
+
+
 def test_base_template_has_cofr_branding():
     html = render_template("verification", verify_url="https://example.com")
-    assert "Cofr" in html
+    assert "cofr" in html
+
+
+def test_dev_email_preview_index_available_in_local_env(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "local")
+    response = client.get("/dev/email-preview")
+    assert response.status_code == 200
+    assert "Email preview" in response.text
+    assert "render_template" in response.text
+    assert "template=verification" in response.text
+    assert "template=password_reset" in response.text
+    assert "Sample data: Alice" in response.text
+
+
+def test_dev_email_preview_verification_renders_html(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "local")
+    response = client.get("/dev/email-preview?template=verification")
+    assert response.status_code == 200
+    assert "srcdoc=" in response.text
+    assert "preview-alice-token" in response.text
+
+
+def test_dev_email_preview_welcome_uses_sample_name(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "local")
+    response = client.get("/dev/email-preview?template=welcome")
+    assert response.status_code == 200
+    assert "Hi Alice," in response.text
+
+
+def test_dev_email_preview_password_reset_renders_html(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "local")
+    response = client.get("/dev/email-preview?template=password_reset")
+    assert response.status_code == 200
+    assert "Reset password" in response.text
+    assert "preview-alice-token" in response.text
+
+
+def test_dev_email_preview_hidden_in_production(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "production")
+    response = client.get("/dev/email-preview")
+    assert response.status_code == 404
 
 
 # ── Token generation / validation ──
@@ -49,6 +103,15 @@ def test_token_tampered_raises_bad_signature():
     token = generate_verification_token("user-123", "alice@example.com")
     with pytest.raises(BadSignature):
         validate_verification_token(token + "tampered")
+
+
+def test_password_reset_token_roundtrip():
+    token = generate_password_reset_token("user-123", "alice@example.com", "hashed-password")
+    payload = validate_password_reset_token(token)
+    assert payload["user_id"] == "user-123"
+    assert payload["email"] == "alice@example.com"
+    assert payload["purpose"] == "reset_password"
+    assert password_reset_token_matches("hashed-password", payload) is True
 
 
 def test_token_expired_raises_signature_expired(monkeypatch):

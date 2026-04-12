@@ -14,6 +14,7 @@ from app.routers import (
     accounts,
     categories,
     dashboard,
+    dev_email,
     exchange_rates,
     expenses,
     exports,
@@ -22,6 +23,8 @@ from app.routers import (
     transfers,
     webhooks,
 )
+
+_DEV_EMAIL_ENVS = {"local", "development", "dev", "test"}
 
 
 def _traces_sampler(sampling_context: dict) -> float:
@@ -118,3 +121,5 @@ app.include_router(local_auth.router)
 app.include_router(webhooks.router)
 app.include_router(exports.router)
 app.include_router(dashboard.router)
+if settings.ENV.lower() in _DEV_EMAIL_ENVS:
+    app.include_router(dev_email.router)

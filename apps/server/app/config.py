@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # Email — Resend
     RESEND_API_KEY: str = ""
     EMAIL_FROM_ADDRESS: str = "hello@cofr.cash"
-    EMAIL_FROM_NAME: str = "Cofr"
+    EMAIL_FROM_NAME: str = "cofr"
     RESEND_WEBHOOK_SECRET: str = ""
 
     # Sentry (empty = disabled)

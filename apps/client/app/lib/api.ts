@@ -34,9 +34,11 @@ import {
   type TransferCreate,
   type TransferResponse,
   TransferResponseSchema,
+  WIDGET_TYPES,
 } from "./schemas";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5173";
+const SUPPORTED_WIDGET_TYPES = new Set<string>(WIDGET_TYPES);
 
 export class ApiError extends Error {
   constructor(
@@ -46,6 +48,32 @@ export class ApiError extends Error {
     super(message);
     this.name = "ApiError";
   }
+}
+
+function sanitizeDashboardLayoutResponse(json: unknown): unknown {
+  if (!json || typeof json !== "object") return json;
+
+  const layout = json as {
+    spaces?: Array<{
+      widgets?: Array<{ widget_type?: string }>;
+    }>;
+  };
+
+  if (!Array.isArray(layout.spaces)) return json;
+
+  return {
+    ...layout,
+    spaces: layout.spaces.map((space) => ({
+      ...space,
+      widgets: Array.isArray(space.widgets)
+        ? space.widgets.filter(
+            (widget) =>
+              typeof widget?.widget_type === "string" &&
+              SUPPORTED_WIDGET_TYPES.has(widget.widget_type),
+          )
+        : [],
+    })),
+  };
 }
 
 async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promise<Response> {
@@ -414,6 +442,35 @@ export async function loginWithEmail(email: string, password: string): Promise<{
   return response.json();
 }
 
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/auth/local/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: "Password reset failed" }));
+    throw new ApiError(response.status, error.detail || "Password reset failed");
+  }
+  return response.json();
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_BASE_URL}/auth/local/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: "Unable to reset password" }));
+    throw new ApiError(response.status, error.detail || "Unable to reset password");
+  }
+  return response.json();
+}
+
 // ── Password Management ──
 
 export async function changePassword(
@@ -497,7 +554,7 @@ export function getExportRecordDownloadUrl(exportId: string): string {
 
 export async function getDashboardLayout(): Promise<DashboardLayoutResponse> {
   const response = await fetchWithAuth("/dashboard/layout");
-  const json = await response.json();
+  const json = sanitizeDashboardLayoutResponse(await response.json());
   return DashboardLayoutResponseSchema.parse(json);
 }
 
@@ -508,7 +565,7 @@ export async function updateDashboardLayout(
     method: "PUT",
     body: JSON.stringify(payload),
   });
-  const json = await response.json();
+  const json = sanitizeDashboardLayoutResponse(await response.json());
   return DashboardLayoutResponseSchema.parse(json);
 }
 
