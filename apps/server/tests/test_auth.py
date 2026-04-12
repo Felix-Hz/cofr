@@ -260,3 +260,135 @@ def test_resend_verification_rate_limited(client, db_session):
 
     resp = client.post("/auth/local/resend-verification", headers=headers)
     assert resp.status_code == 429
+
+
+# ── Password reset ──
+
+
+def test_forgot_password_returns_generic_success_for_unknown_email(client):
+    resp = client.post("/auth/local/forgot-password", json={"email": "ghost@example.com"})
+    assert resp.status_code == 200
+    assert "eligible for reset" in resp.json()["message"]
+
+
+def test_forgot_password_returns_generic_success_for_verified_local_user(client, db_session):
+    token = register_user(client, email="resetme@example.com")
+    payload = pyjwt.decode(token, os.environ["JWT_SECRET"], algorithms=["HS256"])
+    user = db_session.query(User).filter(User.id == payload["user_id"]).first()
+    user.email_verified = True
+    db_session.commit()
+
+    resp = client.post("/auth/local/forgot-password", json={"email": "resetme@example.com"})
+    assert resp.status_code == 200
+    assert "eligible for reset" in resp.json()["message"]
+
+
+def test_forgot_password_returns_generic_success_for_unverified_local_user(client):
+    register_user(client, email="unverified-reset@example.com")
+    resp = client.post(
+        "/auth/local/forgot-password", json={"email": "unverified-reset@example.com"}
+    )
+    assert resp.status_code == 200
+    assert "eligible for reset" in resp.json()["message"]
+
+
+def test_reset_password_success_allows_login_with_new_password(client, db_session):
+    from app.email.tokens import generate_password_reset_token
+
+    old_password = VALID_PASSWORD
+    new_password = "NewPass123!"
+    token = register_user(client, email="recover@example.com", password=old_password)
+    payload = pyjwt.decode(token, os.environ["JWT_SECRET"], algorithms=["HS256"])
+    user = db_session.query(User).filter(User.id == payload["user_id"]).first()
+    user.email_verified = True
+    db_session.commit()
+
+    auth_provider = (
+        db_session.query(AuthProvider)
+        .filter(AuthProvider.user_id == payload["user_id"], AuthProvider.provider == "local")
+        .first()
+    )
+    reset_token = generate_password_reset_token(
+        payload["user_id"], "recover@example.com", auth_provider.password_hash
+    )
+
+    resp = client.post(
+        "/auth/local/reset-password",
+        json={"token": reset_token, "new_password": new_password},
+    )
+    assert resp.status_code == 200
+
+    old_login = client.post(
+        "/auth/local/login",
+        json={"email": "recover@example.com", "password": old_password},
+    )
+    assert old_login.status_code == 401
+
+    new_login = client.post(
+        "/auth/local/login",
+        json={"email": "recover@example.com", "password": new_password},
+    )
+    assert new_login.status_code == 200
+
+
+def test_reset_password_rejects_invalid_token(client):
+    resp = client.post(
+        "/auth/local/reset-password",
+        json={"token": "garbage", "new_password": "NewPass123!"},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "Reset link is invalid"
+
+
+def test_reset_password_rejects_unverified_user(client, db_session):
+    from app.email.tokens import generate_password_reset_token
+
+    token = register_user(client, email="still-unverified@example.com")
+    payload = pyjwt.decode(token, os.environ["JWT_SECRET"], algorithms=["HS256"])
+    auth_provider = (
+        db_session.query(AuthProvider)
+        .filter(AuthProvider.user_id == payload["user_id"], AuthProvider.provider == "local")
+        .first()
+    )
+    reset_token = generate_password_reset_token(
+        payload["user_id"], "still-unverified@example.com", auth_provider.password_hash
+    )
+
+    resp = client.post(
+        "/auth/local/reset-password",
+        json={"token": reset_token, "new_password": "NewPass123!"},
+    )
+    assert resp.status_code == 400
+    assert resp.json()["detail"] == "Reset link is invalid"
+
+
+def test_reset_password_rejects_reused_token_after_password_change(client, db_session):
+    from app.email.tokens import generate_password_reset_token
+
+    token = register_user(client, email="reuse@example.com")
+    payload = pyjwt.decode(token, os.environ["JWT_SECRET"], algorithms=["HS256"])
+    user = db_session.query(User).filter(User.id == payload["user_id"]).first()
+    user.email_verified = True
+    db_session.commit()
+
+    auth_provider = (
+        db_session.query(AuthProvider)
+        .filter(AuthProvider.user_id == payload["user_id"], AuthProvider.provider == "local")
+        .first()
+    )
+    reset_token = generate_password_reset_token(
+        payload["user_id"], "reuse@example.com", auth_provider.password_hash
+    )
+
+    first = client.post(
+        "/auth/local/reset-password",
+        json={"token": reset_token, "new_password": "NewPass123!"},
+    )
+    assert first.status_code == 200
+
+    second = client.post(
+        "/auth/local/reset-password",
+        json={"token": reset_token, "new_password": "Another123!"},
+    )
+    assert second.status_code == 400
+    assert second.json()["detail"] == "Reset link is invalid"

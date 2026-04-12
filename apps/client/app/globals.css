@@ -181,6 +181,290 @@ h6 {
   background: linear-gradient(to bottom, var(--surface-elevated), var(--surface-primary));
 }
 
+.auth-shell {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.16), transparent 32%),
+    radial-gradient(circle at 16% 18%, rgba(15, 23, 42, 0.06), transparent 22%),
+    linear-gradient(
+      180deg,
+      var(--surface-elevated) 0%,
+      var(--surface-page) 46%,
+      var(--surface-primary) 100%
+    );
+}
+
+.auth-shell--recovery {
+  display: flex;
+  align-items: center;
+}
+
+.auth-shell__ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(16, 185, 129, 0.08), transparent 35%),
+    radial-gradient(circle at 82% 16%, rgba(16, 185, 129, 0.1), transparent 18%);
+}
+
+.auth-shell__frame {
+  position: relative;
+  z-index: 1;
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 4rem 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 460px);
+  gap: 3rem;
+  align-items: center;
+}
+
+.auth-shell__intro {
+  max-width: 34rem;
+}
+
+.auth-eyebrow {
+  margin: 0 0 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.auth-title {
+  margin: 0;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  line-height: 0.92;
+  letter-spacing: -0.05em;
+  text-wrap: balance;
+}
+
+.auth-copy {
+  max-width: 30rem;
+  margin: 1.25rem 0 0;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--content-secondary);
+}
+
+.auth-panel {
+  backdrop-filter: blur(18px);
+  background: color-mix(in srgb, var(--surface-primary) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--edge-default) 82%, transparent);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+}
+
+.dark .auth-panel {
+  box-shadow: 0 24px 70px rgba(2, 6, 23, 0.35);
+}
+
+.auth-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-panel__eyebrow {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--content-tertiary);
+}
+
+.auth-panel__title {
+  margin: 0;
+  font-size: 1.4rem;
+  line-height: 1.1;
+}
+
+.auth-panel__footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--edge-default) 78%, transparent);
+}
+
+.auth-link {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.auth-link:hover {
+  color: var(--accent-hover);
+}
+
+.auth-panel--square {
+  border-radius: 1rem;
+}
+
+.auth-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--edge-default) 82%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--surface-elevated) 85%, transparent);
+  margin-bottom: 1.25rem;
+}
+
+.auth-mode-toggle__button {
+  border: 0;
+  background: transparent;
+  color: var(--content-tertiary);
+  font-size: 0.92rem;
+  font-weight: 700;
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.6rem;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.auth-mode-toggle__button.is-active {
+  background: var(--surface-primary);
+  color: var(--content-primary);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+}
+
+.auth-provider-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  border: 1px solid var(--edge-strong);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--surface-primary) 88%, transparent);
+  padding: 0.95rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--content-primary);
+  text-decoration: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.auth-provider-button:hover {
+  background: var(--surface-hover);
+}
+
+.auth-divider {
+  position: relative;
+  margin: 1.25rem 0;
+  text-align: center;
+}
+
+.auth-divider::before {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto;
+  border-top: 1px solid color-mix(in srgb, var(--edge-default) 82%, transparent);
+}
+
+.auth-divider span {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.85rem;
+  background: color-mix(in srgb, var(--surface-primary) 92%, transparent);
+  color: var(--content-tertiary);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.auth-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--content-secondary);
+}
+
+.auth-input {
+  width: 100%;
+  border: 1px solid var(--edge-strong);
+  border-radius: 0.75rem;
+  background: var(--surface-primary);
+  color: var(--content-primary);
+  padding: 0.85rem 1rem;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.auth-input::placeholder {
+  color: var(--content-muted);
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.auth-submit-button {
+  width: 100%;
+  border: 0;
+  border-radius: 0.8rem;
+  background: var(--accent);
+  color: white;
+  padding: 0.95rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  transition:
+    background-color 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.auth-submit-button:hover {
+  background: var(--accent-hover);
+}
+
+.auth-submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 960px) {
+  .auth-shell__frame {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 2.5rem 0;
+  }
+
+  .auth-title {
+    font-size: clamp(2rem, 12vw, 3rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-shell__intro {
+    display: none;
+  }
+
+  .auth-shell__frame {
+    width: min(100%, calc(100% - 1.25rem));
+    padding: 1.5rem 0;
+    gap: 0;
+  }
+
+  .auth-panel {
+    padding: 1.25rem;
+  }
+}
+
 .landing-page {
   position: relative;
   isolation: isolate;

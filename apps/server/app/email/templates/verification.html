@@ -1,15 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Verify your email — Cofr{% endblock %}
+{% block title %}Verify your email{% endblock %}
+{% block preheader %}Confirm your email to finish setting up your cofr account.{% endblock %}
+{% block heading %}Confirm your email to finish setup{% endblock %}
 
 {% block content %}
-<p>Verify your email address to get started with Cofr.</p>
+<p class="copy">Verify your email address to keep your account recoverable and ready for password reset.</p>
 <div class="cta-row">
   <a href="{{ verify_url }}" class="cta">Verify email</a>
 </div>
-<p class="muted">This link expires in 24 hours. If you didn't create this account, ignore this email.</p>
-<p class="muted">
-  Or paste this URL into your browser:<br>
-  <span style="word-break: break-all;">{{ verify_url }}</span>
-</p>
+<p class="note">This link expires in 24 hours. If you didn't create this account, ignore this email.</p>
+<div class="link-panel">
+  <p class="link-label">Or paste this URL into your browser</p>
+  <p class="link-copy">{{ verify_url }}</p>
+</div>
 {% endblock %}
