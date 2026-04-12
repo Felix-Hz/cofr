@@ -45,7 +45,7 @@ export function PeriodStats4UpWidget({ widget }: WidgetRenderProps) {
             {cell.trailing &&
               (cell.widgetType === "stat_net" || cell.widgetType === "stat_savings_rate") && (
                 <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums ${pillTone[cell.tone]}`}
+                  className={`hidden items-center rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums sm:inline-flex ${pillTone[cell.tone]}`}
                 >
                   {cell.trailing}
                 </span>
