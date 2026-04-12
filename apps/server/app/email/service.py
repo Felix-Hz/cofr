@@ -8,7 +8,7 @@ from app.db.models import EmailSuppression
 from app.email import get_email_provider
 from app.email.provider import EmailMessage
 from app.email.templates import render_template
-from app.email.tokens import generate_verification_token
+from app.email.tokens import generate_password_reset_token, generate_verification_token
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,33 @@ async def send_verification_email(db: Session, email: str, user_id: str) -> bool
     message = EmailMessage(
         to=email,
         subject="Verify your email — cofr",
+        html_body=html,
+        from_address=settings.EMAIL_FROM_ADDRESS,
+        from_name=settings.EMAIL_FROM_NAME,
+    )
+
+    provider = get_email_provider()
+    return await provider.send(message)
+
+
+async def send_password_reset_email(
+    db: Session, email: str, user_id: str, password_hash: str
+) -> bool:
+    """Send a password reset email with a signed token link."""
+    if is_suppressed(db, email):
+        logger.info(
+            "Skipping password reset email to suppressed address (hash=%s)",
+            _hash_email(email)[:12],
+        )
+        return False
+
+    token = generate_password_reset_token(user_id, email, password_hash)
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+
+    html = render_template("password_reset", reset_url=reset_url)
+    message = EmailMessage(
+        to=email,
+        subject="Reset your password — cofr",
         html_body=html,
         from_address=settings.EMAIL_FROM_ADDRESS,
         from_name=settings.EMAIL_FROM_NAME,

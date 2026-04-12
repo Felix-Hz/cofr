@@ -65,9 +65,7 @@ async def email_preview(
     body {{
       margin: 0;
       font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at 12% 8%, rgba(209, 250, 229, 0.9), transparent 26%),
-        linear-gradient(180deg, #fdfefd 0%, #f6faf7 18%, #f9fafb 100%);
+      background: #edf2f4;
       color: #4b5563;
     }}
     .page {{
@@ -85,9 +83,8 @@ async def email_preview(
     .panel {{
       border: 1px solid #e5e7eb;
       border-radius: 24px;
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      background: #ffffff;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
     }}
     .sidebar {{
       padding: 26px;
@@ -153,6 +150,7 @@ async def email_preview(
     }}
     .viewer {{
       overflow: hidden;
+      background: #f3f5f7;
     }}
     .viewer-head {{
       display: flex;
