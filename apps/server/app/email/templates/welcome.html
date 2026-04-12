@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Welcome to cofr{% endblock %}
+{% block title %}Welcome{% endblock %}
+{% block preheader %}Your cofr account is verified and ready to use.{% endblock %}
+{% block heading %}You're verified and ready to go{% endblock %}
 
 {% block content %}
-<p>Hi {{ name }},</p>
-<p>Your email is verified. You're all set.</p>
-<p>Start tracking your finances and take control of your spending.</p>
+<p class="copy">Hi {{ name }},</p>
+<p class="copy">Your email is verified. Your cofr account is ready.</p>
+<p class="copy">Start with your real accounts, track across currencies, and get to a cleaner picture of your spending without the usual clutter.</p>
 {% endblock %}

@@ -41,7 +41,7 @@ async def send_verification_email(db: Session, email: str, user_id: str) -> bool
     html = render_template("verification", verify_url=verify_url)
     message = EmailMessage(
         to=email,
-        subject="Verify your email — cofr",
+        subject="Verify your email",
         html_body=html,
         from_address=settings.EMAIL_FROM_ADDRESS,
         from_name=settings.EMAIL_FROM_NAME,
@@ -68,7 +68,7 @@ async def send_password_reset_email(
     html = render_template("password_reset", reset_url=reset_url)
     message = EmailMessage(
         to=email,
-        subject="Reset your password — cofr",
+        subject="Reset your password",
         html_body=html,
         from_address=settings.EMAIL_FROM_ADDRESS,
         from_name=settings.EMAIL_FROM_NAME,
@@ -83,7 +83,7 @@ async def send_welcome_email(email: str, name: str) -> bool:
     html = render_template("welcome", name=name or "there")
     message = EmailMessage(
         to=email,
-        subject="Welcome to cofr!",
+        subject="Welcome",
         html_body=html,
         from_address=settings.EMAIL_FROM_ADDRESS,
         from_name=settings.EMAIL_FROM_NAME,

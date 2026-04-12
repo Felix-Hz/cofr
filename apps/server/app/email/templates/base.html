@@ -5,101 +5,156 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}cofr{% endblock %}</title>
   <style>
+    body, table, td, a {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+    table, td {
+      mso-table-lspace: 0pt;
+      mso-table-rspace: 0pt;
+    }
+    img {
+      -ms-interpolation-mode: bicubic;
+      border: 0;
+      outline: none;
+      text-decoration: none;
+    }
     body {
       margin: 0;
       padding: 0;
       font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background:
-        radial-gradient(circle at top, rgba(16, 185, 129, 0.14), transparent 30%),
-        linear-gradient(180deg, #f4f7f6 0%, #f8fafc 42%, #ffffff 100%);
+      background-color: #f9fafb;
       color: #4b5563;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-    .wrapper {
-      padding: 48px 16px;
+    .email-body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(209, 250, 229, 0.92), transparent 28%),
+        radial-gradient(circle at 82% 8%, rgba(255, 255, 255, 0.95), transparent 22%),
+        linear-gradient(180deg, #fdfefd 0%, #f6faf7 18%, #f9fafb 100%);
+    }
+    .preheader {
+      display: none !important;
+      visibility: hidden;
+      opacity: 0;
+      color: transparent;
+      height: 0;
+      width: 0;
+      overflow: hidden;
+      mso-hide: all;
+      font-size: 1px;
+      line-height: 1px;
+      max-height: 0;
+      max-width: 0;
+    }
+    .shell {
+      padding: 24px 16px 40px;
     }
     .container {
       max-width: 520px;
       margin: 0 auto;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #ffffff 100%);
-      border: 1px solid #dbe4ea;
-      border-radius: 28px;
+      background-color: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 22px 55px rgba(15, 23, 42, 0.08);
     }
-    .header {
+    .hero {
       padding: 32px 40px 24px;
-      border-bottom: 1px solid #e8edf2;
       background:
-        radial-gradient(circle at top left, rgba(16, 185, 129, 0.14), transparent 36%),
-        linear-gradient(180deg, rgba(248, 250, 252, 0.88) 0%, rgba(255, 255, 255, 0.92) 100%);
+        radial-gradient(circle at top left, rgba(209, 250, 229, 0.95), transparent 36%),
+        linear-gradient(180deg, #fdfefd 0%, #f7faf8 100%);
+      border-bottom: 1px solid #e5e7eb;
     }
-    .logo-text {
+    .eyebrow {
       margin: 0;
-      font-size: 20px;
-      font-weight: 700;
-      color: #0f172a;
-      letter-spacing: -0.04em;
-    }
-    .kicker {
-      margin: 0 0 8px;
-      font-size: 11px;
+      font-size: 12px;
+      line-height: 1.1;
       font-weight: 700;
       letter-spacing: 0.18em;
       text-transform: uppercase;
       color: #10b981;
     }
-    .heading {
-      margin: 0;
-      font-size: 28px;
-      line-height: 1.05;
-      letter-spacing: -0.05em;
+    .headline {
+      margin: 10px 0 0;
+      font-size: 26px;
+      line-height: 1.12;
+      font-weight: 800;
       color: #0f172a;
+      letter-spacing: -0.04em;
     }
     .body {
-      padding: 32px 40px;
+      padding: 32px 40px 28px;
     }
-    .body p {
-      margin: 0 0 16px;
-      font-size: 14px;
-      line-height: 1.7;
+    .copy {
+      margin: 0 0 18px;
+      font-size: 15px;
+      line-height: 1.75;
       color: #4b5563;
     }
-    .body p:last-child {
+    .copy:last-child {
       margin-bottom: 0;
     }
     .cta-row {
       text-align: left;
-      padding: 12px 0 10px;
+      padding: 10px 0 8px;
     }
     .cta {
       display: inline-block;
-      background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+      background-color: #10b981;
       color: #ffffff !important;
       text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 999px;
-      font-size: 14px;
-      font-weight: 700;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      line-height: 1;
+      font-weight: 600;
       font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       letter-spacing: -0.02em;
     }
-    .muted {
-      font-size: 12px !important;
-      color: #9ca3af !important;
-      line-height: 1.6 !important;
+    .note {
+      margin: 18px 0 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #6b7280;
+    }
+    .link-panel {
+      margin-top: 18px;
+      padding: 16px 18px;
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+    }
+    .link-label {
+      margin: 0 0 8px;
+      font-size: 12px;
+      line-height: 1.4;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #6b7280;
+    }
+    .link-copy {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.75;
+      color: #4b5563;
+      word-break: break-all;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
     .footer {
-      padding: 20px 40px;
-      border-top: 1px solid #e8edf2;
+      padding: 18px 40px 24px;
+      border-top: 1px solid #e5e7eb;
     }
     .footer p {
       margin: 0;
       font-size: 12px;
       color: #9ca3af;
-      line-height: 1.5;
+      line-height: 1.7;
     }
     .footer a {
       color: #9ca3af;
@@ -107,29 +162,44 @@
     }
 
     @media only screen and (max-width: 480px) {
-      .wrapper { padding: 24px 12px; }
-      .header { padding: 24px 24px 20px; }
-      .body { padding: 24px; }
-      .footer { padding: 16px 24px; }
-      .heading { font-size: 24px; }
+      .shell { padding: 14px 10px 24px; }
+      .hero { padding: 24px 24px 20px; }
+      .headline { font-size: 22px; }
+      .body { padding: 24px 24px 22px; }
+      .footer { padding: 16px 24px 20px; }
+      .container { border-radius: 18px; }
+      .cta {
+        display: block;
+        text-align: center;
+      }
     }
   </style>
 </head>
-<body>
-  <div class="wrapper">
-    <div class="container">
-      <div class="header">
-        <p class="kicker">cofr account</p>
-        <p class="logo-text">cofr</p>
-        <h1 class="heading">{% block heading %}Keep your account secure{% endblock %}</h1>
-      </div>
-      <div class="body">
-        {% block content %}{% endblock %}
-      </div>
-      <div class="footer">
-        <p>&copy; {{ year | default("2026") }} cofr</p>
-      </div>
-    </div>
-  </div>
+<body class="email-body">
+  <div class="preheader">{% block preheader %}cofr account update.{% endblock %}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="email-body">
+    <tr>
+      <td align="center" class="shell">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="container" style="max-width: 520px;">
+          <tr>
+            <td class="hero">
+              <p class="eyebrow">cofr account</p>
+              <h1 class="headline">{% block heading %}Account update{% endblock %}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td class="body">
+              {% block content %}{% endblock %}
+            </td>
+          </tr>
+          <tr>
+            <td class="footer">
+              <p>&copy; {{ year | default("2026") }} cofr</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
