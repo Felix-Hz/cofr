@@ -41,7 +41,7 @@ async def send_verification_email(db: Session, email: str, user_id: str) -> bool
     html = render_template("verification", verify_url=verify_url)
     message = EmailMessage(
         to=email,
-        subject="Verify your email — Cofr",
+        subject="Verify your email — cofr",
         html_body=html,
         from_address=settings.EMAIL_FROM_ADDRESS,
         from_name=settings.EMAIL_FROM_NAME,
@@ -56,7 +56,7 @@ async def send_welcome_email(email: str, name: str) -> bool:
     html = render_template("welcome", name=name or "there")
     message = EmailMessage(
         to=email,
-        subject="Welcome to Cofr!",
+        subject="Welcome to cofr!",
         html_body=html,
         from_address=settings.EMAIL_FROM_ADDRESS,
         from_name=settings.EMAIL_FROM_NAME,

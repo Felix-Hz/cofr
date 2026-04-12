@@ -5,6 +5,7 @@ import time
 import pytest
 from itsdangerous import BadSignature, SignatureExpired
 
+from app.config import settings
 from app.db.models import EmailSuppression
 from app.email import get_email_provider
 from app.email.provider import ConsoleProvider
@@ -31,7 +32,37 @@ def test_welcome_template_contains_name():
 
 def test_base_template_has_cofr_branding():
     html = render_template("verification", verify_url="https://example.com")
-    assert "Cofr" in html
+    assert "cofr" in html
+
+
+def test_dev_email_preview_index_available_in_local_env(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "local")
+    response = client.get("/dev/email-preview")
+    assert response.status_code == 200
+    assert "Email preview" in response.text
+    assert "render_template" in response.text
+    assert "template=verification&person=alice" in response.text
+
+
+def test_dev_email_preview_verification_renders_html(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "local")
+    response = client.get("/dev/email-preview?template=verification&person=bob")
+    assert response.status_code == 200
+    assert "srcdoc=" in response.text
+    assert "preview-bob-token" in response.text
+
+
+def test_dev_email_preview_welcome_uses_sample_name(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "local")
+    response = client.get("/dev/email-preview?template=welcome&person=alice")
+    assert response.status_code == 200
+    assert "Hi Alice," in response.text
+
+
+def test_dev_email_preview_hidden_in_production(client, monkeypatch):
+    monkeypatch.setattr(settings, "ENV", "production")
+    response = client.get("/dev/email-preview")
+    assert response.status_code == 404
 
 
 # ── Token generation / validation ──

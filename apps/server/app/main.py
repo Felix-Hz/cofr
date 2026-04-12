@@ -14,6 +14,7 @@ from app.routers import (
     accounts,
     categories,
     dashboard,
+    dev_email,
     exchange_rates,
     expenses,
     exports,
@@ -118,3 +119,4 @@ app.include_router(local_auth.router)
 app.include_router(webhooks.router)
 app.include_router(exports.router)
 app.include_router(dashboard.router)
+app.include_router(dev_email.router)
