@@ -4,6 +4,8 @@ export default [
   // Public routes
   index("./routes/_index.tsx"),
   route("login", "./routes/login.tsx"),
+  route("forgot-password", "./routes/forgot-password.tsx"),
+  route("reset-password", "./routes/reset-password.tsx"),
   route("auth/callback", "./routes/auth-callback.tsx"),
 
   // Protected routes with shared layout (auth guard + header/nav)
