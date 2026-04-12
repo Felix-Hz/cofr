@@ -24,6 +24,8 @@ from app.routers import (
     webhooks,
 )
 
+_DEV_EMAIL_ENVS = {"local", "development", "dev", "test"}
+
 
 def _traces_sampler(sampling_context: dict) -> float:
     if sampling_context.get("asgi_scope", {}).get("path") == "/health":
@@ -119,4 +121,5 @@ app.include_router(local_auth.router)
 app.include_router(webhooks.router)
 app.include_router(exports.router)
 app.include_router(dashboard.router)
-app.include_router(dev_email.router)
+if settings.ENV.lower() in _DEV_EMAIL_ENVS:
+    app.include_router(dev_email.router)
