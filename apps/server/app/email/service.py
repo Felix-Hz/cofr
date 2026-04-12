@@ -36,7 +36,7 @@ async def send_verification_email(db: Session, email: str, user_id: str) -> bool
         return False
 
     token = generate_verification_token(user_id, email)
-    verify_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+    verify_url = f"{settings.API_URL}/auth/local/verify-email?token={token}"
 
     html = render_template("verification", verify_url=verify_url)
     message = EmailMessage(
