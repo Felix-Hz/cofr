@@ -6,54 +6,88 @@ import { formatCurrency } from "~/lib/utils";
 const VIEWBOX_W = 320;
 const VIEWBOX_H = 64;
 const PAD = 4;
+
+function getTodayKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
   const { sparkline } = useDashboardData();
-  const gradientId = useId();
+  const strokeGradientId = useId();
+  const markerGradientId = useId();
   const isCompact = widget.row_span <= 2;
-  const { path, areaPath, total, peak, latest, average, change, changeTone, startLabel, endLabel } =
-    useMemo(() => {
-      const points = sparkline.points;
-      if (points.length === 0) {
-        return {
-          path: "",
-          areaPath: "",
-          total: 0,
-          peak: 0,
-          latest: 0,
-          average: 0,
-          change: 0,
-          changeTone: "flat" as const,
-          startLabel: "",
-          endLabel: "",
-        };
-      }
-      const max = Math.max(...points.map((p) => p.total), 1);
-      const step = (VIEWBOX_W - PAD * 2) / Math.max(points.length - 1, 1);
-      const coords = points.map((p, i) => {
-        const x = PAD + i * step;
-        const y = VIEWBOX_H - PAD - (p.total / max) * (VIEWBOX_H - PAD * 2);
-        return `${x},${y}`;
-      });
-      const line = `M ${coords.join(" L ")}`;
-      const area = `${line} L ${PAD + (points.length - 1) * step},${VIEWBOX_H - PAD} L ${PAD},${VIEWBOX_H - PAD} Z`;
-      const latestPoint = points[points.length - 1]?.total ?? 0;
-      const firstPoint = points[0]?.total ?? 0;
-      const avg = points.reduce((sum, p) => sum + p.total, 0) / points.length;
-      const delta = latestPoint - firstPoint;
+  const lineStrokeWidth = isCompact ? 2.25 : 2.75;
+  const todayOuterRadius = isCompact ? 3.5 : 4.5;
+  const todayInnerRadius = isCompact ? 2 : 2.5;
+  const latestRadius = isCompact ? 2 : 2.5;
+  const {
+    path,
+    total,
+    peak,
+    latest,
+    average,
+    change,
+    changeTone,
+    startLabel,
+    endLabel,
+    todayX,
+    todayY,
+    hasTodayInRange,
+    isTodayLatest,
+  } = useMemo(() => {
+    const points = sparkline.points;
+    if (points.length === 0) {
       return {
-        path: line,
-        areaPath: area,
-        total: points.reduce((sum, p) => sum + p.total, 0),
-        peak: max,
-        latest: latestPoint,
-        average: avg,
-        change: delta,
-        changeTone: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
-        startLabel: points[0]?.date ?? "",
-        endLabel: points[points.length - 1]?.date ?? "",
+        path: "",
+        total: 0,
+        peak: 0,
+        latest: 0,
+        average: 0,
+        change: 0,
+        changeTone: "flat" as const,
+        startLabel: "",
+        endLabel: "",
+        todayX: null as number | null,
+        todayY: null as number | null,
+        hasTodayInRange: false,
+        isTodayLatest: false,
       };
-    }, [sparkline]);
-
+    }
+    const max = Math.max(...points.map((p) => p.total), 1);
+    const step = (VIEWBOX_W - PAD * 2) / Math.max(points.length - 1, 1);
+    const coords = points.map((p, i) => {
+      const x = PAD + i * step;
+      const y = VIEWBOX_H - PAD - (p.total / max) * (VIEWBOX_H - PAD * 2);
+      return { x, y, date: p.date };
+    });
+    const line = `M ${coords.map((point) => `${point.x},${point.y}`).join(" L ")}`;
+    const latestPoint = points[points.length - 1]?.total ?? 0;
+    const firstPoint = points[0]?.total ?? 0;
+    const avg = points.reduce((sum, p) => sum + p.total, 0) / points.length;
+    const delta = latestPoint - firstPoint;
+    const todayKey = getTodayKey();
+    const todayPoint = coords.find((point) => point.date === todayKey);
+    const latestDate = points[points.length - 1]?.date ?? "";
+    return {
+      path: line,
+      total: points.reduce((sum, p) => sum + p.total, 0),
+      peak: max,
+      latest: latestPoint,
+      average: avg,
+      change: delta,
+      changeTone: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
+      startLabel: points[0]?.date ?? "",
+      endLabel: points[points.length - 1]?.date ?? "",
+      todayX: todayPoint?.x ?? null,
+      todayY: todayPoint?.y ?? null,
+      hasTodayInRange: todayPoint !== undefined,
+      isTodayLatest: latestDate === todayKey,
+    };
+  }, [sparkline]);
   return (
     <div className={`flex h-full flex-col overflow-hidden ${isCompact ? "p-3" : "p-4"}`}>
       <div className={`flex items-start ${isCompact ? "gap-2.5" : "justify-between gap-4"}`}>
@@ -151,29 +185,84 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
               className="relative h-full w-full"
             >
               <defs>
-                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="currentColor" stopOpacity="0.34" />
-                  <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+                <linearGradient
+                  id={strokeGradientId}
+                  x1="0"
+                  y1="0"
+                  x2={VIEWBOX_W}
+                  y2="0"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop offset="0%" stopColor="#34d399" stopOpacity="0.82" />
+                  <stop offset="55%" stopColor="#10b981" stopOpacity="0.96" />
+                  <stop offset="100%" stopColor="#059669" stopOpacity="0.88" />
+                </linearGradient>
+                <linearGradient
+                  id={markerGradientId}
+                  x1="0"
+                  y1={PAD}
+                  x2="0"
+                  y2={VIEWBOX_H - PAD}
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.42" />
+                  <stop offset="100%" stopColor="#94a3b8" stopOpacity="0.08" />
                 </linearGradient>
               </defs>
-              <path d={areaPath} fill={`url(#${gradientId})`} className="text-emerald" />
+              {hasTodayInRange && todayX !== null && !isTodayLatest ? (
+                <line
+                  x1={todayX}
+                  y1={PAD}
+                  x2={todayX}
+                  y2={VIEWBOX_H - PAD}
+                  stroke={`url(#${markerGradientId})`}
+                  strokeWidth={1}
+                />
+              ) : null}
               <path
                 d={path}
                 fill="none"
-                strokeWidth={2.5}
+                stroke={`url(#${strokeGradientId})`}
+                strokeWidth={lineStrokeWidth}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="stroke-emerald"
+                vectorEffect="non-scaling-stroke"
+              />
+              {hasTodayInRange &&
+              todayX !== null &&
+              todayY !== null &&
+              !isTodayLatest &&
+              todayY < VIEWBOX_H - PAD - 1 ? (
+                <g>
+                  <circle
+                    cx={todayX}
+                    cy={todayY}
+                    r={todayOuterRadius}
+                    fill="#ffffff"
+                    fillOpacity={0.96}
+                  />
+                  <circle cx={todayX} cy={todayY} r={todayInnerRadius} fill="#059669" />
+                  <circle cx={todayX} cy={todayY} r={10} fill="transparent">
+                    <title>Today</title>
+                  </circle>
+                </g>
+              ) : null}
+              <circle
+                cx={VIEWBOX_W - PAD}
+                cy={VIEWBOX_H - PAD - (latest / Math.max(peak, 1)) * (VIEWBOX_H - PAD * 2)}
+                r={latestRadius}
+                fill="#059669"
+                fillOpacity={0.92}
               />
             </svg>
           </div>
 
-          {!isCompact && (
-            <div className="mt-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.2em] text-content-tertiary">
+          {!isCompact ? (
+            <div className="mt-2 flex items-center justify-between px-3 text-[10px] font-medium uppercase tracking-[0.2em] text-content-tertiary">
               <span>{startLabel}</span>
               <span>{endLabel}</span>
             </div>
-          )}
+          ) : null}
         </div>
       )}
 

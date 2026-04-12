@@ -22,11 +22,15 @@ import {
   createTransfer,
   deleteExpense,
   deleteTransfer,
+  getAccountTrend,
   getDashboardLayout,
   getExpenses,
   getLifetimeStats,
+  getMonthlyTrend,
   getRangeStats,
+  getRecurring,
   getSpendSparkline,
+  getWeekdayHeatmap,
   updateDashboardLayout,
   updateExpense,
   updateTransfer,
@@ -89,7 +93,17 @@ export async function clientLoader({ request }: { request: Request }) {
   const minAmount = url.searchParams.get("minAmount");
   const maxAmount = url.searchParams.get("maxAmount");
 
-  const [expenseData, rangeStats, lifetimeStats, sparkline, layout] = await Promise.all([
+  const [
+    expenseData,
+    rangeStats,
+    lifetimeStats,
+    sparkline,
+    layout,
+    monthlyTrend,
+    weekdayHeatmap,
+    accountTrend,
+    recurring,
+  ] = await Promise.all([
     getExpenses({
       limit,
       offset,
@@ -102,8 +116,12 @@ export async function clientLoader({ request }: { request: Request }) {
     }),
     getRangeStats(startDate + "T00:00:00", endDate + "T23:59:59", currency),
     getLifetimeStats(currency),
-    getSpendSparkline(startDate + "T00:00:00", endDate + "T23:59:59", currency),
+    getSpendSparkline(`${startDate}T00:00:00`, `${endDate}T23:59:59`, currency),
     getDashboardLayout(),
+    getMonthlyTrend(12, currency),
+    getWeekdayHeatmap(8, currency),
+    getAccountTrend(90, currency),
+    getRecurring(120, currency),
   ]);
 
   return {
@@ -112,6 +130,10 @@ export async function clientLoader({ request }: { request: Request }) {
     lifetimeStats,
     sparkline,
     layout,
+    monthlyTrend,
+    weekdayHeatmap,
+    accountTrend,
+    recurring,
     startDate,
     endDate,
     preset,
@@ -179,6 +201,10 @@ export default function Dashboard() {
     lifetimeStats,
     sparkline,
     layout,
+    monthlyTrend,
+    weekdayHeatmap,
+    accountTrend,
+    recurring,
     startDate,
     endDate,
     preset,
@@ -707,12 +733,17 @@ export default function Dashboard() {
       expensesOffset: loaderOffset,
       accountBalances: monthlyStats.account_balances || [],
       sparkline,
+      monthlyTrend,
+      weekdayHeatmap,
+      accountTrend,
+      recurring,
       startDate,
       endDate,
       currency: currentCurrency || null,
       preferredCurrency: monthlyStats.currency,
     }),
     [
+      accountTrend,
       currentCurrency,
       endDate,
       expenses,
@@ -720,9 +751,12 @@ export default function Dashboard() {
       loaderLimit,
       loaderOffset,
       monthlyStats,
+      monthlyTrend,
+      recurring,
       sparkline,
       startDate,
       total_count,
+      weekdayHeatmap,
     ],
   );
 

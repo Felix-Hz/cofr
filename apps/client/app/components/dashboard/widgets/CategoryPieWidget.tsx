@@ -61,8 +61,8 @@ export function CategoryPieWidget() {
         )}
       </div>
       {pieData.length > 0 ? (
-        <div className="mt-1.5 flex min-h-0 flex-1 flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
-          <div className="relative flex min-h-[150px] flex-1 items-center justify-center overflow-hidden sm:min-h-0">
+        <div className="mt-1.5 flex min-h-0 flex-1 items-stretch gap-2 sm:gap-3">
+          <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart tabIndex={-1} style={{ outline: "none" }}>
                 <Pie
@@ -85,7 +85,7 @@ export function CategoryPieWidget() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <ul className="grid shrink-0 grid-cols-2 content-center gap-x-3 gap-y-1 overflow-hidden sm:flex sm:flex-col sm:justify-center sm:gap-1.5 sm:overflow-auto sm:min-w-[124px] sm:max-w-[160px]">
+          <ul className="flex shrink-0 min-w-[96px] max-w-[140px] flex-col justify-center gap-1 overflow-hidden sm:min-w-[124px] sm:max-w-[160px] sm:gap-1.5 sm:overflow-auto">
             {pieData.map((entry) => (
               <li
                 key={entry.category}

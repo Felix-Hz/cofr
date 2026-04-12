@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import false as sa_false
+from sqlalchemy import true as sa_true
 from sqlalchemy.orm import Session
 
 from app.db.models import Account, Category, ExchangeRate, Transaction, User
@@ -34,6 +35,13 @@ def _resolve_currency(db: Session, user_id: str, override: str | None) -> tuple[
 def _rate_map(db: Session) -> dict[str, float]:
     rows = db.query(ExchangeRate.currency_code, ExchangeRate.rate_to_usd).all()
     return {code: float(rate) for code, rate in rows if rate}
+
+
+def _as_utc(ts: datetime) -> datetime:
+    """Coerce naive timestamps (e.g. from SQLite) to UTC-aware."""
+    if ts.tzinfo is None:
+        return ts.replace(tzinfo=UTC)
+    return ts
 
 
 def _convert(amount: float, from_ccy: str, target_ccy: str, rates: dict[str, float]) -> float:
@@ -88,6 +96,7 @@ class DashboardAnalyticsService:
         rates = _rate_map(self.db) if is_converted else {}
         buckets: dict[str, dict[str, float]] = defaultdict(lambda: {"income": 0.0, "spent": 0.0})
         for ts, amount, ccy, cat_type in rows:
+            ts = _as_utc(ts)
             amt = float(amount)
             if is_converted:
                 amt = _convert(amt, ccy, resolved, rates)
@@ -145,6 +154,7 @@ class DashboardAnalyticsService:
         rates = _rate_map(self.db) if is_converted else {}
         grid: dict[tuple[int, int], float] = defaultdict(float)
         for ts, amount, ccy in rows:
+            ts = _as_utc(ts)
             amt = float(amount)
             if is_converted:
                 amt = _convert(amt, ccy, resolved, rates)
@@ -209,7 +219,7 @@ class DashboardAnalyticsService:
             self.db.query(Transaction.account_id, Transaction.amount, Transaction.currency)
             .filter(
                 Transaction.user_id == user_id,
-                Transaction.is_opening_balance == ~sa_false(),
+                Transaction.is_opening_balance == sa_true(),
             )
             .all()
         )
@@ -223,6 +233,7 @@ class DashboardAnalyticsService:
         # Group txs by account, cumulative by date.
         by_account: dict[str, list[tuple[datetime, float]]] = defaultdict(list)
         for acct_id, amount, ccy, ts, is_transfer, direction, cat_type in all_txs:
+            ts = _as_utc(ts)
             amt = float(amount)
             if is_converted:
                 amt = _convert(amt, ccy, resolved, rates)
@@ -330,7 +341,7 @@ class DashboardAnalyticsService:
                 bucket["category_color_light"] = col_l
                 bucket["category_color_dark"] = col_d
             bucket["occurrences"] += 1
-            bucket["timestamps"].append(ts)
+            bucket["timestamps"].append(_as_utc(ts))
             bucket["amount_sum"] += amt
 
         charges: list[RecurringCharge] = []

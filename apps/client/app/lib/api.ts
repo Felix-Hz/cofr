@@ -5,6 +5,8 @@ import {
   AccountBalanceSchema,
   type AccountCreate,
   AccountSchema,
+  type AccountTrendResponse,
+  AccountTrendResponseSchema,
   type Category,
   type CategoryCreate,
   CategorySchema,
@@ -29,11 +31,17 @@ import {
   LifetimeStatsSchema,
   type MonthlyStats,
   MonthlyStatsSchema,
+  type MonthlyTrendResponse,
+  MonthlyTrendResponseSchema,
+  type RecurringResponse,
+  RecurringResponseSchema,
   type SparklineResponse,
   SparklineResponseSchema,
   type TransferCreate,
   type TransferResponse,
   TransferResponseSchema,
+  type WeekdayHeatmapResponse,
+  WeekdayHeatmapResponseSchema,
   WIDGET_TYPES,
 } from "./schemas";
 
@@ -590,6 +598,43 @@ export async function getSpendSparkline(
   const response = await fetchWithAuth(`/expenses/stats/sparkline?${params}`);
   const json = await response.json();
   return SparklineResponseSchema.parse(json);
+}
+
+export async function getMonthlyTrend(
+  months = 12,
+  currency?: string,
+): Promise<MonthlyTrendResponse> {
+  const params = new URLSearchParams({ months: String(months) });
+  if (currency) params.set("currency", currency);
+  const response = await fetchWithAuth(`/dashboard/monthly-trend?${params}`);
+  return MonthlyTrendResponseSchema.parse(await response.json());
+}
+
+export async function getWeekdayHeatmap(
+  weeks = 8,
+  currency?: string,
+): Promise<WeekdayHeatmapResponse> {
+  const params = new URLSearchParams({ weeks: String(weeks) });
+  if (currency) params.set("currency", currency);
+  const response = await fetchWithAuth(`/dashboard/weekday-heatmap?${params}`);
+  return WeekdayHeatmapResponseSchema.parse(await response.json());
+}
+
+export async function getAccountTrend(days = 90, currency?: string): Promise<AccountTrendResponse> {
+  const params = new URLSearchParams({ days: String(days) });
+  if (currency) params.set("currency", currency);
+  const response = await fetchWithAuth(`/dashboard/account-trend?${params}`);
+  return AccountTrendResponseSchema.parse(await response.json());
+}
+
+export async function getRecurring(
+  lookbackDays = 120,
+  currency?: string,
+): Promise<RecurringResponse> {
+  const params = new URLSearchParams({ lookback_days: String(lookbackDays) });
+  if (currency) params.set("currency", currency);
+  const response = await fetchWithAuth(`/dashboard/recurring?${params}`);
+  return RecurringResponseSchema.parse(await response.json());
 }
 
 // ── Health check (no auth required) ──

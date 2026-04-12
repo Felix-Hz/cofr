@@ -231,6 +231,72 @@ export const SparklineResponseSchema = z.object({
   is_converted: z.boolean().default(false),
 });
 
+// ── Analytics widget responses ──
+
+export const MonthlyTrendPointSchema = z.object({
+  month: z.string(),
+  income: z.number(),
+  spent: z.number(),
+});
+
+export const MonthlyTrendResponseSchema = z.object({
+  points: z.array(MonthlyTrendPointSchema),
+  currency: z.string().length(3),
+  is_converted: z.boolean().default(false),
+});
+
+export const WeekdayHeatmapCellSchema = z.object({
+  weekday: z.number().int().min(0).max(6),
+  week: z.number().int().min(0),
+  total: z.number(),
+});
+
+export const WeekdayHeatmapResponseSchema = z.object({
+  cells: z.array(WeekdayHeatmapCellSchema),
+  weeks: z.number().int(),
+  currency: z.string().length(3),
+  is_converted: z.boolean().default(false),
+});
+
+export const AccountTrendPointSchema = z.object({
+  date: z.string(),
+  balance: z.number(),
+});
+
+export const AccountTrendSeriesSchema = z.object({
+  account_id: z.string(),
+  account_name: z.string(),
+  account_type: z.string(),
+  color: z.string(),
+  points: z.array(AccountTrendPointSchema),
+});
+
+export const AccountTrendResponseSchema = z.object({
+  series: z.array(AccountTrendSeriesSchema),
+  days: z.number().int(),
+  currency: z.string().length(3),
+  is_converted: z.boolean().default(false),
+});
+
+export const RecurringChargeSchema = z.object({
+  merchant: z.string(),
+  amount: z.number(),
+  currency: z.string().length(3),
+  cadence_days: z.number(),
+  occurrences: z.number().int(),
+  last_seen: z.coerce.date(),
+  next_expected: z.coerce.date().nullable().optional(),
+  category_name: z.string().nullable().optional(),
+  category_color_light: z.string().nullable().optional(),
+  category_color_dark: z.string().nullable().optional(),
+});
+
+export const RecurringResponseSchema = z.object({
+  charges: z.array(RecurringChargeSchema),
+  currency: z.string().length(3),
+  is_converted: z.boolean().default(false),
+});
+
 // ============================================================================
 // Dashboard Layout Schemas
 // ============================================================================
@@ -312,6 +378,15 @@ export type ExportHistoryResponse = z.infer<typeof ExportHistoryResponseSchema>;
 export type LifetimeStats = z.infer<typeof LifetimeStatsSchema>;
 export type SparklinePoint = z.infer<typeof SparklinePointSchema>;
 export type SparklineResponse = z.infer<typeof SparklineResponseSchema>;
+export type MonthlyTrendPoint = z.infer<typeof MonthlyTrendPointSchema>;
+export type MonthlyTrendResponse = z.infer<typeof MonthlyTrendResponseSchema>;
+export type WeekdayHeatmapCell = z.infer<typeof WeekdayHeatmapCellSchema>;
+export type WeekdayHeatmapResponse = z.infer<typeof WeekdayHeatmapResponseSchema>;
+export type AccountTrendPoint = z.infer<typeof AccountTrendPointSchema>;
+export type AccountTrendSeries = z.infer<typeof AccountTrendSeriesSchema>;
+export type AccountTrendResponse = z.infer<typeof AccountTrendResponseSchema>;
+export type RecurringCharge = z.infer<typeof RecurringChargeSchema>;
+export type RecurringResponse = z.infer<typeof RecurringResponseSchema>;
 export type WidgetType = z.infer<typeof WidgetTypeSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetSchema>;
 export type DashboardSpace = z.infer<typeof DashboardSpaceSchema>;
