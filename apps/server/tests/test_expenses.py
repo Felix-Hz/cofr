@@ -68,6 +68,59 @@ def test_create_expense_description_max_length(client, auth_headers, system_cate
     assert resp.status_code == 422
 
 
+def test_create_expense_with_merchant(client, auth_headers, system_categories):
+    headers, _ = auth_headers
+    cat_id = str(system_categories["food"].id)
+    resp = client.post(
+        "/expenses/",
+        json={
+            "amount": 12.5,
+            "category_id": cat_id,
+            "currency": "NZD",
+            "description": "Lunch",
+            "merchant": "Daily Bread",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 201
+    assert resp.json()["merchant"] == "Daily Bread"
+
+
+def test_create_expense_merchant_max_length(client, auth_headers, system_categories):
+    headers, _ = auth_headers
+    cat_id = str(system_categories["food"].id)
+    resp = client.post(
+        "/expenses/",
+        json={
+            "amount": 1,
+            "category_id": cat_id,
+            "currency": "NZD",
+            "merchant": "x" * 121,
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 422
+
+
+def test_update_expense_clears_merchant(client, auth_headers, system_categories):
+    headers, _ = auth_headers
+    cat_id = str(system_categories["food"].id)
+    created = _create_expense(client, headers, cat_id)
+    # Set then clear via empty string
+    client.put(
+        f"/expenses/{created['id']}",
+        json={"merchant": "Spotify"},
+        headers=headers,
+    )
+    resp = client.put(
+        f"/expenses/{created['id']}",
+        json={"merchant": ""},
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["merchant"] is None
+
+
 # ── Read ──
 
 

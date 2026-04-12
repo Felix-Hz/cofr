@@ -17,6 +17,13 @@ const MOBILE_ROW_SPANS: Partial<Record<WidgetType, number>> = {
   account_balances: 2,
   category_pie: 3,
   spend_sparkline: 2,
+  top_categories_bars: 3,
+  income_spend_compare: 2,
+  avg_daily_spend: 1,
+  monthly_trend_bars: 3,
+  weekday_heatmap: 2,
+  account_trend: 3,
+  recurring_subscriptions: 3,
 };
 
 /** Preserve widget order while packing them into non-overlapping grid slots. */

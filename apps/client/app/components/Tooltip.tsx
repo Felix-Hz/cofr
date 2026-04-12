@@ -1,17 +1,21 @@
 import { useId } from "react";
+import { cn } from "~/lib/utils";
 
 interface TooltipProps {
   content: string;
   position?: "top" | "bottom";
+  className?: string;
   children: React.ReactNode;
 }
 
-export default function Tooltip({ content, position = "top", children }: TooltipProps) {
+export default function Tooltip({ content, position = "top", className, children }: TooltipProps) {
   const id = useId();
 
   return (
-    <div className="relative group inline-flex">
-      <div aria-describedby={id}>{children}</div>
+    <div className={cn("relative group inline-flex", className)}>
+      <div aria-describedby={id} className="flex h-full min-w-0 flex-1">
+        {children}
+      </div>
       <span
         id={id}
         role="tooltip"

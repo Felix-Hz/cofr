@@ -1,10 +1,14 @@
 import { createContext, type ReactNode, useContext } from "react";
 import type {
   AccountBalance,
+  AccountTrendResponse,
   Expense,
   LifetimeStats,
   MonthlyStats,
+  MonthlyTrendResponse,
+  RecurringResponse,
   SparklineResponse,
+  WeekdayHeatmapResponse,
 } from "../schemas";
 
 export type DashboardData = {
@@ -16,6 +20,10 @@ export type DashboardData = {
   expensesOffset: number;
   accountBalances: AccountBalance[];
   sparkline: SparklineResponse;
+  monthlyTrend: MonthlyTrendResponse;
+  weekdayHeatmap: WeekdayHeatmapResponse;
+  accountTrend: AccountTrendResponse;
+  recurring: RecurringResponse;
   startDate: string;
   endDate: string;
   currency: string | null;

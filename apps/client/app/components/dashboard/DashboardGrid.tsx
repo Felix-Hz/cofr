@@ -22,7 +22,7 @@ import {
   widgetGridStyle,
 } from "~/lib/dashboard/grid";
 import { durations, EASE_OUT_EXPO } from "~/lib/dashboard/motion-config";
-import { getRegistry, WIDGET_META, WIDGET_ORDER } from "~/lib/dashboard/registry";
+import { getRegistry, WIDGET_ORDER } from "~/lib/dashboard/registry";
 import type { DashboardWidget } from "~/lib/schemas";
 import { WidgetDndShell } from "./WidgetDndShell";
 import { WidgetMotionCard } from "./WidgetMotionCard";
@@ -46,19 +46,6 @@ export function DashboardGrid({
   const [isMobileGrid, setIsMobileGrid] = useState(false);
   const registry = getRegistry();
   const widgetCount = WIDGET_ORDER.length;
-  const categorySummaries = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const type of WIDGET_ORDER) {
-      const category = WIDGET_META[type].category;
-      counts.set(category, (counts.get(category) ?? 0) + 1);
-    }
-    return [
-      { key: "period", label: "Period", count: counts.get("period") ?? 0 },
-      { key: "wealth", label: "Wealth", count: counts.get("wealth") ?? 0 },
-      { key: "insights", label: "Insights", count: counts.get("insights") ?? 0 },
-      { key: "activity", label: "Activity", count: counts.get("activity") ?? 0 },
-    ];
-  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -192,75 +179,47 @@ export function DashboardGrid({
                   </div>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)]">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {categorySummaries.map((item, index) => (
-                      <motion.div
-                        key={item.key}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          duration: durations.medium,
-                          delay: 0.04 * index,
-                          ease: EASE_OUT_EXPO,
-                        }}
-                        className="rounded-lg border border-edge-default/80 bg-surface-elevated/70 p-4"
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: durations.medium, delay: 0.08, ease: EASE_OUT_EXPO }}
+                  className="rounded-[var(--radius-lg)] border border-edge-default bg-surface-elevated p-5"
+                >
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-soft-text">
+                    Suggested starting set
+                  </div>
+                  <div className="mt-4 space-y-3">
+                    {[
+                      {
+                        title: "Period Stats",
+                        detail: "Anchor the page with income, spend, net, and savings rate.",
+                      },
+                      {
+                        title: "Category breakdown",
+                        detail: "Add one insight view to explain where spend is moving.",
+                      },
+                      {
+                        title: "Transactions",
+                        detail: "Keep a working list for edits and spot checks.",
+                      },
+                    ].map((item) => (
+                      <div
+                        key={item.title}
+                        className="flex items-start gap-3 border-b border-edge-default/70 pb-3 last:border-b-0 last:pb-0"
                       >
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-content-tertiary">
-                          {item.label}
-                        </div>
-                        <div className="mt-3 flex items-end justify-between gap-3">
-                          <div className="text-2xl font-semibold tabular-nums text-content-heading">
-                            {item.count}
+                        <div className="mt-0.5 h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
+                        <div>
+                          <div className="text-sm font-semibold text-content-heading">
+                            {item.title}
                           </div>
-                          <div className="h-px flex-1 bg-edge-default" aria-hidden />
+                          <p className="mt-1 text-sm leading-6 text-content-secondary">
+                            {item.detail}
+                          </p>
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
-
-                  <motion.div
-                    initial={{ opacity: 0, x: 16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: durations.medium, delay: 0.08, ease: EASE_OUT_EXPO }}
-                    className="rounded-[var(--radius-lg)] border border-edge-default bg-surface-elevated p-5"
-                  >
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent-soft-text">
-                      Suggested starting set
-                    </div>
-                    <div className="mt-4 space-y-3">
-                      {[
-                        {
-                          title: "Period Stats",
-                          detail: "Anchor the page with income, spend, net, and savings rate.",
-                        },
-                        {
-                          title: "Category breakdown",
-                          detail: "Add one insight view to explain where spend is moving.",
-                        },
-                        {
-                          title: "Transactions",
-                          detail: "Keep a working list for edits and spot checks.",
-                        },
-                      ].map((item) => (
-                        <div
-                          key={item.title}
-                          className="flex items-start gap-3 border-b border-edge-default/70 pb-3 last:border-b-0 last:pb-0"
-                        >
-                          <div className="mt-0.5 h-2.5 w-2.5 rounded-full bg-accent" aria-hidden />
-                          <div>
-                            <div className="text-sm font-semibold text-content-heading">
-                              {item.title}
-                            </div>
-                            <p className="mt-1 text-sm leading-6 text-content-secondary">
-                              {item.detail}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                </div>
+                </motion.div>
               </div>
             </motion.section>
           ) : (

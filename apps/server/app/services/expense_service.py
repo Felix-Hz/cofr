@@ -532,11 +532,20 @@ class ExpenseService:
         start_date: datetime,
         end_date: datetime,
         currency: str | None = None,
+        tz_offset_minutes: int = 0,
     ) -> SparklineResponse:
         """Daily spend totals between start_date and end_date (inclusive).
 
         Uses Python-side grouping for cross-DB compatibility (SQLite lacks extract()).
+
+        ``tz_offset_minutes`` is the client's offset from UTC (positive for east of
+        UTC, e.g. NZT = 780). Timestamps are shifted by this amount before bucketing
+        so the day boundaries match the user's local calendar.
         """
+        from datetime import timedelta as _td
+
+        offset = _td(minutes=tz_offset_minutes)
+
         filters = [
             Transaction.user_id == user_id,
             Transaction.timestamp >= start_date,
@@ -557,7 +566,8 @@ class ExpenseService:
             )
             totals: dict[str, float] = {}
             for ts, amount in rows:
-                key = ts.date().isoformat()
+                ts_naive = ts.replace(tzinfo=None) if ts.tzinfo else ts
+                key = (ts_naive + offset).date().isoformat()
                 totals[key] = totals.get(key, 0.0) + float(amount)
         else:
             user = self.db.query(User).filter(User.id == user_id).first()
@@ -580,12 +590,21 @@ class ExpenseService:
             )
             totals = {}
             for ts, amount in rows:
-                key = ts.date().isoformat()
+                ts_naive = ts.replace(tzinfo=None) if ts.tzinfo else ts
+                key = (ts_naive + offset).date().isoformat()
                 totals[key] = totals.get(key, 0.0) + float(amount or 0)
 
-        points = [
-            SparklinePoint(date=date_key, total=total) for date_key, total in sorted(totals.items())
-        ]
+        # Backfill every day in the range so sparkline renders a continuous line
+        # even when only a handful of days have transactions.
+        start_day = start_date.date()
+        end_day = end_date.date()
+        points: list[SparklinePoint] = []
+        cursor = start_day
+        while cursor <= end_day:
+            key = cursor.isoformat()
+            points.append(SparklinePoint(date=key, total=totals.get(key, 0.0)))
+            cursor += _td(days=1)
+
         return SparklineResponse(
             points=points, currency=resolved_currency, is_converted=is_converted
         )
@@ -630,6 +649,7 @@ class ExpenseService:
             category_id=data.category_id,
             account_id=account_id,
             notes=data.description,
+            merchant=(data.merchant or None),
             timestamp=created_at,
             currency=data.currency,
             is_opening_balance=data.is_opening_balance,
@@ -658,6 +678,8 @@ class ExpenseService:
             transaction.category_id = data.category_id
         if data.description is not None:
             transaction.notes = data.description
+        if data.merchant is not None:
+            transaction.merchant = data.merchant or None
         if data.currency is not None:
             transaction.currency = data.currency
         if data.created_at is not None:
@@ -721,6 +743,7 @@ class ExpenseService:
             category_color_dark=cat.color_dark if cat else "#9CA3AF",
             category_type=cat.type if cat else "transfer",
             description=transaction.notes or "",
+            merchant=transaction.merchant,
             created_at=transaction.timestamp,
             currency=transaction.currency,
             is_opening_balance=transaction.is_opening_balance,

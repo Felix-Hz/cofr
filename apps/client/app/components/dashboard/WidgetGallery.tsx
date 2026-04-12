@@ -2,8 +2,30 @@ import { AnimatePresence, motion } from "motion/react";
 import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { springs } from "~/lib/dashboard/motion-config";
 import { WIDGET_META, WIDGET_ORDER } from "~/lib/dashboard/registry";
+import type { WidgetCategory } from "~/lib/dashboard/widget-defs";
 import type { WidgetType } from "~/lib/schemas";
 import { cn } from "~/lib/utils";
+
+const CATEGORY_ORDER: WidgetCategory[] = ["period", "wealth", "insights", "activity"];
+
+const CATEGORY_COPY: Record<WidgetCategory, { title: string; description: string }> = {
+  period: {
+    title: "Period",
+    description: "Cards tied to the selected date range and current reporting window.",
+  },
+  wealth: {
+    title: "Wealth",
+    description: "Balances, net worth, and account-level trajectory.",
+  },
+  insights: {
+    title: "Insights",
+    description: "Breakdowns, comparisons, and trend views across your data.",
+  },
+  activity: {
+    title: "Activity",
+    description: "Recurring behaviour and transaction-level monitoring.",
+  },
+};
 
 export function WidgetGallery({
   isOpen,
@@ -17,6 +39,12 @@ export function WidgetGallery({
   activeTypes: Set<WidgetType>;
 }) {
   useModalKeyboardShortcuts({ isOpen, onEscape: onClose });
+
+  const groupedWidgets = CATEGORY_ORDER.map((category) => ({
+    category,
+    meta: CATEGORY_COPY[category],
+    widgets: WIDGET_ORDER.filter((type) => WIDGET_META[type].category === category),
+  })).filter((section) => section.widgets.length > 0);
 
   return (
     <AnimatePresence>
@@ -66,38 +94,54 @@ export function WidgetGallery({
             </header>
 
             <div className="min-h-0 overflow-y-auto p-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {WIDGET_ORDER.map((type) => {
-                  const meta = WIDGET_META[type];
-                  const added = activeTypes.has(type);
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      disabled={added}
-                      onClick={() => onAdd(type)}
-                      className={cn(
-                        "flex flex-col gap-1.5 rounded-md border p-4 text-left transition-all",
-                        added
-                          ? "cursor-not-allowed border-edge-default bg-surface-elevated opacity-50"
-                          : "border-edge-default bg-surface-elevated hover:border-emerald/60 hover:shadow-lg",
-                      )}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald">
-                          {meta.category}
-                        </span>
-                        {added && (
-                          <span className="text-[10px] font-semibold text-content-tertiary">
-                            Added
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm font-semibold text-content-primary">{meta.title}</div>
-                      <p className="text-xs text-content-tertiary">{meta.description}</p>
-                    </button>
-                  );
-                })}
+              <div className="space-y-5">
+                {groupedWidgets.map((section) => (
+                  <section key={section.category} className="space-y-2.5">
+                    <div className="border-b border-edge-default/80 pb-2">
+                      <h4 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-content-secondary">
+                        {section.meta.title}
+                      </h4>
+                      <p className="mt-1 text-xs text-content-tertiary">
+                        {section.meta.description}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {section.widgets.map((type) => {
+                        const meta = WIDGET_META[type];
+                        const added = activeTypes.has(type);
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            disabled={added}
+                            onClick={() => onAdd(type)}
+                            className={cn(
+                              "flex flex-col gap-1.5 rounded-md border p-4 text-left transition-all",
+                              added
+                                ? "cursor-not-allowed border-edge-default bg-surface-elevated opacity-50"
+                                : "border-edge-default bg-surface-elevated hover:border-emerald/60 hover:shadow-lg",
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald">
+                                {section.meta.title}
+                              </span>
+                              {added && (
+                                <span className="text-[10px] font-semibold text-content-tertiary">
+                                  Added
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm font-semibold text-content-primary">
+                              {meta.title}
+                            </div>
+                            <p className="text-xs text-content-tertiary">{meta.description}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
               </div>
             </div>
             <footer className="border-t border-edge-default bg-surface-primary px-5 py-3 text-[11px] text-content-tertiary">
