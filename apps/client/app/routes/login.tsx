@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { redirect, useNavigate, useSearchParams } from "react-router";
+import { Link, redirect, useNavigate, useSearchParams } from "react-router";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
 import { loginWithEmail, registerWithEmail } from "~/lib/api";
@@ -23,6 +23,8 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const errorParam = searchParams.get("error");
+  const verifiedParam = searchParams.get("verified");
+  const resetParam = searchParams.get("reset");
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -30,10 +32,29 @@ export default function Login() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(errorParam);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = `cofr — ${mode === "signin" ? "Login" : "Sign up"}`;
   }, [mode]);
+
+  useEffect(() => {
+    if (verifiedParam === "true") {
+      setNotice("Email verified. You can sign in now.");
+      return;
+    }
+    if (verifiedParam === "expired") {
+      setError("Your verification link expired. Sign in and resend it from settings.");
+      return;
+    }
+    if (verifiedParam === "invalid") {
+      setError("That verification link is invalid.");
+      return;
+    }
+    if (resetParam === "success") {
+      setNotice("Password updated. Sign in with your new password.");
+    }
+  }, [verifiedParam, resetParam]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,37 +71,80 @@ export default function Login() {
       navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
+      setNotice(null);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gradient-page">
-      <div className="max-w-lg w-full space-y-8 p-8">
-        <div className="text-center">
-          <img src="/logo.png" alt="cofr" className="h-16 w-16 mx-auto mb-4 logo-auto" />
-          <h2 className="text-3xl font-bold tracking-tight">
-            {mode === "signin" ? "Welcome back" : "Create your account"}
-          </h2>
-          <p className="mt-2 text-sm text-content-tertiary">
-            {mode === "signin" ? "Sign in to continue to cofr" : "Get started with cofr"}
+    <div className="min-h-screen auth-shell auth-shell--recovery">
+      <div className="auth-shell__ambient" />
+      <div className="auth-shell__frame">
+        <section className="auth-shell__intro">
+          <p className="auth-eyebrow">{mode === "signin" ? "Welcome back" : "New account"}</p>
+          <h1 className="auth-title">
+            {mode === "signin"
+              ? "Step back into your money in one move."
+              : "Start cofr with a cleaner financial baseline."}
+          </h1>
+          <p className="auth-copy">
+            {mode === "signin"
+              ? "Use email or Google to reopen your dashboard, review your latest activity, and keep the same focused workflow."
+              : "Create an account with email or continue with Google. Email verification can be completed after sign-up to enable account recovery."}
           </p>
-        </div>
+        </section>
 
-        {error && (
-          <div className="bg-negative-bg border border-negative-text text-negative-text px-4 py-3 rounded-md">
-            <p className="text-sm">{error}</p>
+        <section className="auth-panel auth-panel--square">
+          <div className="auth-panel__header">
+            <img src="/logo.png" alt="cofr" className="h-12 w-12 logo-auto" />
+            <div>
+              <p className="auth-panel__eyebrow">{mode === "signin" ? "Sign in" : "Sign up"}</p>
+              <h2 className="auth-panel__title">
+                {mode === "signin" ? "Access your workspace" : "Create your account"}
+              </h2>
+            </div>
           </div>
-        )}
 
-        {/* Google OAuth */}
-        <div className="mt-8 space-y-4">
-          <a
-            href={`${API_BASE_URL}/auth/oauth/google/login`}
-            className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-edge-strong rounded-lg shadow-sm bg-surface-primary text-content-secondary hover:bg-surface-hover transition-colors"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+          <div className="auth-mode-toggle">
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signin");
+                setError(null);
+                setNotice(null);
+              }}
+              className={`auth-mode-toggle__button ${mode === "signin" ? "is-active" : ""}`}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signup");
+                setError(null);
+                setNotice(null);
+              }}
+              className={`auth-mode-toggle__button ${mode === "signup" ? "is-active" : ""}`}
+            >
+              Create account
+            </button>
+          </div>
+
+          {error && (
+            <div className="rounded-lg border border-negative-text/25 bg-negative-bg px-4 py-3 text-sm text-negative-text">
+              <p>{error}</p>
+            </div>
+          )}
+
+          {notice && (
+            <div className="rounded-lg border border-positive-border bg-positive-bg px-4 py-3 text-sm text-positive-text">
+              <p>{notice}</p>
+            </div>
+          )}
+
+          <a href={`${API_BASE_URL}/auth/oauth/google/login`} className="auth-provider-button">
+            <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -98,127 +162,105 @@ export default function Login() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span className="font-medium">Continue with Google</span>
+            <span>Continue with Google</span>
           </a>
-        </div>
 
-        {/* Divider */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-edge-default" />
+          <div className="auth-divider">
+            <span>or use email</span>
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-3 bg-surface-primary text-content-tertiary rounded">or</span>
-          </div>
-        </div>
 
-        {/* Email/Password Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === "signup" && (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signup" && (
+              <div>
+                <label htmlFor="name" className="auth-label">
+                  Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  className="auth-input"
+                />
+              </div>
+            )}
+
             <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-content-secondary mb-1"
-              >
-                Name
+              <label htmlFor="email" className="auth-label">
+                Email
               </label>
               <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name (optional)"
-                className="w-full px-4 py-2.5 border border-edge-strong rounded-lg bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="auth-input"
               />
             </div>
-          )}
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-content-secondary mb-1"
+            <div>
+              <div className="mb-1 flex items-center justify-between gap-3">
+                <label htmlFor="password" className="auth-label mb-0">
+                  Password
+                </label>
+                {mode === "signin" && (
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-semibold text-emerald hover:text-emerald-hover transition-colors"
+                  >
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
+              <PasswordInput
+                id="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
+                className="auth-input"
+              />
+              {mode === "signup" && <PasswordRequirements password={password} />}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || (mode === "signup" && !isPasswordValid(password))}
+              className="auth-submit-button"
             >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full px-4 py-2.5 border border-edge-strong rounded-lg bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
-            />
-          </div>
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
+                  {mode === "signin" ? "Signing in..." : "Creating account..."}
+                </span>
+              ) : mode === "signin" ? (
+                "Sign in"
+              ) : (
+                "Create account"
+              )}
+            </button>
+          </form>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-content-secondary mb-1"
-            >
-              Password
-            </label>
-            <PasswordInput
-              id="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
-              className="w-full px-4 py-2.5 border border-edge-strong rounded-lg bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
-            />
-            {mode === "signup" && <PasswordRequirements password={password} />}
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || (mode === "signup" && !isPasswordValid(password))}
-            className="w-full py-2.5 px-4 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-lg disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                {mode === "signin" ? "Signing in..." : "Creating account..."}
-              </span>
-            ) : mode === "signin" ? (
-              "Sign in"
-            ) : (
-              "Create account"
-            )}
-          </button>
-        </form>
-
-        {/* Mode Toggle */}
-        <p className="text-center text-sm text-content-tertiary">
-          {mode === "signin" ? (
-            <>
-              Don&apos;t have an account?{" "}
+          <div className="auth-panel__footer">
+            <p className="text-sm text-content-tertiary">
+              {mode === "signin" ? "Need a new account?" : "Already set up?"}{" "}
               <button
                 type="button"
                 onClick={() => {
-                  setMode("signup");
+                  setMode(mode === "signin" ? "signup" : "signin");
                   setError(null);
+                  setNotice(null);
                 }}
-                className="font-medium text-emerald hover:text-emerald-hover transition-colors cursor-pointer"
+                className="font-semibold text-emerald hover:text-emerald-hover transition-colors"
               >
-                Sign up
+                {mode === "signin" ? "Create one" : "Sign in"}
               </button>
-            </>
-          ) : (
-            <>
-              Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("signin");
-                  setError(null);
-                }}
-                className="font-medium text-emerald hover:text-emerald-hover transition-colors cursor-pointer"
-              >
-                Sign in
-              </button>
-            </>
-          )}
-        </p>
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import asyncio
 import logging
 
-import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, field_validator
@@ -9,12 +8,23 @@ from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_user_id
 from app.auth.jwt import create_access_token
+from app.auth.passwords import hash_password, validate_password_strength, verify_password
 from app.config import settings
 from app.database import get_db
 from app.db.models import AuthProvider, User
 from app.email.rate_limit import email_rate_limiter
-from app.email.service import send_verification_email, send_welcome_email
-from app.email.tokens import BadSignature, SignatureExpired, validate_verification_token
+from app.email.service import (
+    send_password_reset_email,
+    send_verification_email,
+    send_welcome_email,
+)
+from app.email.tokens import (
+    BadSignature,
+    SignatureExpired,
+    password_reset_token_matches,
+    validate_password_reset_token,
+    validate_verification_token,
+)
 from app.services.account_service import ensure_system_accounts
 
 logger = logging.getLogger(__name__)
@@ -30,17 +40,7 @@ class RegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.islower() for c in v):
-            raise ValueError("Password must contain at least one lowercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one number")
-        if not any(not c.isalnum() for c in v):
-            raise ValueError("Password must contain at least one special character")
-        return v
+        return validate_password_strength(v)
 
 
 class LoginRequest(BaseModel):
@@ -52,12 +52,18 @@ class AuthResponse(BaseModel):
     token: str
 
 
-def _hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
 
 
-def _verify_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode(), hashed.encode())
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return validate_password_strength(v)
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
@@ -93,7 +99,7 @@ async def register(body: RegisterRequest, db: Session = Depends(get_db)):
         provider_user_id=email_normalized,
         email=email_normalized,
         display_name=body.name,
-        password_hash=_hash_password(body.password),
+        password_hash=hash_password(body.password),
     )
     db.add(auth_provider)
     ensure_system_accounts(db, user)
@@ -126,7 +132,7 @@ async def login(body: LoginRequest, db: Session = Depends(get_db)):
             detail="Invalid email or password",
         )
 
-    if not _verify_password(body.password, auth_provider.password_hash):
+    if not verify_password(body.password, auth_provider.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -141,6 +147,88 @@ async def login(body: LoginRequest, db: Session = Depends(get_db)):
         username=auth_provider.display_name or email_normalized,
     )
     return AuthResponse(token=token)
+
+
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)
+async def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Request a password reset email for a verified local account."""
+    email_normalized = body.email.lower().strip()
+    if not email_rate_limiter.check(f"reset:{email_normalized}", max_count=5, window_seconds=3600):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many password reset requests. Please try again later.",
+        )
+
+    auth_provider = (
+        db.query(AuthProvider)
+        .filter(
+            AuthProvider.provider == "local",
+            AuthProvider.provider_user_id == email_normalized,
+        )
+        .first()
+    )
+
+    if auth_provider and auth_provider.password_hash:
+        user = db.query(User).filter(User.id == auth_provider.user_id).first()
+        if user and user.email_verified and auth_provider.email:
+            asyncio.create_task(
+                send_password_reset_email(
+                    db,
+                    auth_provider.email,
+                    str(user.id),
+                    auth_provider.password_hash,
+                )
+            )
+
+    return {
+        "message": "If that account exists and is eligible for reset, we've sent a reset email."
+    }
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Reset password from a signed password reset link."""
+    try:
+        payload = validate_password_reset_token(body.token)
+    except SignatureExpired as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset link has expired",
+        ) from exc
+    except BadSignature as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset link is invalid",
+        ) from exc
+
+    if payload.get("purpose") != "reset_password":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reset link is invalid")
+
+    user_id = payload["user_id"]
+    email = payload["email"]
+    auth_provider = (
+        db.query(AuthProvider)
+        .filter(
+            AuthProvider.user_id == user_id,
+            AuthProvider.provider == "local",
+            AuthProvider.provider_user_id == email,
+        )
+        .first()
+    )
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if (
+        not user
+        or not auth_provider
+        or not auth_provider.password_hash
+        or not user.email_verified
+        or not password_reset_token_matches(auth_provider.password_hash, payload)
+    ):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reset link is invalid")
+
+    auth_provider.password_hash = hash_password(body.new_password)
+    db.commit()
+    return {"message": "Password reset successfully"}
 
 
 @router.get("/verify-email")

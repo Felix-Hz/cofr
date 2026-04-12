@@ -4,6 +4,7 @@ import os
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 os.environ.setdefault("JWT_SECRET", "test-secret-key-at-least-32-chars-long")
 os.environ.setdefault("ENCRYPTION_KEY", "yoiUSNghFamT5wyzMwk8YL2XS1T4uNg5Ih3k05CH51Q=")
+os.environ.setdefault("ENV", "test")
 os.environ["RESEND_API_KEY"] = ""  # Force ConsoleProvider in tests — never send real emails
 os.environ["AWS_ACCESS_KEY_ID"] = ""
 os.environ["AWS_SECRET_ACCESS_KEY"] = ""

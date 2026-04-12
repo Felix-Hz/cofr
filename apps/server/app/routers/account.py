@@ -1,12 +1,12 @@
 from datetime import UTC, datetime
 from typing import Literal
 
-import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_user_id
+from app.auth.passwords import hash_password, validate_password_strength, verify_password
 from app.database import get_db
 from app.db.models import (
     Account,
@@ -75,17 +75,7 @@ class PasswordChangeRequest(BaseModel):
     @field_validator("new_password")
     @classmethod
     def password_strength(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.islower() for c in v):
-            raise ValueError("Password must contain at least one lowercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one number")
-        if not any(not c.isalnum() for c in v):
-            raise ValueError("Password must contain at least one special character")
-        return v
+        return validate_password_strength(v)
 
 
 class PasswordChangeResponse(BaseModel):
@@ -241,12 +231,10 @@ async def change_password(
     if not auth_provider or not auth_provider.password_hash:
         raise HTTPException(status_code=400, detail="No local auth provider linked to this account")
 
-    if not bcrypt.checkpw(body.current_password.encode(), auth_provider.password_hash.encode()):
+    if not verify_password(body.current_password, auth_provider.password_hash):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
 
-    auth_provider.password_hash = bcrypt.hashpw(
-        body.new_password.encode(), bcrypt.gensalt()
-    ).decode()
+    auth_provider.password_hash = hash_password(body.new_password)
     db.commit()
     return PasswordChangeResponse(success=True, message="Password changed successfully")
 
@@ -274,7 +262,7 @@ async def delete_account(
     if local_provider and local_provider.password_hash:
         if not body.password:
             raise HTTPException(status_code=400, detail="Password required for account deletion")
-        if not bcrypt.checkpw(body.password.encode(), local_provider.password_hash.encode()):
+        if not verify_password(body.password, local_provider.password_hash):
             raise HTTPException(status_code=400, detail="Password is incorrect")
 
     if body.mode == "soft":

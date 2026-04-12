@@ -5,6 +5,7 @@ interface PasswordInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
+  disabled?: boolean;
   placeholder?: string;
   className?: string;
 }
@@ -14,6 +15,7 @@ export default function PasswordInput({
   value,
   onChange,
   required,
+  disabled,
   placeholder,
   className = "",
 }: PasswordInputProps) {
@@ -27,14 +29,16 @@ export default function PasswordInput({
         value={value}
         onChange={onChange}
         required={required}
+        disabled={disabled}
         placeholder={placeholder}
         className={`${className} pr-10`}
       />
       <button
         type="button"
         tabIndex={-1}
+        disabled={disabled}
         onClick={() => setVisible(!visible)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted hover:text-content-secondary transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-content-muted hover:text-content-secondary transition-colors disabled:opacity-50"
         aria-label={visible ? "Hide password" : "Show password"}
       >
         {visible ? (
