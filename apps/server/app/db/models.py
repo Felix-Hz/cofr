@@ -1,13 +1,15 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    Date,
     DateTime,
     Float,
     ForeignKey,
     Integer,
+    SmallInteger,
     String,
     Text,
     UniqueConstraint,
@@ -59,6 +61,7 @@ class User(Base):
     default_account_id: Mapped[uuid.UUID | None] = mapped_column(
         SaUuid, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True
     )
+    timezone: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="user")
     auth_providers: Mapped[list["AuthProvider"]] = relationship(back_populates="user")
@@ -158,10 +161,56 @@ class Transaction(Base):
     )
     is_transfer: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("false"))
     transfer_direction: Mapped[str | None] = mapped_column(String(4), nullable=True)
+    recurring_rule_id: Mapped[uuid.UUID | None] = mapped_column(
+        SaUuid,
+        ForeignKey("recurring_rules.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
 
     user: Mapped["User"] = relationship(back_populates="transactions")
     category_rel: Mapped["Category | None"] = relationship(back_populates="transactions")
     account_rel: Mapped["Account"] = relationship(back_populates="transactions")
+    recurring_rule: Mapped["RecurringRule | None"] = relationship(back_populates="transactions")
+
+
+class RecurringRule(Base):
+    __tablename__ = "recurring_rules"
+
+    id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    type: Mapped[str] = mapped_column(String(10))  # expense | income | transfer
+    name: Mapped[str] = mapped_column(String(80))
+    amount: Mapped[float] = mapped_column(Float)
+    currency: Mapped[str] = mapped_column(String(3), default="NZD")
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("accounts.id", ondelete="CASCADE")
+    )
+    to_account_id: Mapped[uuid.UUID | None] = mapped_column(
+        SaUuid, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=True
+    )
+    category_id: Mapped[uuid.UUID | None] = mapped_column(
+        SaUuid, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
+    )
+    merchant: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    description: Mapped[str] = mapped_column(String(360), default="", server_default="")
+    interval_unit: Mapped[str] = mapped_column(String(8))  # day | week | month | year
+    interval_count: Mapped[int] = mapped_column(SmallInteger, default=1, server_default=text("1"))
+    day_of_month: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    day_of_week: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    start_date: Mapped[date] = mapped_column(Date)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    next_due_at: Mapped[date] = mapped_column(Date)
+    last_materialized_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    transactions: Mapped[list["Transaction"]] = relationship(back_populates="recurring_rule")
 
 
 class AuthProvider(Base):

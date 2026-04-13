@@ -755,4 +755,7 @@ class ExpenseService:
             else None,
             linked_account_name=linked_account_name,
             transfer_direction=transaction.transfer_direction,
+            recurring_rule_id=str(transaction.recurring_rule_id)
+            if transaction.recurring_rule_id
+            else None,
         )

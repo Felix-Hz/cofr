@@ -4,7 +4,7 @@ import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { useAccounts } from "~/lib/accounts";
 import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
-import type { Expense, ExpenseCreate } from "~/lib/schemas";
+import type { Expense, ExpenseCreate, RecurringRuleCreate } from "~/lib/schemas";
 
 interface ExpenseFormModalProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface ExpenseFormModalProps {
   onDelete?: () => Promise<void>;
   expense?: Expense | null;
   isLoading?: boolean;
+  onMakeRecurring?: (prefill: Partial<RecurringRuleCreate>) => void;
 }
 
 export default function ExpenseFormModal({
@@ -22,6 +23,7 @@ export default function ExpenseFormModal({
   onDelete,
   expense,
   isLoading = false,
+  onMakeRecurring,
 }: ExpenseFormModalProps) {
   const { activeCategories } = useCategories();
   const { accounts } = useAccounts();
@@ -358,6 +360,31 @@ export default function ExpenseFormModal({
                   className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                 />
               </div>
+
+              {onMakeRecurring && (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const parsed = Number.parseFloat(amount);
+                      onMakeRecurring({
+                        type: mode === "fund" ? "income" : "expense",
+                        name: description.trim() || merchant.trim() || "",
+                        amount: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
+                        currency,
+                        account_id: accountId || undefined,
+                        category_id: categoryId || undefined,
+                        merchant:
+                          mode === "expense" && merchant.trim() ? merchant.trim() : undefined,
+                        description,
+                      });
+                    }}
+                    className="text-xs font-medium text-emerald hover:underline"
+                  >
+                    Make recurring →
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Actions */}

@@ -31,6 +31,7 @@ ALLOWED_WIDGET_TYPES: frozenset[str] = frozenset(
         "weekday_heatmap",
         "account_trend",
         "recurring_subscriptions",
+        "upcoming_recurring",
     }
 )
 

@@ -88,6 +88,7 @@ export const ExpenseSchema = z.object({
   linked_transaction_id: z.string().nullable().optional(),
   linked_account_name: z.string().nullable().optional(),
   transfer_direction: z.string().nullable().optional(),
+  recurring_rule_id: z.string().nullable().optional(),
 });
 
 export const ExpensesResponseSchema = z.object({
@@ -298,6 +299,68 @@ export const RecurringResponseSchema = z.object({
 });
 
 // ============================================================================
+// Recurring Rule Schemas
+// ============================================================================
+
+export const RecurringTypeSchema = z.enum(["expense", "income", "transfer"]);
+export const RecurringIntervalUnitSchema = z.enum(["day", "week", "month", "year"]);
+
+export const RecurringRuleSchema = z.object({
+  id: z.string(),
+  type: RecurringTypeSchema,
+  name: z.string(),
+  amount: z.number(),
+  currency: z.string().length(3),
+  account_id: z.string(),
+  account_name: z.string(),
+  to_account_id: z.string().nullable().optional(),
+  to_account_name: z.string().nullable().optional(),
+  category_id: z.string().nullable().optional(),
+  category_name: z.string().nullable().optional(),
+  category_color_light: z.string().nullable().optional(),
+  category_color_dark: z.string().nullable().optional(),
+  merchant: z.string().nullable().optional(),
+  description: z.string(),
+  interval_unit: RecurringIntervalUnitSchema,
+  interval_count: z.number().int().min(1),
+  day_of_month: z.number().int().nullable().optional(),
+  day_of_week: z.number().int().nullable().optional(),
+  start_date: z.string(),
+  end_date: z.string().nullable().optional(),
+  next_due_at: z.string(),
+  last_materialized_at: z.string().nullable().optional(),
+  is_active: z.boolean(),
+  upcoming: z.array(z.string()).default([]),
+});
+
+export const RecurringRuleCreateSchema = z.object({
+  type: RecurringTypeSchema,
+  name: z.string().min(1).max(80),
+  amount: z.number().positive(),
+  currency: z.string().length(3),
+  account_id: z.string(),
+  to_account_id: z.string().nullable().optional(),
+  category_id: z.string().nullable().optional(),
+  merchant: z.string().max(120).nullable().optional(),
+  description: z.string().max(360).default(""),
+  interval_unit: RecurringIntervalUnitSchema,
+  interval_count: z.number().int().min(1).max(366),
+  day_of_month: z.number().int().min(1).max(31).nullable().optional(),
+  day_of_week: z.number().int().min(0).max(6).nullable().optional(),
+  start_date: z.string(),
+  end_date: z.string().nullable().optional(),
+});
+
+export const RecurringRuleUpdateSchema = RecurringRuleCreateSchema.partial().extend({
+  is_active: z.boolean().optional(),
+});
+
+export const RecurringRuleDeleteResponseSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});
+
+// ============================================================================
 // Dashboard Layout Schemas
 // ============================================================================
 
@@ -387,6 +450,12 @@ export type AccountTrendSeries = z.infer<typeof AccountTrendSeriesSchema>;
 export type AccountTrendResponse = z.infer<typeof AccountTrendResponseSchema>;
 export type RecurringCharge = z.infer<typeof RecurringChargeSchema>;
 export type RecurringResponse = z.infer<typeof RecurringResponseSchema>;
+export type RecurringRuleType = z.infer<typeof RecurringTypeSchema>;
+export type RecurringIntervalUnit = z.infer<typeof RecurringIntervalUnitSchema>;
+export type RecurringRule = z.infer<typeof RecurringRuleSchema>;
+export type RecurringRuleCreate = z.infer<typeof RecurringRuleCreateSchema>;
+export type RecurringRuleUpdate = z.infer<typeof RecurringRuleUpdateSchema>;
+export type RecurringRuleDeleteResponse = z.infer<typeof RecurringRuleDeleteResponseSchema>;
 export type WidgetType = z.infer<typeof WidgetTypeSchema>;
 export type DashboardWidget = z.infer<typeof DashboardWidgetSchema>;
 export type DashboardSpace = z.infer<typeof DashboardSpaceSchema>;

@@ -16,6 +16,7 @@ import { StatSavingsRateWidget } from "./StatSavingsRateWidget";
 import { StatSpentWidget } from "./StatSpentWidget";
 import { TopCategoriesBarsWidget } from "./TopCategoriesBarsWidget";
 import { TransactionsWidget } from "./TransactionsWidget";
+import { UpcomingRecurringWidget } from "./UpcomingRecurringWidget";
 import { WeekdayHeatmapWidget } from "./WeekdayHeatmapWidget";
 
 let registered = false;
@@ -38,6 +39,7 @@ export function ensureWidgetsRegistered(): void {
     account_trend: AccountTrendWidget,
     transactions: TransactionsWidget,
     recurring_subscriptions: RecurringSubscriptionsWidget,
+    upcoming_recurring: UpcomingRecurringWidget,
     net_worth: NetWorthWidget,
     savings_investment: SavingsInvestmentWidget,
     spend_sparkline: SpendSparklineWidget,

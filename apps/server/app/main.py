@@ -20,6 +20,7 @@ from app.routers import (
     exports,
     local_auth,
     oauth,
+    recurring,
     transfers,
     webhooks,
 )
@@ -51,12 +52,19 @@ async def lifespan(app: FastAPI):
 
     # Initial refresh on startup
     refresh_rates_in_db(SessionLocal())
+    # Startup catch-up for any recurring rules missed while the server was down.
+    from app.services.recurring_service import materialize_all_due
+
+    with SessionLocal() as session:
+        materialize_all_due(session)
     # Schedule daily refresh
     task = asyncio.create_task(_daily_rates_refresh_loop())
     cleanup_task = asyncio.create_task(_export_cleanup_loop())
+    recurring_task = asyncio.create_task(_recurring_materialize_loop())
     yield
     task.cancel()
     cleanup_task.cancel()
+    recurring_task.cancel()
     engine.dispose()
 
 
@@ -77,6 +85,26 @@ async def _export_cleanup_loop():
     while True:
         await asyncio.sleep(300)
         cleanup_expired_jobs()
+
+
+async def _recurring_materialize_loop():
+    """Materialize due recurring rules every hour.
+
+    Hourly polling (not daily) is needed because rules are due in each user's
+    local timezone — a user crossing midnight in Auckland is several hours
+    before a user in London. The query is cheap and indexed.
+    """
+    from app.database import SessionLocal
+    from app.services.recurring_service import materialize_all_due
+
+    while True:
+        await asyncio.sleep(3600)
+        try:
+            with SessionLocal() as session:
+                materialize_all_due(session)
+        except Exception:
+            # Keep the loop alive even if one pass fails; Sentry will capture.
+            pass
 
 
 app = FastAPI(
@@ -116,6 +144,7 @@ app.include_router(oauth.router)
 app.include_router(account.router)
 app.include_router(accounts.router)
 app.include_router(transfers.router)
+app.include_router(recurring.router)
 app.include_router(exchange_rates.router)
 app.include_router(local_auth.router)
 app.include_router(webhooks.router)
