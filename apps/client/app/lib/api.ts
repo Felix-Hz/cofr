@@ -35,6 +35,12 @@ import {
   MonthlyTrendResponseSchema,
   type RecurringResponse,
   RecurringResponseSchema,
+  type RecurringRule,
+  type RecurringRuleCreate,
+  type RecurringRuleDeleteResponse,
+  RecurringRuleDeleteResponseSchema,
+  RecurringRuleSchema,
+  type RecurringRuleUpdate,
   type SparklineResponse,
   SparklineResponseSchema,
   type TransferCreate,
@@ -349,6 +355,62 @@ export async function deleteTransfer(id: string): Promise<ExpenseDeleteResponse>
   return ExpenseDeleteResponseSchema.parse(json);
 }
 
+// ── Recurring Rules ──
+
+export async function listRecurringRules(): Promise<RecurringRule[]> {
+  const response = await fetchWithAuth("/recurring/");
+  const json = await response.json();
+  return RecurringRuleSchema.array().parse(json);
+}
+
+export async function createRecurringRule(data: RecurringRuleCreate): Promise<RecurringRule> {
+  const response = await fetchWithAuth("/recurring/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  const json = await response.json();
+  return RecurringRuleSchema.parse(json);
+}
+
+export async function updateRecurringRule(
+  id: string,
+  data: RecurringRuleUpdate,
+): Promise<RecurringRule> {
+  const response = await fetchWithAuth(`/recurring/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  const json = await response.json();
+  return RecurringRuleSchema.parse(json);
+}
+
+export async function toggleRecurringRule(id: string): Promise<RecurringRule> {
+  const response = await fetchWithAuth(`/recurring/${id}/pause`, {
+    method: "PATCH",
+  });
+  const json = await response.json();
+  return RecurringRuleSchema.parse(json);
+}
+
+export async function deleteRecurringRule(id: string): Promise<RecurringRuleDeleteResponse> {
+  const response = await fetchWithAuth(`/recurring/${id}`, {
+    method: "DELETE",
+  });
+  const json = await response.json();
+  return RecurringRuleDeleteResponseSchema.parse(json);
+}
+
+export async function getRecurringRuleHistory(
+  id: string,
+  limit = 50,
+  offset = 0,
+): Promise<ExpensesResponse> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  const response = await fetchWithAuth(`/recurring/${id}/history?${params}`);
+  const json = await response.json();
+  return ExpensesResponseSchema.parse(json);
+}
+
 // ── Account / Provider Linking ──
 
 export async function getLinkedProviders(): Promise<
@@ -377,6 +439,7 @@ export async function getPreferences(): Promise<{
   preferred_currency: string;
   session_timeout_minutes: number | null;
   default_account_id: string | null;
+  timezone: string | null;
 }> {
   const response = await fetchWithAuth("/account/preferences");
   return response.json();
@@ -386,10 +449,12 @@ export async function updatePreferences(data: {
   preferred_currency?: string;
   session_timeout_minutes?: number | null;
   default_account_id?: string;
+  timezone?: string | null;
 }): Promise<{
   preferred_currency: string;
   session_timeout_minutes: number | null;
   default_account_id: string | null;
+  timezone: string | null;
 }> {
   const response = await fetchWithAuth("/account/preferences", {
     method: "PUT",

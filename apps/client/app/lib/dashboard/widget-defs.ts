@@ -164,6 +164,15 @@ export const WIDGET_TYPE_DEFS = [
     supportsFilterOverride: true,
   },
   {
+    type: "upcoming_recurring",
+    title: "Upcoming recurring",
+    description: "Next due dates from your recurring rules.",
+    category: "activity",
+    icon: "repeat",
+    size: { col: 6, row: 2, minColSpan: 4, minRowSpan: 2, maxRowSpan: 6 },
+    supportsFilterOverride: false,
+  },
+  {
     type: "transactions",
     title: "Transactions",
     description: "Recent transactions table with inline edit.",

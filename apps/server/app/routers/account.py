@@ -41,12 +41,14 @@ class PreferencesResponse(BaseModel):
     preferred_currency: str
     session_timeout_minutes: int | None
     default_account_id: str | None = None
+    timezone: str | None = None
 
 
 class PreferencesUpdate(BaseModel):
     preferred_currency: str | None = None
     session_timeout_minutes: int | None = None
     default_account_id: str | None = None
+    timezone: str | None = None
 
     @field_validator("session_timeout_minutes")
     @classmethod
@@ -189,6 +191,7 @@ async def get_preferences(
         preferred_currency=user.preferred_currency,
         session_timeout_minutes=user.session_timeout_minutes,
         default_account_id=str(user.default_account_id) if user.default_account_id else None,
+        timezone=user.timezone,
     )
 
 
@@ -208,11 +211,14 @@ async def update_preferences(
         user.session_timeout_minutes = data.session_timeout_minutes
     if data.default_account_id is not None:
         user.default_account_id = data.default_account_id
+    if "timezone" in data.model_fields_set:
+        user.timezone = data.timezone
     db.commit()
     return PreferencesResponse(
         preferred_currency=user.preferred_currency,
         session_timeout_minutes=user.session_timeout_minutes,
         default_account_id=str(user.default_account_id) if user.default_account_id else None,
+        timezone=user.timezone,
     )
 
 

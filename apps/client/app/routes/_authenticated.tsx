@@ -4,8 +4,10 @@ import OfflineBanner from "~/components/OfflineBanner";
 import ThemeToggle from "~/components/ThemeToggle";
 import { useSessionTimeout } from "~/hooks/useSessionTimeout";
 import { AccountsProvider } from "~/lib/accounts";
+import { updatePreferences } from "~/lib/api";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
 import { CategoriesProvider } from "~/lib/categories";
+import { RecurringProvider } from "~/lib/recurring";
 import { getUserInitials } from "~/lib/utils";
 
 export async function clientLoader() {
@@ -51,6 +53,23 @@ export default function AuthenticatedLayout() {
       window.removeEventListener("cofr:session-timeout", handleTimeoutChange);
       window.removeEventListener("storage", handleStorage);
     };
+  }, []);
+
+  // One-shot: report the browser's detected timezone so recurring rules
+  // fire at the user's local midnight. Guarded by localStorage so we don't
+  // PATCH on every page load.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("cofr_tz_synced")) return;
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (!tz) return;
+      updatePreferences({ timezone: tz })
+        .then(() => localStorage.setItem("cofr_tz_synced", tz))
+        .catch(() => {});
+    } catch {
+      // Intl unavailable — skip silently
+    }
   }, []);
 
   useEffect(() => {
@@ -123,9 +142,11 @@ export default function AuthenticatedLayout() {
       {/* Main content */}
       <CategoriesProvider>
         <AccountsProvider>
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <Outlet />
-          </main>
+          <RecurringProvider>
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <Outlet />
+            </main>
+          </RecurringProvider>
         </AccountsProvider>
       </CategoriesProvider>
     </div>

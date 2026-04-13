@@ -165,6 +165,14 @@ export function TransactionsWidget() {
                             IN
                           </span>
                         )}
+                        {expense.recurring_rule_id && (
+                          <span
+                            className="rounded bg-surface-elevated px-1 py-0.5 text-[9px] font-semibold text-content-secondary"
+                            title="From a recurring rule"
+                          >
+                            RC
+                          </span>
+                        )}
                         {formatCurrency(expense.amount, expense.currency)}
                       </span>
                     </td>

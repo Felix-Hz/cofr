@@ -4,7 +4,7 @@ import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { useAccounts } from "~/lib/accounts";
 import { getAccountBalances } from "~/lib/api";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
-import type { AccountBalance, Expense, TransferCreate } from "~/lib/schemas";
+import type { AccountBalance, Expense, RecurringRuleCreate, TransferCreate } from "~/lib/schemas";
 import { formatCurrency } from "~/lib/utils";
 
 interface TransferFormModalProps {
@@ -14,6 +14,7 @@ interface TransferFormModalProps {
   onDelete?: () => Promise<void>;
   expense?: Expense | null;
   isLoading?: boolean;
+  onMakeRecurring?: (prefill: Partial<RecurringRuleCreate>) => void;
 }
 
 export default function TransferFormModal({
@@ -23,6 +24,7 @@ export default function TransferFormModal({
   onDelete,
   expense,
   isLoading = false,
+  onMakeRecurring,
 }: TransferFormModalProps) {
   const { accounts } = useAccounts();
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([]);
@@ -301,6 +303,29 @@ export default function TransferFormModal({
                   className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                 />
               </div>
+
+              {onMakeRecurring && (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const parsed = Number.parseFloat(amount);
+                      onMakeRecurring({
+                        type: "transfer",
+                        name: description.trim() || "Transfer",
+                        amount: Number.isFinite(parsed) && parsed > 0 ? parsed : undefined,
+                        currency,
+                        account_id: fromAccountId || undefined,
+                        to_account_id: toAccountId || undefined,
+                        description,
+                      });
+                    }}
+                    className="text-xs font-medium text-emerald hover:underline"
+                  >
+                    Make recurring →
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Actions */}

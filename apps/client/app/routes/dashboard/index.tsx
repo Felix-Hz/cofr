@@ -15,10 +15,12 @@ import { ensureWidgetsRegistered } from "~/components/dashboard/widgets/register
 import ExchangeRatesModal from "~/components/ExchangeRatesModal";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
 import ExportModal from "~/components/ExportModal";
+import RecurringFormModal from "~/components/RecurringFormModal";
 import Tooltip from "~/components/Tooltip";
 import TransferFormModal from "~/components/TransferFormModal";
 import {
   createExpense,
+  createRecurringRule,
   createTransfer,
   deleteExpense,
   deleteTransfer,
@@ -47,11 +49,13 @@ import {
   removeDashboardSpace,
 } from "~/lib/dashboard/layout-state";
 import { clampWidgetSize, WIDGET_META } from "~/lib/dashboard/registry";
+import { useRecurring } from "~/lib/recurring";
 import type {
   DashboardSpace,
   DashboardWidget,
   Expense,
   ExpenseCreate,
+  RecurringRuleCreate,
   TransferCreate,
   WidgetType,
 } from "~/lib/schemas";
@@ -237,6 +241,11 @@ export default function Dashboard() {
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
+  const [recurringPrefill, setRecurringPrefill] = useState<Partial<RecurringRuleCreate> | null>(
+    null,
+  );
+  const [isRecurringLoading, setIsRecurringLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRatesModalOpen, setIsRatesModalOpen] = useState(false);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
@@ -462,6 +471,28 @@ export default function Dashboard() {
       setIsLoading(false);
     }
   };
+  const { refresh: refreshRecurring } = useRecurring();
+
+  const handleMakeRecurring = useCallback((prefill: Partial<RecurringRuleCreate>) => {
+    setRecurringPrefill(prefill);
+    setIsFormModalOpen(false);
+    setIsTransferModalOpen(false);
+    setIsRecurringModalOpen(true);
+  }, []);
+
+  const handleRecurringSubmit = async (data: RecurringRuleCreate) => {
+    setIsRecurringLoading(true);
+    try {
+      await createRecurringRule(data);
+      await refreshRecurring();
+      setIsRecurringModalOpen(false);
+      setRecurringPrefill(null);
+      revalidator.revalidate();
+    } finally {
+      setIsRecurringLoading(false);
+    }
+  };
+
   const handleTransferSubmit = async (data: TransferCreate) => {
     setIsLoading(true);
     try {
@@ -1329,6 +1360,7 @@ export default function Dashboard() {
           onDelete={handleDeleteFromModal}
           expense={selectedExpense}
           isLoading={isLoading}
+          onMakeRecurring={handleMakeRecurring}
         />
         <TransferFormModal
           isOpen={isTransferModalOpen}
@@ -1337,6 +1369,17 @@ export default function Dashboard() {
           onDelete={handleTransferDelete}
           expense={selectedExpense}
           isLoading={isLoading}
+          onMakeRecurring={handleMakeRecurring}
+        />
+        <RecurringFormModal
+          isOpen={isRecurringModalOpen}
+          onClose={() => {
+            setIsRecurringModalOpen(false);
+            setRecurringPrefill(null);
+          }}
+          onSubmit={handleRecurringSubmit}
+          prefill={recurringPrefill}
+          isLoading={isRecurringLoading}
         />
         <DeleteConfirmModal
           isOpen={isDeleteModalOpen}

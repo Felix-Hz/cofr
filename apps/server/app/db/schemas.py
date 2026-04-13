@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -94,6 +94,7 @@ class ExpenseSchema(BaseModel):
     linked_transaction_id: str | None = None
     linked_account_name: str | None = None
     transfer_direction: str | None = None
+    recurring_rule_id: str | None = None
 
 
 class ExpensesResponse(BaseModel):
@@ -259,6 +260,80 @@ class TransferCreateRequest(BaseModel):
 class TransferResponse(BaseModel):
     from_transaction: ExpenseSchema
     to_transaction: ExpenseSchema
+
+
+# ── Recurring Rule Schemas ──
+
+
+class RecurringRuleSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    type: str
+    name: str
+    amount: float
+    currency: str
+    account_id: str
+    account_name: str
+    to_account_id: str | None = None
+    to_account_name: str | None = None
+    category_id: str | None = None
+    category_name: str | None = None
+    category_color_light: str | None = None
+    category_color_dark: str | None = None
+    merchant: str | None = None
+    description: str
+    interval_unit: str
+    interval_count: int
+    day_of_month: int | None = None
+    day_of_week: int | None = None
+    start_date: date
+    end_date: date | None = None
+    next_due_at: date
+    last_materialized_at: date | None = None
+    is_active: bool
+    upcoming: list[date] = Field(default_factory=list)
+
+
+class RecurringRuleCreateRequest(BaseModel):
+    type: str = Field(pattern=r"^(expense|income|transfer)$")
+    name: str = Field(min_length=1, max_length=80)
+    amount: float = Field(gt=0)
+    currency: str = Field(pattern="^[A-Z]{3}$")
+    account_id: str
+    to_account_id: str | None = None
+    category_id: str | None = None
+    merchant: str | None = Field(default=None, max_length=120)
+    description: str = Field(default="", max_length=360)
+    interval_unit: str = Field(pattern=r"^(day|week|month|year)$")
+    interval_count: int = Field(ge=1, le=366)
+    day_of_month: int | None = Field(default=None, ge=1, le=31)
+    day_of_week: int | None = Field(default=None, ge=0, le=6)
+    start_date: date
+    end_date: date | None = None
+
+
+class RecurringRuleUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    amount: float | None = Field(default=None, gt=0)
+    currency: str | None = Field(default=None, pattern="^[A-Z]{3}$")
+    account_id: str | None = None
+    to_account_id: str | None = None
+    category_id: str | None = None
+    merchant: str | None = Field(default=None, max_length=120)
+    description: str | None = Field(default=None, max_length=360)
+    interval_unit: str | None = Field(default=None, pattern=r"^(day|week|month|year)$")
+    interval_count: int | None = Field(default=None, ge=1, le=366)
+    day_of_month: int | None = Field(default=None, ge=1, le=31)
+    day_of_week: int | None = Field(default=None, ge=0, le=6)
+    start_date: date | None = None
+    end_date: date | None = None
+    is_active: bool | None = None
+
+
+class RecurringRuleDeleteResponse(BaseModel):
+    success: bool
+    message: str
 
 
 # ── Export Schemas ──

@@ -8,28 +8,42 @@ import ExportHistoryTable from "~/components/ExportHistoryTable";
 import ExportModal from "~/components/ExportModal";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
+import RecurringFormModal from "~/components/RecurringFormModal";
 import { useAccounts } from "~/lib/accounts";
 import {
   changePassword,
   createAccount,
   createCategory,
   createExpense,
+  createRecurringRule,
   deleteAccount,
   deleteCategory,
+  deleteRecurringRule,
   getLinkedProviders,
   getPreferences,
   moveTransactions,
   toggleCategory,
+  toggleRecurringRule,
   unlinkProvider,
   updateAccount,
   updateCategory,
   updatePreferences,
+  updateRecurringRule,
 } from "~/lib/api";
 import { isAuthenticated } from "~/lib/auth";
 import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 import { isPasswordValid } from "~/lib/password";
-import type { Account, Category, CategoryCreate, CategoryUpdate } from "~/lib/schemas";
+import { useRecurring } from "~/lib/recurring";
+import type {
+  Account,
+  Category,
+  CategoryCreate,
+  CategoryUpdate,
+  RecurringRule,
+  RecurringRuleCreate,
+  RecurringRuleUpdate,
+} from "~/lib/schemas";
 import { useTheme } from "~/lib/theme";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
@@ -59,6 +73,7 @@ const SECTIONS = [
   { id: "preferences", label: "Preferences" },
   { id: "accounts", label: "Accounts" },
   { id: "categories", label: "Categories" },
+  { id: "recurring", label: "Recurring" },
   { id: "linked-accounts", label: "Linked Accounts" },
   { id: "security", label: "Security" },
   { id: "export", label: "Export" },
@@ -176,6 +191,23 @@ function AlertTriangleIcon() {
   );
 }
 
+function RepeatIcon() {
+  return (
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17.5 7.5h-6a4 4 0 00-4 4" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 4.5l3 3-3 3" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 16.5h6a4 4 0 004-4" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7 13.5l-3 3 3 3" />
+    </svg>
+  );
+}
+
 function VaultIcon() {
   return (
     <svg
@@ -287,6 +319,12 @@ export default function Settings() {
   const [catLoading, setCatLoading] = useState(false);
   const [deletingCatId, setDeletingCatId] = useState<string | null>(null);
 
+  // Recurring rules
+  const { rules: recurringRules, refresh: refreshRecurring } = useRecurring();
+  const [recurringModalOpen, setRecurringModalOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState<RecurringRule | null>(null);
+  const [recurringLoading, setRecurringLoading] = useState(false);
+
   // Accounts (financial)
   const { accounts, refresh: refreshAccounts } = useAccounts();
   const [defaultAccountId, setDefaultAccountId] = useState<string | null>(null);
@@ -380,6 +418,48 @@ export default function Settings() {
       setCatDeleteError(err instanceof Error ? err.message : "Failed to delete category");
     } finally {
       setDeletingCatId(null);
+    }
+  };
+
+  const handleRecurringSubmit = async (data: RecurringRuleCreate) => {
+    setRecurringLoading(true);
+    try {
+      if (editingRule) {
+        await updateRecurringRule(editingRule.id, data as RecurringRuleUpdate);
+      } else {
+        await createRecurringRule(data);
+      }
+      await refreshRecurring();
+      setRecurringModalOpen(false);
+      setEditingRule(null);
+    } catch {
+      setError("Failed to save recurring rule");
+    } finally {
+      setRecurringLoading(false);
+    }
+  };
+
+  const handleRecurringDelete = async () => {
+    if (!editingRule) return;
+    setRecurringLoading(true);
+    try {
+      await deleteRecurringRule(editingRule.id);
+      await refreshRecurring();
+      setRecurringModalOpen(false);
+      setEditingRule(null);
+    } catch {
+      setError("Failed to delete recurring rule");
+    } finally {
+      setRecurringLoading(false);
+    }
+  };
+
+  const handleRecurringToggle = async (id: string) => {
+    try {
+      await toggleRecurringRule(id);
+      await refreshRecurring();
+    } catch {
+      setError("Failed to toggle recurring rule");
     }
   };
 
@@ -1327,6 +1407,119 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* ── Recurring ── */}
+      <div
+        id="recurring"
+        ref={(el) => {
+          sectionRefs.current.recurring = el;
+        }}
+        style={{ scrollMarginTop: "4rem" }}
+        className="bg-surface-primary rounded-xl border border-edge-default mb-6 shadow-sm hover:shadow-md transition-shadow"
+      >
+        <div className="px-6 py-4 border-b border-edge-default flex items-center gap-3">
+          <span className="text-content-tertiary">
+            <RepeatIcon />
+          </span>
+          <div>
+            <h3 className="text-lg font-medium text-content-primary">Recurring</h3>
+            <p className="text-sm text-content-tertiary mt-0.5">
+              Schedule expenses, income, and transfers that fire automatically
+            </p>
+          </div>
+        </div>
+
+        {recurringRules.length > 0 ? (
+          <div className="divide-y divide-edge-default border-t border-edge-default">
+            {recurringRules.map((rule) => {
+              const cadenceLabel =
+                rule.interval_count === 1
+                  ? rule.interval_unit === "day"
+                    ? "Daily"
+                    : rule.interval_unit === "week"
+                      ? "Weekly"
+                      : rule.interval_unit === "month"
+                        ? "Monthly"
+                        : "Yearly"
+                  : `Every ${rule.interval_count} ${rule.interval_unit}s`;
+              const typeBadgeClass =
+                rule.type === "income"
+                  ? "bg-positive-bg text-positive-text-strong"
+                  : rule.type === "transfer"
+                    ? "bg-accent-soft-bg text-accent-soft-text"
+                    : "bg-surface-elevated text-content-secondary";
+              return (
+                <div
+                  key={rule.id}
+                  className={`px-6 py-3 flex items-center justify-between gap-3 ${
+                    rule.is_active ? "" : "opacity-60"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-content-primary truncate">
+                        {rule.name}
+                      </span>
+                      <span
+                        className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${typeBadgeClass}`}
+                      >
+                        {rule.type}
+                      </span>
+                    </div>
+                    <p className="text-xs text-content-tertiary mt-0.5 truncate">
+                      {cadenceLabel} · {rule.amount.toFixed(2)} {rule.currency} ·{" "}
+                      {rule.is_active ? `next ${rule.next_due_at}` : "Paused"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRecurringToggle(rule.id)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                        rule.is_active ? "bg-emerald" : "bg-edge-strong"
+                      }`}
+                      aria-label={rule.is_active ? "Pause" : "Resume"}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200 ${
+                          rule.is_active ? "translate-x-5" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingRule(rule);
+                        setRecurringModalOpen(true);
+                      }}
+                      className="px-2 py-1 text-xs font-medium text-content-secondary hover:bg-surface-hover rounded"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="px-6 py-4 border-t border-edge-default">
+            <p className="text-sm text-content-muted">No recurring rules yet</p>
+          </div>
+        )}
+
+        <div className="px-6 py-4 border-t border-edge-default">
+          <button
+            type="button"
+            onClick={() => {
+              setEditingRule(null);
+              setRecurringModalOpen(true);
+            }}
+            className="w-full py-2.5 text-sm font-medium text-emerald border-2 border-dashed border-emerald/40 hover:border-emerald hover:bg-emerald/5 rounded-lg transition-colors"
+          >
+            + Add Recurring Rule
+          </button>
+        </div>
+      </div>
+
       {/* ── Linked Accounts ── */}
       <div
         id="linked-accounts"
@@ -1545,6 +1738,18 @@ export default function Settings() {
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         hasLocalAuth={hasLocalAuth}
+      />
+
+      <RecurringFormModal
+        isOpen={recurringModalOpen}
+        onClose={() => {
+          setRecurringModalOpen(false);
+          setEditingRule(null);
+        }}
+        onSubmit={handleRecurringSubmit}
+        onDelete={editingRule ? handleRecurringDelete : undefined}
+        rule={editingRule}
+        isLoading={recurringLoading}
       />
 
       <CategoryFormModal
