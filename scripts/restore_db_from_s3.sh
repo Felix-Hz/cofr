@@ -14,8 +14,9 @@ echo "[$(date -Iseconds)] PostgreSQL S3 restore script starting"
 # BACKUP_S3_BUCKET, BACKUP_S3_PREFIX (configured in backup script)
 
 # Set default values if not provided
+BACKUP_S3_BUCKET="${BACKUP_S3_BUCKET:-${S3_BUCKET_NAME:-}}"
 BACKUP_S3_PREFIX="${BACKUP_S3_PREFIX:-postgres}"
-BACKUP_S3_REGION="${BACKUP_S3_REGION:-us-east-1}"
+BACKUP_S3_REGION="${BACKUP_S3_REGION:-${AWS_REGION:-ap-southeast-2}}"
 S3_ENDPOINT_URL="${BACKUP_S3_ENDPOINT:-}"
 
 # Construct AWS CLI base command with optional endpoint
