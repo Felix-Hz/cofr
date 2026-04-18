@@ -24,15 +24,8 @@ import {
   createTransfer,
   deleteExpense,
   deleteTransfer,
-  getAccountTrend,
+  getDashboardBootstrap,
   getDashboardLayout,
-  getExpenses,
-  getLifetimeStats,
-  getMonthlyTrend,
-  getRangeStats,
-  getRecurring,
-  getSpendSparkline,
-  getWeekdayHeatmap,
   updateDashboardLayout,
   updateExpense,
   updateTransfer,
@@ -62,6 +55,26 @@ import type {
 
 const CURRENCIES = [...SUPPORTED_CURRENCIES];
 const TRANSACTIONS_PAGE_SIZE_OPTIONS = [10, 25, 50];
+
+const PERIOD_STATS_WIDGET_TYPES = new Set<WidgetType>([
+  "period_stats_4up",
+  "stat_income",
+  "stat_spent",
+  "stat_net",
+  "stat_savings_rate",
+  "category_pie",
+  "top_categories_bars",
+  "avg_daily_spend",
+  "income_spend_compare",
+]);
+const LIFETIME_STATS_WIDGET_TYPES = new Set<WidgetType>(["net_worth", "savings_investment"]);
+const ACCOUNT_BALANCE_WIDGET_TYPES = new Set<WidgetType>(["account_balances"]);
+const SPARKLINE_WIDGET_TYPES = new Set<WidgetType>(["spend_sparkline"]);
+const MONTHLY_TREND_WIDGET_TYPES = new Set<WidgetType>(["monthly_trend_bars"]);
+const WEEKDAY_HEATMAP_WIDGET_TYPES = new Set<WidgetType>(["weekday_heatmap"]);
+const ACCOUNT_TREND_WIDGET_TYPES = new Set<WidgetType>(["account_trend"]);
+const RECURRING_WIDGET_TYPES = new Set<WidgetType>(["recurring_subscriptions"]);
+const TRANSACTIONS_WIDGET_TYPES = new Set<WidgetType>(["transactions"]);
 
 ensureWidgetsRegistered();
 
@@ -97,47 +110,34 @@ export async function clientLoader({ request }: { request: Request }) {
   const minAmount = url.searchParams.get("minAmount");
   const maxAmount = url.searchParams.get("maxAmount");
 
-  const [
-    expenseData,
-    rangeStats,
-    lifetimeStats,
-    sparkline,
-    layout,
-    monthlyTrend,
-    weekdayHeatmap,
-    accountTrend,
-    recurring,
-  ] = await Promise.all([
-    getExpenses({
-      limit,
-      offset,
-      startDate: startDate + "T00:00:00",
-      endDate: endDate + "T23:59:59",
-      category: category || undefined,
-      minAmount: minAmount ? Number(minAmount) : undefined,
-      maxAmount: maxAmount ? Number(maxAmount) : undefined,
-      collapseTransferPairs: true,
-    }),
-    getRangeStats(startDate + "T00:00:00", endDate + "T23:59:59", currency),
-    getLifetimeStats(currency),
-    getSpendSparkline(`${startDate}T00:00:00`, `${endDate}T23:59:59`, currency),
-    getDashboardLayout(),
-    getMonthlyTrend(12, currency),
-    getWeekdayHeatmap(8, currency),
-    getAccountTrend(90, currency),
-    getRecurring(120, currency),
-  ]);
+  const layout = await getDashboardLayout();
+  const widgetTypes = Array.from(
+    new Set(layout.spaces.flatMap((space) => space.widgets.map((widget) => widget.widget_type))),
+  );
+  const bootstrap = await getDashboardBootstrap({
+    startDate: `${startDate}T00:00:00`,
+    endDate: `${endDate}T23:59:59`,
+    currency,
+    limit,
+    offset,
+    category: category || undefined,
+    minAmount: minAmount ? Number(minAmount) : undefined,
+    maxAmount: maxAmount ? Number(maxAmount) : undefined,
+    widgetTypes,
+  });
 
   return {
-    ...expenseData,
-    monthlyStats: rangeStats,
-    lifetimeStats,
-    sparkline,
+    ...bootstrap.expenses,
+    monthlyStats: bootstrap.period_stats,
+    lifetimeStats: bootstrap.lifetime_stats,
+    accountBalances: bootstrap.account_balances,
+    sparkline: bootstrap.sparkline,
     layout,
-    monthlyTrend,
-    weekdayHeatmap,
-    accountTrend,
-    recurring,
+    monthlyTrend: bootstrap.monthly_trend,
+    weekdayHeatmap: bootstrap.weekday_heatmap,
+    accountTrend: bootstrap.account_trend,
+    recurring: bootstrap.recurring,
+    preferredCurrency: bootstrap.preferred_currency,
     startDate,
     endDate,
     preset,
@@ -209,6 +209,8 @@ export default function Dashboard() {
     weekdayHeatmap,
     accountTrend,
     recurring,
+    accountBalances,
+    preferredCurrency,
     startDate,
     endDate,
     preset,
@@ -254,6 +256,30 @@ export default function Dashboard() {
   const desktopControlsToggleRef = useRef<HTMLButtonElement>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [dashboardDataState, setDashboardDataState] = useState(() => ({
+    periodStats: monthlyStats,
+    lifetimeStats,
+    accountBalances,
+    sparkline,
+    monthlyTrend,
+    weekdayHeatmap,
+    accountTrend,
+    recurring,
+    startDate,
+    endDate,
+    currency: currentCurrency || null,
+    preferredCurrency,
+  }));
+  const [dashboardTransactionsState, setDashboardTransactionsState] = useState(() => ({
+    expenses,
+    expensesTotal: total_count,
+    expensesLimit: loaderLimit,
+    expensesOffset: loaderOffset,
+  }));
+  const [loadedWidgetTypes, setLoadedWidgetTypes] = useState<Set<WidgetType>>(
+    () =>
+      new Set(layout.spaces.flatMap((space) => space.widgets.map((widget) => widget.widget_type))),
+  );
 
   const [customStart, setCustomStart] = useState(startDate);
   const [customEnd, setCustomEnd] = useState(endDate);
@@ -281,6 +307,50 @@ export default function Dashboard() {
       window.localStorage.getItem("cofr:hide-conversion-banner") === "1",
     );
   }, []);
+
+  useEffect(() => {
+    setDashboardDataState({
+      periodStats: monthlyStats,
+      lifetimeStats,
+      accountBalances,
+      sparkline,
+      monthlyTrend,
+      weekdayHeatmap,
+      accountTrend,
+      recurring,
+      startDate,
+      endDate,
+      currency: currentCurrency || null,
+      preferredCurrency,
+    });
+    setDashboardTransactionsState({
+      expenses,
+      expensesTotal: total_count,
+      expensesLimit: loaderLimit,
+      expensesOffset: loaderOffset,
+    });
+    setLoadedWidgetTypes(
+      new Set(layout.spaces.flatMap((space) => space.widgets.map((widget) => widget.widget_type))),
+    );
+  }, [
+    accountBalances,
+    accountTrend,
+    currentCurrency,
+    endDate,
+    expenses,
+    layout.spaces,
+    lifetimeStats,
+    loaderLimit,
+    loaderOffset,
+    monthlyStats,
+    monthlyTrend,
+    preferredCurrency,
+    recurring,
+    sparkline,
+    startDate,
+    total_count,
+    weekdayHeatmap,
+  ]);
 
   useEffect(() => {
     const nextSavedSpaces = normalizeDashboardSpaces(layout.spaces);
@@ -538,6 +608,60 @@ export default function Dashboard() {
     }
   };
 
+  const hydrateWidgetData = useCallback(
+    async (type: WidgetType) => {
+      if (loadedWidgetTypes.has(type)) return;
+
+      const bootstrap = await getDashboardBootstrap({
+        startDate: `${startDate}T00:00:00`,
+        endDate: `${endDate}T23:59:59`,
+        currency: currentCurrency || undefined,
+        limit: currentLimit,
+        offset: currentOffset,
+        category: currentCategory || undefined,
+        minAmount: currentMinAmount ? Number(currentMinAmount) : undefined,
+        maxAmount: currentMaxAmount ? Number(currentMaxAmount) : undefined,
+        widgetTypes: [type],
+      });
+
+      setDashboardDataState((current) => {
+        const next = { ...current, preferredCurrency: bootstrap.preferred_currency };
+        if (PERIOD_STATS_WIDGET_TYPES.has(type)) next.periodStats = bootstrap.period_stats;
+        if (LIFETIME_STATS_WIDGET_TYPES.has(type)) next.lifetimeStats = bootstrap.lifetime_stats;
+        if (ACCOUNT_BALANCE_WIDGET_TYPES.has(type))
+          next.accountBalances = bootstrap.account_balances;
+        if (SPARKLINE_WIDGET_TYPES.has(type)) next.sparkline = bootstrap.sparkline;
+        if (MONTHLY_TREND_WIDGET_TYPES.has(type)) next.monthlyTrend = bootstrap.monthly_trend;
+        if (WEEKDAY_HEATMAP_WIDGET_TYPES.has(type)) next.weekdayHeatmap = bootstrap.weekday_heatmap;
+        if (ACCOUNT_TREND_WIDGET_TYPES.has(type)) next.accountTrend = bootstrap.account_trend;
+        if (RECURRING_WIDGET_TYPES.has(type)) next.recurring = bootstrap.recurring;
+        return next;
+      });
+
+      if (TRANSACTIONS_WIDGET_TYPES.has(type)) {
+        setDashboardTransactionsState({
+          expenses: bootstrap.expenses.expenses,
+          expensesTotal: bootstrap.expenses.total_count,
+          expensesLimit: bootstrap.expenses.limit,
+          expensesOffset: bootstrap.expenses.offset,
+        });
+      }
+
+      setLoadedWidgetTypes((current) => new Set(current).add(type));
+    },
+    [
+      currentCategory,
+      currentCurrency,
+      currentLimit,
+      currentMaxAmount,
+      currentMinAmount,
+      currentOffset,
+      endDate,
+      loadedWidgetTypes,
+      startDate,
+    ],
+  );
+
   const updateDraftLayout = useCallback(
     (updater: (spaces: DashboardSpace[]) => DashboardSpace[]) => {
       const nextSpaces = normalizeDashboardSpaces(updater(draftSpacesRef.current));
@@ -651,6 +775,7 @@ export default function Dashboard() {
     (type: WidgetType) => {
       const meta = WIDGET_META[type];
       const tempId = `pending-${type}-${Date.now()}`;
+      void hydrateWidgetData(type);
       updateActiveSpaceWidgets((currentWidgets) =>
         repackWidgets([
           ...currentWidgets,
@@ -667,7 +792,7 @@ export default function Dashboard() {
       );
       setIsGalleryOpen(false);
     },
-    [updateActiveSpaceWidgets],
+    [hydrateWidgetData, updateActiveSpaceWidgets],
   );
 
   const handleResizeWidget = useCallback(
@@ -759,42 +884,9 @@ export default function Dashboard() {
   const periodLabel = getPresetLabel(preset, startDate, endDate);
   const showArrows = preset !== "custom";
 
-  const dashboardData = useMemo(
-    () => ({
-      periodStats: monthlyStats,
-      lifetimeStats,
-      expenses,
-      expensesTotal: total_count,
-      expensesLimit: loaderLimit,
-      expensesOffset: loaderOffset,
-      accountBalances: monthlyStats.account_balances || [],
-      sparkline,
-      monthlyTrend,
-      weekdayHeatmap,
-      accountTrend,
-      recurring,
-      startDate,
-      endDate,
-      currency: currentCurrency || null,
-      preferredCurrency: monthlyStats.currency,
-    }),
-    [
-      accountTrend,
-      currentCurrency,
-      endDate,
-      expenses,
-      lifetimeStats,
-      loaderLimit,
-      loaderOffset,
-      monthlyStats,
-      monthlyTrend,
-      recurring,
-      sparkline,
-      startDate,
-      total_count,
-      weekdayHeatmap,
-    ],
-  );
+  const dashboardData = dashboardDataState;
+  const dashboardTransactions = dashboardTransactionsState;
+  const hasTransactionsDataLoaded = loadedWidgetTypes.has("transactions");
 
   const dashboardActions = useMemo(
     () => ({
@@ -816,7 +908,11 @@ export default function Dashboard() {
   );
 
   return (
-    <DashboardDataProvider data={dashboardData} actions={dashboardActions}>
+    <DashboardDataProvider
+      data={dashboardData}
+      transactions={dashboardTransactions}
+      actions={dashboardActions}
+    >
       <div className="space-y-6 pb-24">
         {/* ─── Header ─── */}
         <div className="sm:hidden">
@@ -966,6 +1062,7 @@ export default function Dashboard() {
                 <ControlsPanel
                   isOpen={isControlsOpen}
                   onClose={() => setIsControlsOpen(false)}
+                  anchorRefs={[mobileControlsToggleRef, desktopControlsToggleRef]}
                   preset={preset}
                   onPresetChange={handlePresetChange}
                   currency={currentCurrency}
@@ -1176,6 +1273,7 @@ export default function Dashboard() {
                 <ControlsPanel
                   isOpen={isControlsOpen}
                   onClose={() => setIsControlsOpen(false)}
+                  anchorRefs={[mobileControlsToggleRef, desktopControlsToggleRef]}
                   preset={preset}
                   onPresetChange={handlePresetChange}
                   currency={currentCurrency}
@@ -1420,12 +1518,14 @@ export default function Dashboard() {
         <ExchangeRatesModal
           isOpen={isRatesModalOpen}
           onClose={() => setIsRatesModalOpen(false)}
-          preferredCurrency={monthlyStats.currency}
+          preferredCurrency={preferredCurrency}
         />
         <ExportModal
           isOpen={isExportModalOpen}
           onClose={() => setIsExportModalOpen(false)}
-          transactionCount={total_count}
+          transactionCount={
+            hasTransactionsDataLoaded ? dashboardTransactions.expensesTotal : undefined
+          }
           defaultFilters={{
             startDate: startDate,
             endDate: endDate,

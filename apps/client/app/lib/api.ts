@@ -11,6 +11,8 @@ import {
   type CategoryCreate,
   CategorySchema,
   type CategoryUpdate,
+  type DashboardBootstrapResponse,
+  DashboardBootstrapResponseSchema,
   type DashboardLayoutResponse,
   DashboardLayoutResponseSchema,
   type DashboardLayoutUpdate,
@@ -629,6 +631,42 @@ export async function getDashboardLayout(): Promise<DashboardLayoutResponse> {
   const response = await fetchWithAuth("/dashboard/layout");
   const json = sanitizeDashboardLayoutResponse(await response.json());
   return DashboardLayoutResponseSchema.parse(json);
+}
+
+export async function getDashboardBootstrap(options: {
+  startDate: string;
+  endDate: string;
+  currency?: string;
+  limit?: number;
+  offset?: number;
+  category?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  months?: number;
+  weeks?: number;
+  days?: number;
+  lookbackDays?: number;
+  widgetTypes: string[];
+}): Promise<DashboardBootstrapResponse> {
+  const params = new URLSearchParams({
+    start_date: options.startDate,
+    end_date: options.endDate,
+    limit: String(options.limit ?? 10),
+    offset: String(options.offset ?? 0),
+    months: String(options.months ?? 12),
+    weeks: String(options.weeks ?? 8),
+    days: String(options.days ?? 90),
+    lookback_days: String(options.lookbackDays ?? 120),
+  });
+  if (options.currency) params.set("currency", options.currency);
+  if (options.category) params.set("category", options.category);
+  if (options.minAmount !== undefined) params.set("min_amount", options.minAmount.toString());
+  if (options.maxAmount !== undefined) params.set("max_amount", options.maxAmount.toString());
+  for (const widgetType of options.widgetTypes) {
+    params.append("widget_type", widgetType);
+  }
+  const response = await fetchWithAuth(`/dashboard/bootstrap?${params}`);
+  return DashboardBootstrapResponseSchema.parse(await response.json());
 }
 
 export async function updateDashboardLayout(
