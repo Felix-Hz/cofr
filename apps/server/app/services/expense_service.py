@@ -59,6 +59,9 @@ class ExpenseService:
     def __init__(self, db: Session):
         self.db = db
 
+    def get_preferred_currency(self, user_id: str) -> str:
+        return _get_user_currency(user_id, self.db)
+
     def _paginated_query(
         self, filters: list, limit: int, offset: int
     ) -> tuple[list[ExpenseSchema], int]:
@@ -142,7 +145,12 @@ class ExpenseService:
         return self._paginated_query(filters, limit, offset)
 
     async def get_monthly_stats(
-        self, user_id: str, month: int, year: int, currency: str | None = None
+        self,
+        user_id: str,
+        month: int,
+        year: int,
+        currency: str | None = None,
+        account_balances: list[AccountBalance] | None = None,
     ) -> MonthlyStats:
         """Get monthly statistics with category breakdown, optionally filtered by currency"""
         base_filter = [
@@ -159,14 +167,19 @@ class ExpenseService:
         else:
             stats = self._aggregate_with_conversion(base_filter, user_id)
 
-        stats.account_balances = self.get_account_balances(user_id)
+        stats.account_balances = account_balances or self.get_account_balances(user_id)
         stats.savings_net_change = self._get_savings_net_change_monthly(
             user_id, month, year, currency
         )
         return stats
 
     async def get_range_stats(
-        self, user_id: str, start_date: datetime, end_date: datetime, currency: str | None = None
+        self,
+        user_id: str,
+        start_date: datetime,
+        end_date: datetime,
+        currency: str | None = None,
+        account_balances: list[AccountBalance] | None = None,
     ) -> MonthlyStats:
         """Get statistics for a date range with category breakdown, optionally filtered by currency"""
         base_filter = [
@@ -183,7 +196,7 @@ class ExpenseService:
         else:
             stats = self._aggregate_with_conversion(base_filter, user_id)
 
-        stats.account_balances = self.get_account_balances(user_id)
+        stats.account_balances = account_balances or self.get_account_balances(user_id)
         stats.savings_net_change = self._get_savings_net_change_range(
             user_id, start_date, end_date, currency
         )
@@ -524,9 +537,14 @@ class ExpenseService:
             for row in results
         ]
 
-    def get_lifetime_stats(self, user_id: str, currency: str | None = None) -> LifetimeStats:
+    def get_lifetime_stats(
+        self,
+        user_id: str,
+        currency: str | None = None,
+        account_balances: list[AccountBalance] | None = None,
+    ) -> LifetimeStats:
         """All-time aggregates: net worth, balances by account type, lifetime income/spent."""
-        balances = self.get_account_balances(user_id)
+        balances = account_balances or self.get_account_balances(user_id)
         checking = sum(b.balance for b in balances if b.account_type == "checking")
         savings = sum(b.balance for b in balances if b.account_type == "savings")
         investment = sum(b.balance for b in balances if b.account_type == "investment")

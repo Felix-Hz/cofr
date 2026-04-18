@@ -298,6 +298,19 @@ export const RecurringResponseSchema = z.object({
   is_converted: z.boolean().default(false),
 });
 
+export const DashboardBootstrapResponseSchema = z.object({
+  preferred_currency: z.string().length(3),
+  expenses: ExpensesResponseSchema,
+  period_stats: MonthlyStatsSchema,
+  lifetime_stats: LifetimeStatsSchema,
+  account_balances: z.array(AccountBalanceSchema),
+  sparkline: SparklineResponseSchema,
+  monthly_trend: MonthlyTrendResponseSchema,
+  weekday_heatmap: WeekdayHeatmapResponseSchema,
+  account_trend: AccountTrendResponseSchema,
+  recurring: RecurringResponseSchema,
+});
+
 // ============================================================================
 // Recurring Rule Schemas
 // ============================================================================
@@ -450,6 +463,7 @@ export type AccountTrendSeries = z.infer<typeof AccountTrendSeriesSchema>;
 export type AccountTrendResponse = z.infer<typeof AccountTrendResponseSchema>;
 export type RecurringCharge = z.infer<typeof RecurringChargeSchema>;
 export type RecurringResponse = z.infer<typeof RecurringResponseSchema>;
+export type DashboardBootstrapResponse = z.infer<typeof DashboardBootstrapResponseSchema>;
 export type RecurringRuleType = z.infer<typeof RecurringTypeSchema>;
 export type RecurringIntervalUnit = z.infer<typeof RecurringIntervalUnitSchema>;
 export type RecurringRule = z.infer<typeof RecurringRuleSchema>;

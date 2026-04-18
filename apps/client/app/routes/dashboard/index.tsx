@@ -24,15 +24,8 @@ import {
   createTransfer,
   deleteExpense,
   deleteTransfer,
-  getAccountTrend,
+  getDashboardBootstrap,
   getDashboardLayout,
-  getExpenses,
-  getLifetimeStats,
-  getMonthlyTrend,
-  getRangeStats,
-  getRecurring,
-  getSpendSparkline,
-  getWeekdayHeatmap,
   updateDashboardLayout,
   updateExpense,
   updateTransfer,
@@ -62,7 +55,6 @@ import type {
 
 const CURRENCIES = [...SUPPORTED_CURRENCIES];
 const TRANSACTIONS_PAGE_SIZE_OPTIONS = [10, 25, 50];
-
 ensureWidgetsRegistered();
 
 const SPACE_NAME_MAX_LENGTH = 32;
@@ -97,47 +89,34 @@ export async function clientLoader({ request }: { request: Request }) {
   const minAmount = url.searchParams.get("minAmount");
   const maxAmount = url.searchParams.get("maxAmount");
 
-  const [
-    expenseData,
-    rangeStats,
-    lifetimeStats,
-    sparkline,
-    layout,
-    monthlyTrend,
-    weekdayHeatmap,
-    accountTrend,
-    recurring,
-  ] = await Promise.all([
-    getExpenses({
-      limit,
-      offset,
-      startDate: startDate + "T00:00:00",
-      endDate: endDate + "T23:59:59",
-      category: category || undefined,
-      minAmount: minAmount ? Number(minAmount) : undefined,
-      maxAmount: maxAmount ? Number(maxAmount) : undefined,
-      collapseTransferPairs: true,
-    }),
-    getRangeStats(startDate + "T00:00:00", endDate + "T23:59:59", currency),
-    getLifetimeStats(currency),
-    getSpendSparkline(`${startDate}T00:00:00`, `${endDate}T23:59:59`, currency),
-    getDashboardLayout(),
-    getMonthlyTrend(12, currency),
-    getWeekdayHeatmap(8, currency),
-    getAccountTrend(90, currency),
-    getRecurring(120, currency),
-  ]);
+  const layout = await getDashboardLayout();
+  const widgetTypes = Array.from(
+    new Set(layout.spaces.flatMap((space) => space.widgets.map((widget) => widget.widget_type))),
+  );
+  const bootstrap = await getDashboardBootstrap({
+    startDate: `${startDate}T00:00:00`,
+    endDate: `${endDate}T23:59:59`,
+    currency,
+    limit,
+    offset,
+    category: category || undefined,
+    minAmount: minAmount ? Number(minAmount) : undefined,
+    maxAmount: maxAmount ? Number(maxAmount) : undefined,
+    widgetTypes,
+  });
 
   return {
-    ...expenseData,
-    monthlyStats: rangeStats,
-    lifetimeStats,
-    sparkline,
+    ...bootstrap.expenses,
+    monthlyStats: bootstrap.period_stats,
+    lifetimeStats: bootstrap.lifetime_stats,
+    accountBalances: bootstrap.account_balances,
+    sparkline: bootstrap.sparkline,
     layout,
-    monthlyTrend,
-    weekdayHeatmap,
-    accountTrend,
-    recurring,
+    monthlyTrend: bootstrap.monthly_trend,
+    weekdayHeatmap: bootstrap.weekday_heatmap,
+    accountTrend: bootstrap.account_trend,
+    recurring: bootstrap.recurring,
+    preferredCurrency: bootstrap.preferred_currency,
     startDate,
     endDate,
     preset,
@@ -209,6 +188,8 @@ export default function Dashboard() {
     weekdayHeatmap,
     accountTrend,
     recurring,
+    accountBalances,
+    preferredCurrency,
     startDate,
     endDate,
     preset,
@@ -763,11 +744,7 @@ export default function Dashboard() {
     () => ({
       periodStats: monthlyStats,
       lifetimeStats,
-      expenses,
-      expensesTotal: total_count,
-      expensesLimit: loaderLimit,
-      expensesOffset: loaderOffset,
-      accountBalances: monthlyStats.account_balances || [],
+      accountBalances,
       sparkline,
       monthlyTrend,
       weekdayHeatmap,
@@ -776,24 +753,32 @@ export default function Dashboard() {
       startDate,
       endDate,
       currency: currentCurrency || null,
-      preferredCurrency: monthlyStats.currency,
+      preferredCurrency,
     }),
     [
+      accountBalances,
       accountTrend,
       currentCurrency,
       endDate,
-      expenses,
       lifetimeStats,
-      loaderLimit,
-      loaderOffset,
       monthlyStats,
       monthlyTrend,
+      preferredCurrency,
       recurring,
       sparkline,
       startDate,
-      total_count,
       weekdayHeatmap,
     ],
+  );
+
+  const dashboardTransactions = useMemo(
+    () => ({
+      expenses,
+      expensesTotal: total_count,
+      expensesLimit: loaderLimit,
+      expensesOffset: loaderOffset,
+    }),
+    [expenses, loaderLimit, loaderOffset, total_count],
   );
 
   const dashboardActions = useMemo(
@@ -816,7 +801,11 @@ export default function Dashboard() {
   );
 
   return (
-    <DashboardDataProvider data={dashboardData} actions={dashboardActions}>
+    <DashboardDataProvider
+      data={dashboardData}
+      transactions={dashboardTransactions}
+      actions={dashboardActions}
+    >
       <div className="space-y-6 pb-24">
         {/* ─── Header ─── */}
         <div className="sm:hidden">
@@ -1420,7 +1409,7 @@ export default function Dashboard() {
         <ExchangeRatesModal
           isOpen={isRatesModalOpen}
           onClose={() => setIsRatesModalOpen(false)}
-          preferredCurrency={monthlyStats.currency}
+          preferredCurrency={preferredCurrency}
         />
         <ExportModal
           isOpen={isExportModalOpen}
