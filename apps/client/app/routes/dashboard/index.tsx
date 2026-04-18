@@ -225,6 +225,7 @@ export default function Dashboard() {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [layoutSaveError, setLayoutSaveError] = useState<string | null>(null);
@@ -306,6 +307,15 @@ export default function Dashboard() {
     setIsConversionBannerDismissed(
       window.localStorage.getItem("cofr:hide-conversion-banner") === "1",
     );
+  }, []);
+
+  useEffect(() => {
+    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+    const sync = () =>
+      setIsTouchDevice(coarsePointerQuery.matches || (navigator.maxTouchPoints ?? 0) > 0);
+    sync();
+    coarsePointerQuery.addEventListener("change", sync);
+    return () => coarsePointerQuery.removeEventListener("change", sync);
   }, []);
 
   useEffect(() => {
@@ -1457,6 +1467,7 @@ export default function Dashboard() {
           onClose={() => setIsGalleryOpen(false)}
           onAdd={handleAddWidget}
           activeTypes={activeTypes}
+          isTouchDevice={isTouchDevice}
         />
 
         <ExpenseFormModal

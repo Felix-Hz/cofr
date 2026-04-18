@@ -27,6 +27,18 @@ import type { DashboardWidget } from "~/lib/schemas";
 import { WidgetDndShell } from "./WidgetDndShell";
 import { WidgetMotionCard } from "./WidgetMotionCard";
 
+export const POINTER_DRAG_DISTANCE_PX = 6;
+export const DEFAULT_TOUCH_DRAG_DELAY_MS = 200;
+export const TOUCH_DRAG_DELAY_MS = 250;
+export const TOUCH_DRAG_TOLERANCE_PX = 8;
+
+export function getTouchDragActivationConstraint(isTouchDevice: boolean) {
+  return {
+    delay: isTouchDevice ? TOUCH_DRAG_DELAY_MS : DEFAULT_TOUCH_DRAG_DELAY_MS,
+    tolerance: TOUCH_DRAG_TOLERANCE_PX,
+  };
+}
+
 export function DashboardGrid({
   widgets,
   isEditMode,
@@ -44,12 +56,15 @@ export function DashboardGrid({
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isMobileGrid, setIsMobileGrid] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const registry = getRegistry();
   const widgetCount = WIDGET_ORDER.length;
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: POINTER_DRAG_DISTANCE_PX } }),
+    useSensor(TouchSensor, {
+      activationConstraint: getTouchDragActivationConstraint(isTouchDevice),
+    }),
   );
 
   const orderedIds = useMemo(() => widgets.map((w) => w.id), [widgets]);
@@ -77,6 +92,15 @@ export function DashboardGrid({
     sync();
     mediaQuery.addEventListener("change", sync);
     return () => mediaQuery.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+    const sync = () =>
+      setIsTouchDevice(coarsePointerQuery.matches || (navigator.maxTouchPoints ?? 0) > 0);
+    sync();
+    coarsePointerQuery.addEventListener("change", sync);
+    return () => coarsePointerQuery.removeEventListener("change", sync);
   }, []);
 
   const handleDragStart = (event: DragStartEvent) => {

@@ -32,11 +32,13 @@ export function WidgetGallery({
   onClose,
   onAdd,
   activeTypes,
+  isTouchDevice,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (type: WidgetType) => void;
   activeTypes: Set<WidgetType>;
+  isTouchDevice: boolean;
 }) {
   useModalKeyboardShortcuts({ isOpen, onEscape: onClose });
 
@@ -145,7 +147,9 @@ export function WidgetGallery({
               </div>
             </div>
             <footer className="border-t border-edge-default bg-surface-primary px-5 py-3 text-[11px] text-content-tertiary">
-              Tap a card to add it. Drag widgets on the dashboard to reorder.
+              {isTouchDevice
+                ? "Tap a card to add it. Long-press and drag widgets on the dashboard to reorder."
+                : "Tap a card to add it. Drag widgets on the dashboard to reorder."}
             </footer>
           </motion.aside>
         </>
