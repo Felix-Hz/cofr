@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardPeriodStats } from "~/lib/dashboard/data-context";
 import { useTheme } from "~/lib/theme";
 import { formatCurrency } from "~/lib/utils";
 
 const MAX_ROWS = 6;
 
 export function TopCategoriesBarsWidget() {
-  const { periodStats } = useDashboardData();
+  const periodStats = useDashboardPeriodStats();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 

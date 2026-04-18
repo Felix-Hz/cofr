@@ -12,6 +12,7 @@ import {
 import { rectSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
+import { useIsTouchDevice } from "~/hooks/useIsTouchDevice";
 import {
   GRID_COLUMNS,
   getMobileRowSpan,
@@ -28,8 +29,8 @@ import { WidgetDndShell } from "./WidgetDndShell";
 import { WidgetMotionCard } from "./WidgetMotionCard";
 
 export const POINTER_DRAG_DISTANCE_PX = 6;
-export const DEFAULT_TOUCH_DRAG_DELAY_MS = 200;
-export const TOUCH_DRAG_DELAY_MS = 250;
+export const DEFAULT_TOUCH_DRAG_DELAY_MS = 300;
+export const TOUCH_DRAG_DELAY_MS = 300;
 export const TOUCH_DRAG_TOLERANCE_PX = 8;
 
 export function getTouchDragActivationConstraint(isTouchDevice: boolean) {
@@ -56,7 +57,7 @@ export function DashboardGrid({
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isMobileGrid, setIsMobileGrid] = useState(false);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const isTouchDevice = useIsTouchDevice();
   const registry = getRegistry();
   const widgetCount = WIDGET_ORDER.length;
 
@@ -92,15 +93,6 @@ export function DashboardGrid({
     sync();
     mediaQuery.addEventListener("change", sync);
     return () => mediaQuery.removeEventListener("change", sync);
-  }, []);
-
-  useEffect(() => {
-    const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
-    const sync = () =>
-      setIsTouchDevice(coarsePointerQuery.matches || (navigator.maxTouchPoints ?? 0) > 0);
-    sync();
-    coarsePointerQuery.addEventListener("change", sync);
-    return () => coarsePointerQuery.removeEventListener("change", sync);
   }, []);
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -258,12 +250,11 @@ export function DashboardGrid({
                     key={widget.id}
                     widget={widget}
                     layoutWidget={layoutWidget}
+                    Component={Component}
                     isEditMode={isEditMode}
                     onRequestRemove={() => onRequestRemove(widget)}
                     onResize={isMobileGrid ? undefined : (action) => onResize(widget, action)}
-                  >
-                    <Component widget={layoutWidget} isEditMode={isEditMode} />
-                  </WidgetDndShell>
+                  />
                 );
               })}
             </div>

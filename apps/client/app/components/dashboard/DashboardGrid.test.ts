@@ -1,5 +1,4 @@
 import {
-  DEFAULT_TOUCH_DRAG_DELAY_MS,
   getTouchDragActivationConstraint,
   TOUCH_DRAG_DELAY_MS,
   TOUCH_DRAG_TOLERANCE_PX,
@@ -13,9 +12,9 @@ describe("getTouchDragActivationConstraint", () => {
     });
   });
 
-  it("preserves the existing touch delay for non-touch environments", () => {
+  it("uses the same long-press threshold when touch input is not active yet", () => {
     expect(getTouchDragActivationConstraint(false)).toEqual({
-      delay: DEFAULT_TOUCH_DRAG_DELAY_MS,
+      delay: TOUCH_DRAG_DELAY_MS,
       tolerance: TOUCH_DRAG_TOLERANCE_PX,
     });
   });

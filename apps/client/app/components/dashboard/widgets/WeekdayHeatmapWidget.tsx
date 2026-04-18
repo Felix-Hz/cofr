@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardWeekdayHeatmap } from "~/lib/dashboard/data-context";
 import { formatCurrency } from "~/lib/utils";
 
 const WEEKDAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 const WEEKDAY_FULL = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function WeekdayHeatmapWidget() {
-  const { weekdayHeatmap } = useDashboardData();
+  const weekdayHeatmap = useDashboardWeekdayHeatmap();
 
   const ccy = weekdayHeatmap.currency;
   const weeks = weekdayHeatmap.weeks;

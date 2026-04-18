@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardRecurring } from "~/lib/dashboard/data-context";
 import { useTheme } from "~/lib/theme";
 import { formatCurrency, formatDate } from "~/lib/utils";
 
@@ -16,7 +16,7 @@ function monthlyEquivalent(amount: number, days: number): number {
 }
 
 export function RecurringSubscriptionsWidget() {
-  const { recurring } = useDashboardData();
+  const recurring = useDashboardRecurring();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 

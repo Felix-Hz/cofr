@@ -1,4 +1,4 @@
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardPeriodStats } from "~/lib/dashboard/data-context";
 import { formatCurrency } from "~/lib/utils";
 
 export type PeriodStatWidgetType = "stat_income" | "stat_spent" | "stat_net" | "stat_savings_rate";
@@ -13,7 +13,7 @@ export type PeriodStatCell = {
 };
 
 export function usePeriodStatCells(): Record<PeriodStatWidgetType, PeriodStatCell> {
-  const { periodStats } = useDashboardData();
+  const periodStats = useDashboardPeriodStats();
   const net = periodStats.total_income - periodStats.total_spent;
   const netPct =
     periodStats.total_income > 0 ? Math.round((net / periodStats.total_income) * 100) : 0;

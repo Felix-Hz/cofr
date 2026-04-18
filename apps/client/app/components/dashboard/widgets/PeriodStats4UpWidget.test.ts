@@ -3,10 +3,10 @@ import { createRoot } from "react-dom/client";
 
 import { PeriodStats4UpWidget } from "./PeriodStats4UpWidget";
 
-const useDashboardData = vi.fn();
+const useDashboardPeriodStats = vi.fn();
 
 vi.mock("~/lib/dashboard/data-context", () => ({
-  useDashboardData: () => useDashboardData(),
+  useDashboardPeriodStats: () => useDashboardPeriodStats(),
 }));
 
 describe("PeriodStats4UpWidget", () => {
@@ -17,18 +17,16 @@ describe("PeriodStats4UpWidget", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-    useDashboardData.mockReturnValue({
-      periodStats: {
-        total_spent: 3891,
-        total_income: 12009,
-        transaction_count: 12,
-        expense_count: 8,
-        category_breakdown: [],
-        currency: "NZD",
-        is_converted: false,
-        account_balances: [],
-        savings_net_change: 450,
-      },
+    useDashboardPeriodStats.mockReturnValue({
+      total_spent: 3891,
+      total_income: 12009,
+      transaction_count: 12,
+      expense_count: 8,
+      category_breakdown: [],
+      currency: "NZD",
+      is_converted: false,
+      account_balances: [],
+      savings_net_change: 450,
     });
   });
 

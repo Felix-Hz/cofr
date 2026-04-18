@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { useIsTouchDevice } from "~/hooks/useIsTouchDevice";
 import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { springs } from "~/lib/dashboard/motion-config";
 import { WIDGET_META, WIDGET_ORDER } from "~/lib/dashboard/registry";
@@ -32,15 +33,14 @@ export function WidgetGallery({
   onClose,
   onAdd,
   activeTypes,
-  isTouchDevice,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (type: WidgetType) => void;
   activeTypes: Set<WidgetType>;
-  isTouchDevice: boolean;
 }) {
   useModalKeyboardShortcuts({ isOpen, onEscape: onClose });
+  const isTouchDevice = useIsTouchDevice();
 
   const groupedWidgets = CATEGORY_ORDER.map((category) => ({
     category,

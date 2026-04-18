@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { Pie, PieChart, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import CategoryPieTooltip from "~/components/CategoryPieTooltip";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardPeriodStats } from "~/lib/dashboard/data-context";
 import { useTheme } from "~/lib/theme";
 
 export function CategoryPieWidget() {
-  const { periodStats } = useDashboardData();
+  const periodStats = useDashboardPeriodStats();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
