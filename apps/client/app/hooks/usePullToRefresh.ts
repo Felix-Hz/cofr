@@ -35,11 +35,8 @@ export function usePullToRefresh(options?: { disabled?: boolean }): PullToRefres
 
     function isDndActive(target: EventTarget | null): boolean {
       if (!(target instanceof HTMLElement)) return false;
-      // WidgetDndShell sets touch-action: none on its wrapper when in edit mode
-      const dndEl = target.closest("[style*='touch-action']");
-      if (!dndEl) return false;
-      const style = (dndEl as HTMLElement).style.touchAction;
-      return style === "none";
+      // Drag handle has touch-action: none via CSS class .widget-drag-handle
+      return !!target.closest(".widget-drag-handle");
     }
 
     function handleTouchStart(e: TouchEvent) {
