@@ -1913,7 +1913,11 @@ export default function Settings() {
         error={catDeleteError}
       />
 
-      <ExchangeRatesModal isOpen={isRatesModalOpen} onClose={() => setIsRatesModalOpen(false)} />
+      <ExchangeRatesModal
+        isOpen={isRatesModalOpen}
+        onClose={() => setIsRatesModalOpen(false)}
+        preferredCurrency={preferredCurrency}
+      />
     </div>
   );
 }
