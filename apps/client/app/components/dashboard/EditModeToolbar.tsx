@@ -50,7 +50,8 @@ export function EditModeToolbar({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={springs.toolbar}
-          className="edit-toolbar fixed inset-x-0 bottom-3 z-40 mx-auto w-[min(calc(100%-1rem),40rem)] pointer-events-auto sm:bottom-6"
+          className="edit-toolbar fixed inset-x-0 z-40 mx-auto w-[min(calc(100%-1rem),40rem)] pointer-events-auto"
+          style={{ bottom: "calc(0.75rem + var(--safe-bottom))" }}
           role="toolbar"
           aria-label="Dashboard edit controls"
         >

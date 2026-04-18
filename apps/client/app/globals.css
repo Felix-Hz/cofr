@@ -48,6 +48,10 @@
 
 /* Light theme (default) */
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
   --surface-page: #f9fafb;
   --surface-primary: #ffffff;
   --surface-elevated: #f9fafb;
@@ -731,6 +735,39 @@ h6 {
   }
 }
 
+/* Pull-to-refresh indicator */
+.ptr-indicator {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-primary);
+  border: 1px solid var(--edge-default);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.dark .ptr-indicator {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes ptrSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ptr-spin {
+  animation: ptrSpin 0.7s linear infinite;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
@@ -741,6 +778,9 @@ h6 {
   }
   .mockup-tilt {
     transform: none;
+  }
+  .ptr-spin {
+    animation: none;
   }
 }
 
