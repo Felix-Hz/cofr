@@ -56,6 +56,11 @@ check_env_var "apps/server/.env" "ENCRYPTION_KEY" || INVALID=1
 check_env_var "apps/server/.env" "DATABASE_URL" || INVALID=1
 check_env_var "infra/.prod.env" "CLOUDFLARE_TUNNEL_TOKEN" || INVALID=1
 
+# Backup system environment variables (only warn if missing)
+check_env_var "infra/.prod.env" "AWS_ACCESS_KEY_ID" || echo "Warning: AWS_ACCESS_KEY_ID not set - backup system will not work"
+check_env_var "infra/.prod.env" "AWS_SECRET_ACCESS_KEY" || echo "Warning: AWS_SECRET_ACCESS_KEY not set - backup system will not work"
+check_env_var "infra/.prod.env" "BACKUP_S3_BUCKET" || echo "Warning: BACKUP_S3_BUCKET not set - backup system will not work"
+
 if [ "$INVALID" -eq 1 ]; then
     echo ""
     echo "Fix the above env vars before deploying to production."
@@ -131,6 +136,26 @@ if command -v curl >/dev/null 2>&1; then
     if ! curl --fail --silent --show-error --retry 10 --retry-delay 3 "https://cofr.cash/health" >/dev/null; then
         echo "Warning: public health check did not succeed yet"
     fi
+fi
+
+echo ""
+echo "Installing PostgreSQL backup systemd service..."
+if [ -d "/etc/systemd/system" ]; then
+    # Copy systemd service and timer files
+    cp infra/systemd/postgres-backup.service /etc/systemd/system/
+    cp infra/systemd/postgres-backup.timer /etc/systemd/system/
+    
+    # Reload systemd daemon
+    systemctl daemon-reload
+    
+    # Enable and start the timer (not the service - timer starts the service)
+    systemctl enable --now postgres-backup.timer
+    
+    echo "Backup system installed. Service will run daily at midnight UTC."
+    echo "Check status: systemctl status postgres-backup.timer"
+    echo "View logs: journalctl -u postgres-backup"
+else
+    echo "Warning: /etc/systemd/system not found - systemd service not installed"
 fi
 
 echo ""
