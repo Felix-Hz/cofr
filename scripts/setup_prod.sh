@@ -141,19 +141,29 @@ fi
 echo ""
 echo "Installing PostgreSQL backup systemd service..."
 if [ -d "/etc/systemd/system" ]; then
-    # Copy systemd service and timer files
-    cp infra/systemd/postgres-backup.service /etc/systemd/system/
-    cp infra/systemd/postgres-backup.timer /etc/systemd/system/
-    
-    # Reload systemd daemon
-    systemctl daemon-reload
-    
-    # Enable and start the timer (not the service - timer starts the service)
-    systemctl enable --now postgres-backup.timer
-    
-    echo "Backup system installed. Service will run daily at midnight UTC."
-    echo "Check status: systemctl status postgres-backup.timer"
-    echo "View logs: journalctl -u postgres-backup"
+    if command -v sudo >/dev/null 2>&1; then
+        SUDO="sudo"
+    else
+        SUDO=""
+    fi
+
+    if [ -n "$SUDO" ] || [ "$(id -u)" -eq 0 ]; then
+        # Copy systemd service and timer files
+        $SUDO cp infra/systemd/postgres-backup.service /etc/systemd/system/
+        $SUDO cp infra/systemd/postgres-backup.timer /etc/systemd/system/
+
+        # Reload systemd daemon
+        $SUDO systemctl daemon-reload
+
+        # Enable and start the timer (not the service - timer starts the service)
+        $SUDO systemctl enable --now postgres-backup.timer
+
+        echo "Backup system installed. Service will run daily at midnight UTC."
+        echo "Check status: $SUDO systemctl status postgres-backup.timer"
+        echo "View logs: $SUDO journalctl -u postgres-backup"
+    else
+        echo "Warning: sudo is not available - backup systemd service not installed"
+    fi
 else
     echo "Warning: /etc/systemd/system not found - systemd service not installed"
 fi
