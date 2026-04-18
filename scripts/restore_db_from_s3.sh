@@ -25,9 +25,11 @@ if [ -n "$S3_ENDPOINT_URL" ]; then
     AWS_CLI_BASE="$AWS_CLI_BASE --endpoint-url $S3_ENDPOINT_URL"
 fi
 
-# Wait for PostgreSQL to be ready (should already be ready in initdb.d context)
+# Wait for PostgreSQL to be ready on the local Unix socket.
+# During docker-entrypoint-initdb.d execution the temporary server does not
+# listen on TCP, so forcing localhost causes an init-time deadlock.
 echo "[$(date -Iseconds)] Checking if PostgreSQL is ready..."
-until pg_isready -h localhost -U "$POSTGRES_USER" >/dev/null 2>&1; do
+until pg_isready -U "$POSTGRES_USER" >/dev/null 2>&1; do
     echo "[$(date -Iseconds)] Waiting for PostgreSQL..."
     sleep 1
 done
@@ -85,9 +87,9 @@ if [ -z "${CHECKSUM_MISSING:-}" ]; then
     echo "[$(date -Iseconds)] Checksum verification passed"
 fi
 
-# Restore the database
+# Restore the database via the local Unix socket.
 echo "[$(date -Iseconds)] Restoring database from backup..."
-gunzip -c "$TEMP_DIR/backup.sql.gz" | psql -v ON_ERROR_STOP=1 -h localhost -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+gunzip -c "$TEMP_DIR/backup.sql.gz" | psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"
 
 echo "[$(date -Iseconds)] Database restore completed successfully from: $BACKUP_FILENAME"
 echo "[$(date -Iseconds)] Database ready for use"
