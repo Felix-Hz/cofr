@@ -69,4 +69,24 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
       storage_class = "STANDARD_IA"
     }
   }
+
+  # PostgreSQL backups: safety net expiration after 5 days
+  # Primary retention (keep last 3) is handled by backup script
+  # This rule ensures nothing older than 5 days accumulates
+  rule {
+    id     = "postgres-backups-lifecycle"
+    status = "Enabled"
+
+    filter {
+      prefix = "postgres/"
+    }
+
+    expiration {
+      days = 5
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
 }

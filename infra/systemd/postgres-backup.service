@@ -1,0 +1,26 @@
+[Unit]
+Description=PostgreSQL daily backup to S3
+After=docker.service
+Requires=docker.service
+ConditionPathExists=/opt/cofr/scripts/backup_postgres.sh
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/cofr
+EnvironmentFile=/opt/cofr/infra/.env
+EnvironmentFile=/opt/cofr/infra/.prod.env
+ExecStart=/opt/cofr/scripts/backup_postgres.sh
+
+# Logging - available via journalctl -u postgres-backup
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=postgres-backup
+
+# On failure, wait 5 minutes before systemd considers the service "failed"
+# This prevents immediate failure state if S3 has temporary issues
+Restart=on-failure
+RestartSec=300
+
+[Install]
+WantedBy=multi-user.target

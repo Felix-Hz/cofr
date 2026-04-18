@@ -1,0 +1,14 @@
+[Unit]
+Description=Run PostgreSQL backup daily at midnight UTC
+Requires=postgres-backup.service
+
+[Timer]
+OnCalendar=*-*-* 00:00:00 UTC
+AccuracySec=1m
+Persistent=true
+
+# No RandomizedDelaySec - run exactly at midnight UTC
+# Persistent=true means if system was off at midnight, run on next boot
+
+[Install]
+WantedBy=timers.target

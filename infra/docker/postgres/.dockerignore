@@ -1,0 +1,9 @@
+# Ignore everything by default
+*
+
+# Except the Dockerfile and the restore script
+!Dockerfile
+!../../scripts/restore_db_from_s3.sh
+
+# Also include the restore script specifically (relative path)
+scripts/restore_db_from_s3.sh
