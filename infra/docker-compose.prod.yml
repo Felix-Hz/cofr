@@ -15,7 +15,9 @@ services:
 
   # PgSQL with S3 backup
   postgres:
-    build: docker/postgres
+    build:
+      context: ..
+      dockerfile: infra/docker/postgres/Dockerfile
     image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-postgres:${APP_IMAGE_TAG:-main}
     pull_policy: always
     environment:
