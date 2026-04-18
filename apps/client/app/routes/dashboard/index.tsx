@@ -1062,6 +1062,7 @@ export default function Dashboard() {
                 <ControlsPanel
                   isOpen={isControlsOpen}
                   onClose={() => setIsControlsOpen(false)}
+                  anchorRefs={[mobileControlsToggleRef, desktopControlsToggleRef]}
                   preset={preset}
                   onPresetChange={handlePresetChange}
                   currency={currentCurrency}
@@ -1272,6 +1273,7 @@ export default function Dashboard() {
                 <ControlsPanel
                   isOpen={isControlsOpen}
                   onClose={() => setIsControlsOpen(false)}
+                  anchorRefs={[mobileControlsToggleRef, desktopControlsToggleRef]}
                   preset={preset}
                   onPresetChange={handlePresetChange}
                   currency={currentCurrency}

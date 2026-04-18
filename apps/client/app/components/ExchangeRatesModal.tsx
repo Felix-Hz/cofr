@@ -70,28 +70,7 @@ export default function ExchangeRatesModal({
         <div className="relative bg-surface-primary rounded-lg shadow-xl w-full max-w-sm p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-lg font-semibold text-content-primary">Exchange Rates</h3>
-              <div className="relative group">
-                <svg
-                  className="w-4 h-4 text-content-tertiary cursor-help"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity delay-200 absolute left-1/2 -translate-x-1/2 top-full mt-1.5 px-3 py-2 text-[11px] leading-relaxed text-content-heading bg-surface-elevated border border-edge-strong rounded-lg shadow-lg z-50 w-52 pointer-events-none">
-                  Rates are based on your default currency ({preferredCurrency}). Go to Settings
-                  &gt; Preferences to change it.
-                </div>
-              </div>
-            </div>
+            <h3 className="text-lg font-semibold text-content-primary">Exchange Rates</h3>
             <button
               type="button"
               onClick={onClose}
