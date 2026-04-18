@@ -125,7 +125,7 @@ export const ExpenseCreateSchema = z.object({
   category_id: z.string(),
   description: z.string().default(""),
   merchant: z.string().max(120).nullable().optional(),
-  currency: z.string().length(3).default("NZD"),
+  currency: z.string().length(3).default("USD"),
   created_at: z.coerce.date().optional(),
   is_opening_balance: z.boolean().default(false),
   account_id: z.string().optional(),
@@ -155,7 +155,7 @@ export const TransferCreateSchema = z.object({
   from_account_id: z.string(),
   to_account_id: z.string(),
   description: z.string().default(""),
-  currency: z.string().length(3).default("NZD"),
+  currency: z.string().length(3).default("USD"),
   created_at: z.coerce.date().optional(),
 });
 

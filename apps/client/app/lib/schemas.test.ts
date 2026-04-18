@@ -45,9 +45,9 @@ describe("ExpenseCreateSchema", () => {
     expect(() => ExpenseCreateSchema.parse({ amount: -1, category_id: "cat-1" })).toThrow();
   });
 
-  it("defaults currency to NZD", () => {
+  it("defaults currency to USD", () => {
     const result = ExpenseCreateSchema.parse({ amount: 10, category_id: "cat-1" });
-    expect(result.currency).toBe("NZD");
+    expect(result.currency).toBe("USD");
   });
 });
 

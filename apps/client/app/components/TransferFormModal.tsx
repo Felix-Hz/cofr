@@ -32,7 +32,7 @@ export default function TransferFormModal({
   const [toAccountId, setToAccountId] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [currency, setCurrency] = useState("NZD");
+  const [currency, setCurrency] = useState("USD");
   const [date, setDate] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -88,7 +88,7 @@ export default function TransferFormModal({
       setToAccountId(defaultToAccountId);
       setAmount("");
       setDescription("");
-      setCurrency("NZD");
+      setCurrency("USD");
       setShowDeleteConfirm(false);
       const now = new Date();
       const pad = (n: number) => n.toString().padStart(2, "0");

@@ -29,7 +29,7 @@ def _resolve_currency(db: Session, user_id: str, override: str | None) -> tuple[
     if override:
         return override, False
     user = db.query(User).filter(User.id == user_id).first()
-    return (user.preferred_currency if user else "NZD"), True
+    return (user.preferred_currency if user else "USD"), True
 
 
 def _rate_map(db: Session) -> dict[str, float]:

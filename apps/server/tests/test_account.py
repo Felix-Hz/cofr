@@ -148,7 +148,7 @@ def test_get_profile(client, auth_headers):
     resp = client.get("/account/profile", headers=headers)
     assert resp.status_code == 200
     body = resp.json()
-    assert body["preferred_currency"] == "NZD"
+    assert body["preferred_currency"] == "USD"
     assert "session_timeout_minutes" in body
 
 

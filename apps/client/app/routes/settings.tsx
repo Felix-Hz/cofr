@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { redirect } from "react-router";
+import { Link, redirect } from "react-router";
 import AccountDeleteModal from "~/components/AccountDeleteModal";
 import CategoryFormModal from "~/components/CategoryFormModal";
 import DeleteAccountModal from "~/components/DeleteAccountModal";
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
+import ExchangeRatesModal from "~/components/ExchangeRatesModal";
 import ExportHistoryTable from "~/components/ExportHistoryTable";
 import ExportModal from "~/components/ExportModal";
 import PasswordInput from "~/components/PasswordInput";
@@ -47,8 +48,6 @@ import type {
 import { useTheme } from "~/lib/theme";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
-
-const CURRENCIES = ["NZD", "EUR", "USD", "GBP", "AUD"];
 
 interface LinkedProvider {
   id: string;
@@ -293,7 +292,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [preferredCurrency, setPreferredCurrency] = useState("NZD");
+  const [preferredCurrency, setPreferredCurrency] = useState("USD");
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState<number | null>(null);
   const [savingTimeout, setSavingTimeout] = useState(false);
@@ -305,6 +304,7 @@ export default function Settings() {
     text: string;
   } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isRatesModalOpen, setIsRatesModalOpen] = useState(false);
 
   // Tab bar
   const [activeTab, setActiveTab] = useState<string>("preferences");
@@ -333,7 +333,7 @@ export default function Settings() {
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountType, setNewAccountType] = useState<string>("checking");
   const [newAccountStartingBalance, setNewAccountStartingBalance] = useState("");
-  const [newAccountCurrency, setNewAccountCurrency] = useState("NZD");
+  const [newAccountCurrency, setNewAccountCurrency] = useState("USD");
   const [acctLoading, setAcctLoading] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editAccountName, setEditAccountName] = useState("");
@@ -342,7 +342,9 @@ export default function Settings() {
   const [catDeleteError, setCatDeleteError] = useState<string | null>(null);
   const [balanceAccountId, setBalanceAccountId] = useState<string | null>(null);
   const [balanceAmount, setBalanceAmount] = useState("");
-  const [balanceCurrency, setBalanceCurrency] = useState("NZD");
+  const [balanceCurrency, setBalanceCurrency] = useState("USD");
+  const [acctMenuOpen, setAcctMenuOpen] = useState<string | null>(null);
+  const acctMenuRef = useRef<HTMLDivElement>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportHistoryRefreshToken, setExportHistoryRefreshToken] = useState(0);
 
@@ -369,6 +371,22 @@ export default function Settings() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [loading]);
+
+  // Close account ellipsis menu on click outside
+  useEffect(() => {
+    if (!acctMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (acctMenuRef.current && !acctMenuRef.current.contains(e.target as Node)) {
+        setAcctMenuOpen(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside as EventListener);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside as EventListener);
+    };
+  }, [acctMenuOpen]);
 
   const scrollToSection = useCallback((id: string) => {
     setActiveTab(id);
@@ -503,7 +521,7 @@ export default function Settings() {
       setNewAccountName("");
       setNewAccountType("checking");
       setNewAccountStartingBalance("");
-      setNewAccountCurrency("NZD");
+      setNewAccountCurrency("USD");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create account");
     } finally {
@@ -546,7 +564,7 @@ export default function Settings() {
       await refreshAccounts();
       setBalanceAccountId(null);
       setBalanceAmount("");
-      setBalanceCurrency("NZD");
+      setBalanceCurrency("USD");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set balance");
     } finally {
@@ -666,9 +684,30 @@ export default function Settings() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h2 ref={titleRef} className="text-2xl font-bold text-content-primary mb-4">
-        Settings
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 ref={titleRef} className="text-2xl font-bold text-content-primary">
+          Settings
+        </h2>
+        <Link
+          to="/dashboard"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald hover:text-emerald-hover transition-colors"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+            />
+          </svg>
+          Back to Dashboard
+        </Link>
+      </div>
 
       {/* Tab bar — appears on scroll (fixed to viewport) */}
       <div
@@ -749,7 +788,7 @@ export default function Settings() {
                 disabled={savingCurrency}
                 className="px-3 py-1.5 text-sm font-medium bg-surface-primary text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors disabled:opacity-50"
               >
-                {CURRENCIES.map((c) => (
+                {SUPPORTED_CURRENCIES.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
@@ -759,6 +798,28 @@ export default function Settings() {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-content-primary" />
               )}
             </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2.5 rounded-md border border-accent/20 bg-accent-soft-bg px-3 py-2 text-xs text-accent-soft-text">
+            <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>
+              Multi-currency totals are converted at{" "}
+              <button
+                type="button"
+                onClick={() => setIsRatesModalOpen(true)}
+                className="cursor-pointer font-medium underline hover:text-accent"
+              >
+                approximate rates
+              </button>
+              .
+            </span>
           </div>
 
           {accounts.length > 0 && (
@@ -941,30 +1002,47 @@ export default function Settings() {
                       </button>
                     </div>
                   ) : (
-                    <>
+                    <div
+                      className="relative"
+                      ref={acctMenuOpen === acct.id ? acctMenuRef : undefined}
+                    >
                       <button
                         type="button"
-                        onClick={() => {
-                          setEditingAccount(acct);
-                          setEditAccountName(acct.name);
-                        }}
-                        className="px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft-bg rounded"
+                        onClick={() => setAcctMenuOpen(acctMenuOpen === acct.id ? null : acct.id)}
+                        className="h-7 w-7 rounded-full flex items-center justify-center text-content-tertiary hover:bg-surface-hover hover:text-content-primary transition-colors"
                       >
-                        Edit
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                        </svg>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setBalanceAccountId(acct.id);
-                          setBalanceAmount("");
-                          setBalanceCurrency("NZD");
-                        }}
-                        className="px-2 py-1 text-xs font-medium text-emerald hover:bg-emerald/5 rounded"
-                      >
-                        <span className="sm:hidden">Set</span>
-                        <span className="hidden sm:inline">Set balance</span>
-                      </button>
-                    </>
+                      {acctMenuOpen === acct.id && (
+                        <div className="absolute right-0 mt-1 w-36 bg-surface-primary rounded-lg border border-edge-default shadow-lg z-50 py-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAccount(acct);
+                              setEditAccountName(acct.name);
+                              setAcctMenuOpen(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs font-medium text-content-secondary hover:bg-surface-hover"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBalanceAccountId(acct.id);
+                              setBalanceAmount("");
+                              setBalanceCurrency("USD");
+                              setAcctMenuOpen(null);
+                            }}
+                            className="w-full px-3 py-2 text-left text-xs font-medium text-emerald hover:bg-surface-hover"
+                          >
+                            Set Balance
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -1104,36 +1182,57 @@ export default function Settings() {
                         </button>
                       </div>
                     ) : (
-                      <>
+                      <div
+                        className="relative"
+                        ref={acctMenuOpen === acct.id ? acctMenuRef : undefined}
+                      >
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingAccount(acct);
-                            setEditAccountName(acct.name);
-                          }}
-                          className="px-2 py-1 text-xs font-medium text-accent hover:bg-accent-soft-bg rounded"
+                          onClick={() => setAcctMenuOpen(acctMenuOpen === acct.id ? null : acct.id)}
+                          className="h-7 w-7 rounded-full flex items-center justify-center text-content-tertiary hover:bg-surface-hover hover:text-content-primary transition-colors"
                         >
-                          Edit
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                          </svg>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setBalanceAccountId(acct.id);
-                            setBalanceAmount("");
-                            setBalanceCurrency("NZD");
-                          }}
-                          className="px-2 py-1 text-xs font-medium text-emerald hover:bg-emerald/5 rounded"
-                        >
-                          Set balance
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAcctDeleteTarget(acct)}
-                          className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded"
-                        >
-                          Delete
-                        </button>
-                      </>
+                        {acctMenuOpen === acct.id && (
+                          <div className="absolute right-0 mt-1 w-36 bg-surface-primary rounded-lg border border-edge-default shadow-lg z-50 py-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingAccount(acct);
+                                setEditAccountName(acct.name);
+                                setAcctMenuOpen(null);
+                              }}
+                              className="w-full px-3 py-2 text-left text-xs font-medium text-content-secondary hover:bg-surface-hover"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBalanceAccountId(acct.id);
+                                setBalanceAmount("");
+                                setBalanceCurrency("USD");
+                                setAcctMenuOpen(null);
+                              }}
+                              className="w-full px-3 py-2 text-left text-xs font-medium text-emerald hover:bg-surface-hover"
+                            >
+                              Set Balance
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAcctDeleteTarget(acct);
+                                setAcctMenuOpen(null);
+                              }}
+                              className="w-full px-3 py-2 text-left text-xs font-medium text-negative-text hover:bg-surface-hover"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1243,7 +1342,7 @@ export default function Settings() {
                     setNewAccountName("");
                     setNewAccountType("checking");
                     setNewAccountStartingBalance("");
-                    setNewAccountCurrency("NZD");
+                    setNewAccountCurrency("USD");
                   }}
                   className="text-xs font-medium text-content-tertiary px-2 py-1.5"
                 >
@@ -1279,7 +1378,7 @@ export default function Settings() {
           <div>
             <h3 className="text-lg font-medium text-content-primary">Categories</h3>
             <p className="text-sm text-content-tertiary mt-0.5">
-              Manage system and custom categories for your transactions
+              Manage your transaction categories
             </p>
           </div>
         </div>
@@ -1338,21 +1437,66 @@ export default function Settings() {
         {customCategories.length > 0 ? (
           <div className="divide-y divide-edge-default border-t border-edge-default">
             {customCategories.map((cat) => (
-              <div key={cat.id} className="px-6 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div key={cat.id} className="px-6 py-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 min-w-0">
                   <span
                     className="inline-block w-3 h-3 rounded-full shrink-0"
                     style={{ backgroundColor: isDark ? cat.color_dark : cat.color_light }}
                   />
-                  <div>
-                    <span className="text-sm font-medium text-content-primary">{cat.name}</span>
-                    {cat.alias && (
-                      <span className="ml-2 text-xs text-content-tertiary">{cat.alias}</span>
-                    )}
-                    <span className="ml-2 text-xs text-content-muted capitalize">{cat.type}</span>
+                  <div className="min-w-0">
+                    <span className="text-sm font-medium text-content-primary truncate block">
+                      {cat.name}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {cat.alias && (
+                        <span className="text-xs text-content-tertiary">{cat.alias}</span>
+                      )}
+                      <span className="text-xs text-content-muted capitalize">{cat.type}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
+                  <div
+                    className="relative"
+                    ref={acctMenuOpen === `cat-${cat.id}` ? acctMenuRef : undefined}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAcctMenuOpen(acctMenuOpen === `cat-${cat.id}` ? null : `cat-${cat.id}`)
+                      }
+                      className="h-7 w-7 rounded-full flex items-center justify-center text-content-tertiary hover:bg-surface-hover hover:text-content-primary transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+                    {acctMenuOpen === `cat-${cat.id}` && (
+                      <div className="absolute right-0 mt-1 w-28 bg-surface-primary rounded-lg border border-edge-default shadow-lg z-50 py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCategory(cat);
+                            setCatModalOpen(true);
+                            setAcctMenuOpen(null);
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-medium text-content-secondary hover:bg-surface-hover"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCatDeleteTarget(cat);
+                            setAcctMenuOpen(null);
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-medium text-negative-text hover:bg-surface-hover"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleToggleCategory(cat.id)}
@@ -1365,23 +1509,6 @@ export default function Settings() {
                         cat.is_active ? "translate-x-5" : "translate-x-0"
                       }`}
                     />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingCategory(cat);
-                      setCatModalOpen(true);
-                    }}
-                    className="px-2 py-1 text-xs font-medium text-content-secondary hover:bg-surface-hover rounded"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCatDeleteTarget(cat)}
-                    className="px-2 py-1 text-xs font-medium text-negative-text hover:bg-negative-bg rounded"
-                  >
-                    Delete
                   </button>
                 </div>
               </div>
@@ -1473,6 +1600,16 @@ export default function Settings() {
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
+                      onClick={() => {
+                        setEditingRule(rule);
+                        setRecurringModalOpen(true);
+                      }}
+                      className="px-2 py-1 text-xs font-medium text-content-secondary hover:bg-surface-hover rounded"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => handleRecurringToggle(rule.id)}
                       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
                         rule.is_active ? "bg-emerald" : "bg-edge-strong"
@@ -1484,16 +1621,6 @@ export default function Settings() {
                           rule.is_active ? "translate-x-5" : "translate-x-0"
                         }`}
                       />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingRule(rule);
-                        setRecurringModalOpen(true);
-                      }}
-                      className="px-2 py-1 text-xs font-medium text-content-secondary hover:bg-surface-hover rounded"
-                    >
-                      Edit
                     </button>
                   </div>
                 </div>
@@ -1785,6 +1912,8 @@ export default function Settings() {
         isLoading={deletingCatId === catDeleteTarget?.id}
         error={catDeleteError}
       />
+
+      <ExchangeRatesModal isOpen={isRatesModalOpen} onClose={() => setIsRatesModalOpen(false)} />
     </div>
   );
 }

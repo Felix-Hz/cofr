@@ -184,7 +184,7 @@ class ExpenseService:
     def _savings_net_change_converted(self, savings_filter: list, user_id: str) -> float:
         """Calculate net flow into savings/investment accounts with currency conversion."""
         user = self.db.query(User).filter(User.id == user_id).first()
-        preferred = user.preferred_currency if user else "NZD"
+        preferred = user.preferred_currency if user else "USD"
 
         target_rate = (
             self.db.query(ExchangeRate.rate_to_usd)
@@ -326,7 +326,7 @@ class ExpenseService:
     def _aggregate_with_conversion(self, base_filter: list, user_id: str) -> MonthlyStats:
         """Aggregate with currency conversion done in SQL via exchange_rates join."""
         user = self.db.query(User).filter(User.id == user_id).first()
-        preferred = user.preferred_currency if user else "NZD"
+        preferred = user.preferred_currency if user else "USD"
 
         # Subquery for the target currency rate
         target_rate = (
@@ -415,7 +415,7 @@ class ExpenseService:
         that currency (no conversion). Otherwise converts all to preferred currency.
         """
         user = self.db.query(User).filter(User.id == user_id).first()
-        preferred = currency or (user.preferred_currency if user else "NZD")
+        preferred = currency or (user.preferred_currency if user else "USD")
 
         # Target currency rate for conversion
         target_rate = (
@@ -512,7 +512,7 @@ class ExpenseService:
         else:
             stats = self._aggregate_with_conversion(base_filter, user_id)
             user = self.db.query(User).filter(User.id == user_id).first()
-            resolved_currency = user.preferred_currency if user else "NZD"
+            resolved_currency = user.preferred_currency if user else "USD"
             is_converted = True
 
         return LifetimeStats(
@@ -571,7 +571,7 @@ class ExpenseService:
                 totals[key] = totals.get(key, 0.0) + float(amount)
         else:
             user = self.db.query(User).filter(User.id == user_id).first()
-            resolved_currency = user.preferred_currency if user else "NZD"
+            resolved_currency = user.preferred_currency if user else "USD"
             is_converted = True
 
             target_rate = (

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
 import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import type { Category, CategoryCreate, CategoryUpdate } from "~/lib/schemas";
+import { useTheme } from "~/lib/theme";
 import CategoryColorPicker, { COLOR_PRESETS } from "./CategoryColorPicker";
 
 interface CategoryFormModalProps {
@@ -21,6 +22,8 @@ export default function CategoryFormModal({
   isLoading = false,
   categories,
 }: CategoryFormModalProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
   const [name, setName] = useState("");
   const [type, setType] = useState<string>("expense");
   const [alias, setAlias] = useState("");
@@ -226,6 +229,7 @@ export default function CategoryFormModal({
                 dark: c.color_dark,
                 categoryName: c.name,
               }))}
+              isDark={isDark}
             />
 
             {/* Actions */}

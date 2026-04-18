@@ -65,7 +65,7 @@ export function AverageDailySpendWidget() {
       </div>
       <div className="mt-2 flex min-h-0 flex-1 flex-col justify-center gap-1.5">
         <div className="flex items-baseline gap-2">
-          <span className="text-[1.75rem] font-semibold leading-none tracking-tight text-content-heading tabular-nums">
+          <span className="text-xl sm:text-[1.75rem] font-semibold leading-none tracking-tight text-content-heading tabular-nums">
             {formatCurrency(avgPerDay, periodStats.currency, true, 0)}
           </span>
           <span className="text-[11px] font-medium text-content-tertiary">per day</span>
