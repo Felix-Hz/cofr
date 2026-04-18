@@ -7,7 +7,7 @@ Bun.serve({
     const file = Bun.file(`build/client${path}`);
     if (await file.exists()) {
       let cacheControl = "public, max-age=3600";
-      if (path.startsWith("/assets/")) {
+      if (path.startsWith("/assets/") || path.startsWith("/splash/")) {
         cacheControl = "public, max-age=31536000, immutable";
       } else if (
         path === "/sw.js" ||

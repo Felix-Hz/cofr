@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, redirect, useLoaderData } from "react-router";
 import OfflineBanner from "~/components/OfflineBanner";
+import PullToRefreshIndicator from "~/components/PullToRefreshIndicator";
 import ThemeToggle from "~/components/ThemeToggle";
+import { usePullToRefresh } from "~/hooks/usePullToRefresh";
 import { useSessionTimeout } from "~/hooks/useSessionTimeout";
 import { AccountsProvider } from "~/lib/accounts";
 import { updatePreferences } from "~/lib/api";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
+import { hasNativePullToRefresh } from "~/lib/browser";
 import { CategoriesProvider } from "~/lib/categories";
 import { detectCurrencyFromLocale } from "~/lib/constants";
 import { RecurringProvider } from "~/lib/recurring";
@@ -104,11 +107,25 @@ export default function AuthenticatedLayout() {
     };
   }, [menuOpen]);
 
+  const ptr = usePullToRefresh({ disabled: hasNativePullToRefresh() });
+
   return (
-    <div className="min-h-screen bg-surface-page">
+    <div
+      className="min-h-screen bg-surface-page"
+      style={{
+        paddingLeft: "var(--safe-left)",
+        paddingRight: "var(--safe-right)",
+        transform: ptr.pulling ? `translateY(${ptr.pullDistance * 0.5}px)` : undefined,
+        transition: ptr.pulling ? "none" : "transform 0.3s ease",
+      }}
+    >
+      <PullToRefreshIndicator pullDistance={ptr.pullDistance} refreshing={ptr.refreshing} />
       <OfflineBanner />
       {/* Header */}
-      <header className="bg-surface-primary border-b border-edge-default">
+      <header
+        className="bg-surface-primary border-b border-edge-default"
+        style={{ paddingTop: "var(--safe-top)" }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link to="/dashboard">

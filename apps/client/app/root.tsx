@@ -9,6 +9,7 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import AppleSplashLinks from "~/components/AppleSplashLinks";
 import UpdateBanner from "~/components/UpdateBanner";
 import type { Route } from "./+types/root";
 import "./globals.css";
@@ -56,7 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta charSet="utf-8" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
         <meta name="theme-color" content="#0B1220" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)" />
@@ -66,6 +67,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <AppleSplashLinks />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
