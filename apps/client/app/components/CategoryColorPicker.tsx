@@ -48,6 +48,7 @@ interface CategoryColorPickerProps {
   selectedDark: string;
   onSelect: (light: string, dark: string) => void;
   usedColors?: UsedColor[];
+  isDark?: boolean;
 }
 
 export default function CategoryColorPicker({
@@ -55,6 +56,7 @@ export default function CategoryColorPicker({
   selectedDark,
   onSelect,
   usedColors = [],
+  isDark = false,
 }: CategoryColorPickerProps) {
   return (
     <div>
@@ -62,6 +64,7 @@ export default function CategoryColorPicker({
       <div className="grid grid-cols-8 gap-2">
         {COLOR_PRESETS.map((preset) => {
           const isSelected = preset.light === selectedLight && preset.dark === selectedDark;
+          const displayColor = isDark ? preset.dark : preset.light;
           const usedBy = usedColors.find((u) => u.light === preset.light);
           return (
             <div key={preset.light} className="relative group">
@@ -73,12 +76,12 @@ export default function CategoryColorPicker({
                     ? "ring-2 ring-offset-2 ring-emerald ring-offset-surface-primary scale-110"
                     : "hover:scale-110"
                 }`}
-                style={{ backgroundColor: preset.light }}
+                style={{ backgroundColor: displayColor }}
                 aria-label={`Color ${preset.light}${usedBy ? ` (used by ${usedBy.categoryName})` : ""}`}
               />
               {usedBy && (
                 <>
-                  <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 bg-white rounded-full pointer-events-none shadow-sm" />
+                  <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 bg-gray-800 dark:bg-white rounded-full pointer-events-none shadow-sm" />
                   <span className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 text-[10px] font-medium text-content-heading bg-surface-elevated border border-edge-strong rounded whitespace-nowrap z-10 pointer-events-none shadow-lg">
                     Used by: {usedBy.categoryName}
                   </span>

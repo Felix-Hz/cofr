@@ -28,9 +28,9 @@ interface ControlsPanelProps {
 }
 
 const PRESETS: { value: Preset; label: string }[] = [
-  { value: "thisMonth", label: "This Month" },
-  { value: "last7Days", label: "Last Week" },
-  { value: "lastYear", label: "Last Year" },
+  { value: "thisMonth", label: "Current Month" },
+  { value: "last7Days", label: "Past Week" },
+  { value: "lastYear", label: "Past Year" },
   { value: "custom", label: "Custom Range" },
 ];
 
@@ -229,7 +229,15 @@ export default function ControlsPanel({
                 id="ctrl-start"
                 type="date"
                 value={customStart}
-                onChange={(e) => onCustomStartChange(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (customEnd && v > customEnd) {
+                    onCustomEndChange(v);
+                    onCustomStartChange(customEnd);
+                  } else {
+                    onCustomStartChange(v);
+                  }
+                }}
                 className="h-9 w-full min-w-0 rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
               />
             </div>
@@ -244,7 +252,15 @@ export default function ControlsPanel({
                 id="ctrl-end"
                 type="date"
                 value={customEnd}
-                onChange={(e) => onCustomEndChange(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (customStart && v < customStart) {
+                    onCustomStartChange(v);
+                    onCustomEndChange(customStart);
+                  } else {
+                    onCustomEndChange(v);
+                  }
+                }}
                 className="h-9 w-full min-w-0 rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
               />
             </div>
@@ -351,15 +367,20 @@ export default function ControlsPanel({
   if (!portalTarget) return null;
 
   return createPortal(
-    <>
-      <div
-        className="fixed inset-0 z-[70] bg-black/40 transition-opacity"
-        style={{ opacity: dragOffset > 0 ? Math.max(0, 1 - dragOffset / 200) : 1 }}
-        onClick={onClose}
-      />
-
-      <div className="fixed inset-0 z-[71] flex items-end">{panel}</div>
-    </>,
+    <div
+      className="fixed inset-0 z-[70] flex items-end overflow-hidden"
+      style={{
+        backgroundColor: `rgba(0,0,0,${dragOffset > 0 ? Math.max(0, 0.4 * (1 - dragOffset / 200)) : 0.4})`,
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onTouchEnd={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      {panel}
+    </div>,
     portalTarget,
   );
 }

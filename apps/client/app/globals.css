@@ -137,11 +137,13 @@ input[type="datetime-local"] {
   min-width: 0;
 }
 
-html,
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   overflow-x: hidden;
   overscroll-behavior: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
 body {

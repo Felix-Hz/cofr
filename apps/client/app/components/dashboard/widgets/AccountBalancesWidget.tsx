@@ -83,7 +83,7 @@ export function AccountBalancesWidget({ widget }: WidgetRenderProps) {
           </div>
         </div>
       ) : (
-        <div className="mt-3 grid flex-1 auto-rows-min grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="mt-3 grid min-h-0 flex-1 auto-rows-min grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
           {visibleBalances.map((ab) => (
             <div
               key={ab.account_id}

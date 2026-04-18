@@ -423,7 +423,7 @@ export default function Dashboard() {
   const handleMinAmountChange = (v: string) => navigate(buildUrl({ offset: 0, minAmount: v }));
   const handleMaxAmountChange = (v: string) => navigate(buildUrl({ offset: 0, maxAmount: v }));
   const clearFilters = () =>
-    navigate(buildUrl({ offset: 0, category: "", minAmount: "", maxAmount: "" }));
+    navigate(buildUrl({ offset: 0, category: "", minAmount: "", maxAmount: "", currency: "" }));
   const handleTransactionsPageChange = useCallback(
     (nextOffset: number) => {
       navigate(buildUrl({ offset: Math.max(0, nextOffset) }));
@@ -750,7 +750,12 @@ export default function Dashboard() {
 
   const activeTypes = useMemo(() => new Set(widgets.map((w) => w.widget_type)), [widgets]);
 
-  const hasActiveFilters = !!(currentCategory || currentMinAmount || currentMaxAmount);
+  const hasActiveFilters = !!(
+    currentCategory ||
+    currentMinAmount ||
+    currentMaxAmount ||
+    currentCurrency
+  );
   const periodLabel = getPresetLabel(preset, startDate, endDate);
   const showArrows = preset !== "custom";
 
@@ -1255,10 +1260,10 @@ export default function Dashboard() {
 
         {/* ─── Currency info ─── */}
         {!currentCurrency && monthlyStats.is_converted && !isConversionBannerDismissed && (
-          <div className="hidden items-center justify-between gap-4 rounded-md border border-accent/20 bg-accent-soft-bg px-4 py-2.5 text-xs text-accent-soft-text sm:flex">
-            <div className="flex items-center gap-2.5">
+          <div className="flex items-start gap-3 rounded-lg border border-accent/20 bg-accent-soft-bg px-4 py-3.5 text-xs leading-relaxed text-accent-soft-text sm:items-center sm:gap-4 sm:py-2.5">
+            <div className="flex flex-1 items-start gap-2.5 sm:items-center">
               <svg
-                className="h-4 w-4 shrink-0"
+                className="mt-0.5 h-4 w-4 shrink-0 sm:mt-0"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -1270,16 +1275,19 @@ export default function Dashboard() {
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span>
-                Totals converted to {monthlyStats.currency} at approximate rates. Select a specific
-                currency to view only those transactions, or{" "}
+              <span className="text-justify sm:text-left">
+                Totals converted to your default currency ({monthlyStats.currency}) at{" "}
                 <button
                   type="button"
                   onClick={() => setIsRatesModalOpen(true)}
                   className="cursor-pointer font-medium underline hover:text-accent"
                 >
-                  view daily rates
+                  approximate rates
                 </button>
+                . You can change your default currency in{" "}
+                <a href="/settings" className="font-medium underline hover:text-accent">
+                  Settings
+                </a>
                 .
               </span>
             </div>
@@ -1290,13 +1298,13 @@ export default function Dashboard() {
                 setIsConversionBannerDismissed(true);
                 window.localStorage.setItem("cofr:hide-conversion-banner", "1");
               }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-sm border border-accent/15 bg-surface-primary/70 text-accent-soft-text transition-colors hover:bg-surface-primary"
+              className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-negative-text/20 text-negative-text/60 transition-colors hover:bg-negative-text/10 hover:text-negative-text sm:mt-0"
             >
               <svg
-                className="h-3.5 w-3.5"
+                className="h-3 w-3"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />

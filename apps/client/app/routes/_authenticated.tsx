@@ -7,6 +7,7 @@ import { AccountsProvider } from "~/lib/accounts";
 import { updatePreferences } from "~/lib/api";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
 import { CategoriesProvider } from "~/lib/categories";
+import { detectCurrencyFromLocale } from "~/lib/constants";
 import { RecurringProvider } from "~/lib/recurring";
 import { getUserInitials } from "~/lib/utils";
 
@@ -69,6 +70,21 @@ export default function AuthenticatedLayout() {
         .catch(() => {});
     } catch {
       // Intl unavailable — skip silently
+    }
+  }, []);
+
+  // One-shot: detect default currency from browser locale for new users.
+  // Only runs once per browser; skips if the user has already set a currency.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("cofr_currency_synced")) return;
+    try {
+      const detected = detectCurrencyFromLocale();
+      updatePreferences({ preferred_currency: detected })
+        .then(() => localStorage.setItem("cofr_currency_synced", detected))
+        .catch(() => {});
+    } catch {
+      // skip silently
     }
   }, []);
 

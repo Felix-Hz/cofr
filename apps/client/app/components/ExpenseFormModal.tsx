@@ -33,7 +33,7 @@ export default function ExpenseFormModal({
   const [accountId, setAccountId] = useState("");
   const [description, setDescription] = useState("");
   const [merchant, setMerchant] = useState("");
-  const [currency, setCurrency] = useState("NZD");
+  const [currency, setCurrency] = useState("USD");
   const [date, setDate] = useState("");
   const [isOpeningBalance, setIsOpeningBalance] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -82,7 +82,7 @@ export default function ExpenseFormModal({
       setAccountId(defaultAccountId);
       setDescription("");
       setMerchant("");
-      setCurrency("NZD");
+      setCurrency("USD");
       setIsOpeningBalance(false);
       setShowDeleteConfirm(false);
       const now = new Date();

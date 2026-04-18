@@ -229,7 +229,7 @@ class ExportService:
 
     def _query_accounts_summary(self, user_id: str) -> list[dict]:
         user = self.db.query(User).filter(User.id == user_id).first()
-        preferred = user.preferred_currency if user else "NZD"
+        preferred = user.preferred_currency if user else "USD"
 
         target_rate = (
             self.db.query(ExchangeRate.rate_to_usd)
@@ -328,9 +328,9 @@ class ExportService:
         if fmt == "csv":
             return self._serialize_csv(data, scope)
         elif fmt == "xlsx":
-            return self._serialize_xlsx(data, scope, request.currency or "NZD")
+            return self._serialize_xlsx(data, scope, request.currency or "USD")
         elif fmt == "pdf":
-            return self._serialize_pdf(data, scope, request.currency or "NZD")
+            return self._serialize_pdf(data, scope, request.currency or "USD")
         else:
             raise ValueError(f"Unsupported format: {fmt}")
 

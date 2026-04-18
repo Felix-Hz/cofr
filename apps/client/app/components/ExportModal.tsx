@@ -288,6 +288,14 @@ export default function ExportModal({
           </button>
         </div>
 
+        {hasNoTransactions && (
+          <div className="px-5 pt-4 shrink-0">
+            <div className="px-3 py-2 rounded-lg bg-warning-bg border border-warning-border text-warning-text text-sm">
+              No transactions match the current filters. Adjust the filters before exporting.
+            </div>
+          </div>
+        )}
+
         {/* Body */}
         <div className="px-5 py-4 space-y-5 overflow-y-auto">
           {/* Name input */}
@@ -411,12 +419,6 @@ export default function ExportModal({
               ))}
             </div>
           </div>
-
-          {hasNoTransactions && (
-            <div className="px-3 py-2 rounded-lg bg-warning-bg border border-warning-border text-warning-text text-sm">
-              No transactions match the current filters. Adjust the filters before exporting.
-            </div>
-          )}
 
           {/* Filter summary (when filters are pre-filled) */}
           {defaultFilters &&

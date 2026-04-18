@@ -46,7 +46,7 @@ def test_monthly_trend_buckets_income_and_spend(client, auth_headers, system_cat
     assert resp.status_code == 200
     body = resp.json()
     assert len(body["points"]) == 3
-    assert body["currency"] == "NZD"
+    assert body["currency"] == "USD"
 
     current_key = f"{now.year:04d}-{now.month:02d}"
     current_point = next(p for p in body["points"] if p["month"] == current_key)

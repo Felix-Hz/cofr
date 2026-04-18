@@ -52,7 +52,7 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(EncryptedString, default="")
     last_name: Mapped[str] = mapped_column(EncryptedString, default="")
     username: Mapped[str] = mapped_column(EncryptedString, default="")
-    preferred_currency: Mapped[str] = mapped_column(String, default="NZD")
+    preferred_currency: Mapped[str] = mapped_column(String, default="USD")
     session_timeout_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     email_verified: Mapped[bool] = mapped_column(
@@ -141,7 +141,7 @@ class Transaction(Base):
     )
     account_id: Mapped[uuid.UUID] = mapped_column(SaUuid, ForeignKey("accounts.id"), index=True)
     amount: Mapped[float] = mapped_column(Float)
-    currency: Mapped[str] = mapped_column(String, default="NZD", index=True)
+    currency: Mapped[str] = mapped_column(String, default="USD", index=True)
     notes: Mapped[str] = mapped_column(String, default="")
     merchant: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
     timestamp: Mapped[datetime] = mapped_column(
@@ -184,7 +184,7 @@ class RecurringRule(Base):
     type: Mapped[str] = mapped_column(String(10))  # expense | income | transfer
     name: Mapped[str] = mapped_column(String(80))
     amount: Mapped[float] = mapped_column(Float)
-    currency: Mapped[str] = mapped_column(String(3), default="NZD")
+    currency: Mapped[str] = mapped_column(String(3), default="USD")
     account_id: Mapped[uuid.UUID] = mapped_column(
         SaUuid, ForeignKey("accounts.id", ondelete="CASCADE")
     )
