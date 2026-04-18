@@ -13,6 +13,18 @@ services:
     image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-client:${CLIENT_IMAGE_TAG:-${APP_IMAGE_TAG:-main}}
     pull_policy: always
 
+  # PgSQL with S3 backup
+  postgres:
+    build: docker/postgres
+    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-postgres:${APP_IMAGE_TAG:-main}
+    pull_policy: always
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - BACKUP_S3_BUCKET
+      - BACKUP_S3_ENDPOINT
+      - BACKUP_S3_REGION
+
   caddy:
     volumes:
       - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
