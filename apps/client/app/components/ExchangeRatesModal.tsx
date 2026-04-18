@@ -59,7 +59,7 @@ export default function ExchangeRatesModal({
     if (mins < 60) return `Updated ${mins}m ago`;
     const hours = Math.floor(mins / 60);
     if (hours < 24) return `Updated ${hours}h ago`;
-    return `Updated ${new Date(iso).toLocaleDateString()}`;
+    return `Updated ${new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
   }
 
   return (

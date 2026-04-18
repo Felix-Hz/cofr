@@ -62,10 +62,10 @@ def get_rates_metadata(db: Session, use_cache: bool = True) -> dict:
         return {"rates": {}, "updated_at": None}
 
     rows = db.query(ExchangeRate).all()
-    min_updated = min((r.updated_at for r in rows), default=None)
+    max_updated = max((r.updated_at for r in rows), default=None)
     return {
         "rates": rates,
-        "updated_at": min_updated.isoformat() if min_updated else None,
+        "updated_at": max_updated.isoformat() if max_updated else None,
     }
 
 

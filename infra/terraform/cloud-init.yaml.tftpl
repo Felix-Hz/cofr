@@ -82,7 +82,10 @@ write_files:
       chmod 700 /home/${admin_user}/.ssh
       chmod 600 /home/${admin_user}/.ssh/authorized_keys
       sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-      systemctl reload ssh
+      # Use try-reload-or-restart because on Ubuntu 24.04 ssh uses socket activation
+      # and ssh.service may not be running yet during cloud-init (no connections yet),
+      # causing plain `systemctl reload ssh` to fail and abort the bootstrap.
+      systemctl try-reload-or-restart ssh
       install -m 0440 /dev/null /etc/sudoers.d/90-${admin_user}
       printf '%s ALL=(ALL) NOPASSWD:ALL\n' '${admin_user}' >/etc/sudoers.d/90-${admin_user}
 
