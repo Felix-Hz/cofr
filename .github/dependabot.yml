@@ -1,6 +1,6 @@
 version: 2
 updates:
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/server"
     schedule:
       interval: "weekly"
@@ -45,7 +45,7 @@ updates:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/apps/scribe"
     schedule:
       interval: "weekly"
