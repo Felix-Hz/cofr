@@ -1,9 +1,9 @@
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardLifetimeStats } from "~/lib/dashboard/data-context";
 import type { WidgetRenderProps } from "~/lib/dashboard/registry";
 import { formatCurrency } from "~/lib/utils";
 
 export function NetWorthWidget({ widget }: WidgetRenderProps) {
-  const { lifetimeStats } = useDashboardData();
+  const lifetimeStats = useDashboardLifetimeStats();
   const { net_worth, lifetime_income, lifetime_spent, currency } = lifetimeStats;
   const isCompact = widget.row_span <= 1;
   const valueClass = isCompact

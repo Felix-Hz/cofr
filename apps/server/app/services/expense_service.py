@@ -1,3 +1,4 @@
+import threading
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
@@ -18,10 +19,48 @@ from app.db.schemas import (
     SparklineResponse,
 )
 
+_user_cache: dict[str, tuple[str, datetime]] = {}
+_user_cache_lock = threading.Lock()
+USER_CACHE_TTL_SECONDS = 300  # 5 minutes
+
+
+def _get_user_currency(user_id: str, db: Session) -> str:
+    """Get user's preferred currency with caching."""
+    global _user_cache
+    now = datetime.now(UTC)
+
+    with _user_cache_lock:
+        cached = _user_cache.get(user_id)
+        if cached:
+            currency, cached_at = cached
+            if (now - cached_at).total_seconds() < USER_CACHE_TTL_SECONDS:
+                return currency
+
+    user = db.query(User).filter(User.id == user_id).first()
+    currency = user.preferred_currency if user else "USD"
+
+    with _user_cache_lock:
+        _user_cache[user_id] = (currency, now)
+
+    return currency
+
+
+def invalidate_user_cache(user_id: str | None = None) -> None:
+    """Clear user currency cache."""
+    global _user_cache
+    with _user_cache_lock:
+        if user_id:
+            _user_cache.pop(user_id, None)
+        else:
+            _user_cache.clear()
+
 
 class ExpenseService:
     def __init__(self, db: Session):
         self.db = db
+
+    def get_preferred_currency(self, user_id: str) -> str:
+        return _get_user_currency(user_id, self.db)
 
     def _paginated_query(
         self, filters: list, limit: int, offset: int
@@ -106,7 +145,12 @@ class ExpenseService:
         return self._paginated_query(filters, limit, offset)
 
     async def get_monthly_stats(
-        self, user_id: str, month: int, year: int, currency: str | None = None
+        self,
+        user_id: str,
+        month: int,
+        year: int,
+        currency: str | None = None,
+        account_balances: list[AccountBalance] | None = None,
     ) -> MonthlyStats:
         """Get monthly statistics with category breakdown, optionally filtered by currency"""
         base_filter = [
@@ -123,14 +167,19 @@ class ExpenseService:
         else:
             stats = self._aggregate_with_conversion(base_filter, user_id)
 
-        stats.account_balances = self.get_account_balances(user_id)
+        stats.account_balances = account_balances or self.get_account_balances(user_id)
         stats.savings_net_change = self._get_savings_net_change_monthly(
             user_id, month, year, currency
         )
         return stats
 
     async def get_range_stats(
-        self, user_id: str, start_date: datetime, end_date: datetime, currency: str | None = None
+        self,
+        user_id: str,
+        start_date: datetime,
+        end_date: datetime,
+        currency: str | None = None,
+        account_balances: list[AccountBalance] | None = None,
     ) -> MonthlyStats:
         """Get statistics for a date range with category breakdown, optionally filtered by currency"""
         base_filter = [
@@ -147,7 +196,7 @@ class ExpenseService:
         else:
             stats = self._aggregate_with_conversion(base_filter, user_id)
 
-        stats.account_balances = self.get_account_balances(user_id)
+        stats.account_balances = account_balances or self.get_account_balances(user_id)
         stats.savings_net_change = self._get_savings_net_change_range(
             user_id, start_date, end_date, currency
         )
@@ -183,8 +232,7 @@ class ExpenseService:
 
     def _savings_net_change_converted(self, savings_filter: list, user_id: str) -> float:
         """Calculate net flow into savings/investment accounts with currency conversion."""
-        user = self.db.query(User).filter(User.id == user_id).first()
-        preferred = user.preferred_currency if user else "USD"
+        preferred = _get_user_currency(user_id, self.db)
 
         target_rate = (
             self.db.query(ExchangeRate.rate_to_usd)
@@ -325,8 +373,7 @@ class ExpenseService:
 
     def _aggregate_with_conversion(self, base_filter: list, user_id: str) -> MonthlyStats:
         """Aggregate with currency conversion done in SQL via exchange_rates join."""
-        user = self.db.query(User).filter(User.id == user_id).first()
-        preferred = user.preferred_currency if user else "USD"
+        preferred = _get_user_currency(user_id, self.db)
 
         # Subquery for the target currency rate
         target_rate = (
@@ -414,8 +461,7 @@ class ExpenseService:
         If `currency` is provided, balances are filtered to only transactions in
         that currency (no conversion). Otherwise converts all to preferred currency.
         """
-        user = self.db.query(User).filter(User.id == user_id).first()
-        preferred = currency or (user.preferred_currency if user else "USD")
+        preferred = currency or _get_user_currency(user_id, self.db)
 
         # Target currency rate for conversion
         target_rate = (
@@ -491,9 +537,14 @@ class ExpenseService:
             for row in results
         ]
 
-    def get_lifetime_stats(self, user_id: str, currency: str | None = None) -> LifetimeStats:
+    def get_lifetime_stats(
+        self,
+        user_id: str,
+        currency: str | None = None,
+        account_balances: list[AccountBalance] | None = None,
+    ) -> LifetimeStats:
         """All-time aggregates: net worth, balances by account type, lifetime income/spent."""
-        balances = self.get_account_balances(user_id)
+        balances = account_balances or self.get_account_balances(user_id)
         checking = sum(b.balance for b in balances if b.account_type == "checking")
         savings = sum(b.balance for b in balances if b.account_type == "savings")
         investment = sum(b.balance for b in balances if b.account_type == "investment")
@@ -511,8 +562,7 @@ class ExpenseService:
             is_converted = False
         else:
             stats = self._aggregate_with_conversion(base_filter, user_id)
-            user = self.db.query(User).filter(User.id == user_id).first()
-            resolved_currency = user.preferred_currency if user else "USD"
+            resolved_currency = _get_user_currency(user_id, self.db)
             is_converted = True
 
         return LifetimeStats(
@@ -570,8 +620,7 @@ class ExpenseService:
                 key = (ts_naive + offset).date().isoformat()
                 totals[key] = totals.get(key, 0.0) + float(amount)
         else:
-            user = self.db.query(User).filter(User.id == user_id).first()
-            resolved_currency = user.preferred_currency if user else "USD"
+            resolved_currency = _get_user_currency(user_id, self.db)
             is_converted = True
 
             target_rate = (

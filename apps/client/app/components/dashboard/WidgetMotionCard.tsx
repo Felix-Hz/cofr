@@ -1,9 +1,9 @@
 import { motion } from "motion/react";
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { springs } from "~/lib/dashboard/motion-config";
 import { cn } from "~/lib/utils";
 
-export function WidgetMotionCard({
+export const WidgetMotionCard = memo(function WidgetMotionCard({
   children,
   isEditMode,
   isDragging,
@@ -28,4 +28,4 @@ export function WidgetMotionCard({
       {children}
     </motion.div>
   );
-}
+});

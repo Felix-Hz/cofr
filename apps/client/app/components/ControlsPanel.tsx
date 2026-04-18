@@ -7,6 +7,7 @@ export type Preset = "thisMonth" | "last7Days" | "lastYear" | "custom";
 interface ControlsPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  anchorRefs?: Array<React.RefObject<HTMLElement | null>>;
   preset: Preset;
   onPresetChange: (preset: Preset) => void;
   currency: string;
@@ -37,6 +38,7 @@ const PRESETS: { value: Preset; label: string }[] = [
 export default function ControlsPanel({
   isOpen,
   onClose,
+  anchorRefs = [],
   preset,
   onPresetChange,
   currency,
@@ -80,6 +82,21 @@ export default function ControlsPanel({
     if (typeof document === "undefined") return;
     setPortalTarget(document.body);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen || isMobile) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (panelRef.current?.contains(target)) return;
+      if (anchorRefs.some((ref) => ref.current?.contains(target))) return;
+      onClose();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [anchorRefs, isMobile, isOpen, onClose]);
 
   // Swipe down to close on mobile — follows finger
   const handleTouchStart = useCallback((e: React.TouchEvent) => {

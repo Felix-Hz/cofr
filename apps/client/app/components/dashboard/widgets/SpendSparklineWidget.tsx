@@ -1,5 +1,5 @@
 import { useId, useMemo } from "react";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardSparkline } from "~/lib/dashboard/data-context";
 import type { WidgetRenderProps } from "~/lib/dashboard/registry";
 import { formatCurrency } from "~/lib/utils";
 
@@ -16,7 +16,7 @@ function getTodayKey() {
 }
 
 export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
-  const { sparkline } = useDashboardData();
+  const sparkline = useDashboardSparkline();
   const strokeGradientId = useId();
   const markerGradientId = useId();
   const isCompact = widget.row_span <= 2;

@@ -12,6 +12,7 @@ import {
 import { rectSortingStrategy, SortableContext } from "@dnd-kit/sortable";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
+import { useIsTouchDevice } from "~/hooks/useIsTouchDevice";
 import {
   GRID_COLUMNS,
   getMobileRowSpan,
@@ -26,6 +27,18 @@ import { getRegistry, WIDGET_ORDER } from "~/lib/dashboard/registry";
 import type { DashboardWidget } from "~/lib/schemas";
 import { WidgetDndShell } from "./WidgetDndShell";
 import { WidgetMotionCard } from "./WidgetMotionCard";
+
+export const POINTER_DRAG_DISTANCE_PX = 6;
+export const DEFAULT_TOUCH_DRAG_DELAY_MS = 300;
+export const TOUCH_DRAG_DELAY_MS = 300;
+export const TOUCH_DRAG_TOLERANCE_PX = 8;
+
+export function getTouchDragActivationConstraint(isTouchDevice: boolean) {
+  return {
+    delay: isTouchDevice ? TOUCH_DRAG_DELAY_MS : DEFAULT_TOUCH_DRAG_DELAY_MS,
+    tolerance: TOUCH_DRAG_TOLERANCE_PX,
+  };
+}
 
 export function DashboardGrid({
   widgets,
@@ -44,12 +57,15 @@ export function DashboardGrid({
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isMobileGrid, setIsMobileGrid] = useState(false);
+  const isTouchDevice = useIsTouchDevice();
   const registry = getRegistry();
   const widgetCount = WIDGET_ORDER.length;
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: POINTER_DRAG_DISTANCE_PX } }),
+    useSensor(TouchSensor, {
+      activationConstraint: getTouchDragActivationConstraint(isTouchDevice),
+    }),
   );
 
   const orderedIds = useMemo(() => widgets.map((w) => w.id), [widgets]);
@@ -234,12 +250,11 @@ export function DashboardGrid({
                     key={widget.id}
                     widget={widget}
                     layoutWidget={layoutWidget}
+                    Component={Component}
                     isEditMode={isEditMode}
                     onRequestRemove={() => onRequestRemove(widget)}
                     onResize={isMobileGrid ? undefined : (action) => onResize(widget, action)}
-                  >
-                    <Component widget={layoutWidget} isEditMode={isEditMode} />
-                  </WidgetDndShell>
+                  />
                 );
               })}
             </div>

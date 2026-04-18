@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { useIsTouchDevice } from "~/hooks/useIsTouchDevice";
 import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { springs } from "~/lib/dashboard/motion-config";
 import { WIDGET_META, WIDGET_ORDER } from "~/lib/dashboard/registry";
@@ -39,6 +40,7 @@ export function WidgetGallery({
   activeTypes: Set<WidgetType>;
 }) {
   useModalKeyboardShortcuts({ isOpen, onEscape: onClose });
+  const isTouchDevice = useIsTouchDevice();
 
   const groupedWidgets = CATEGORY_ORDER.map((category) => ({
     category,
@@ -145,7 +147,9 @@ export function WidgetGallery({
               </div>
             </div>
             <footer className="border-t border-edge-default bg-surface-primary px-5 py-3 text-[11px] text-content-tertiary">
-              Tap a card to add it. Drag widgets on the dashboard to reorder.
+              {isTouchDevice
+                ? "Tap a card to add it. Long-press and drag widgets on the dashboard to reorder."
+                : "Tap a card to add it. Drag widgets on the dashboard to reorder."}
             </footer>
           </motion.aside>
         </>

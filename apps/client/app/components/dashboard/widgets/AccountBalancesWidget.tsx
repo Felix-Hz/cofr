@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardAccountBalances, useDashboardMeta } from "~/lib/dashboard/data-context";
 import type { WidgetRenderProps } from "~/lib/dashboard/registry";
 import { formatCurrency } from "~/lib/utils";
 
@@ -28,7 +28,8 @@ const ACCOUNT_ICONS: Record<string, ReactElement> = {
 };
 
 export function AccountBalancesWidget({ widget }: WidgetRenderProps) {
-  const { accountBalances, periodStats } = useDashboardData();
+  const accountBalances = useDashboardAccountBalances();
+  const { preferredCurrency } = useDashboardMeta();
   const total = accountBalances.reduce((sum, ab) => sum + ab.balance, 0);
   const isCompact = widget.row_span <= 1;
   const visibleBalances = isCompact ? accountBalances.slice(0, 2) : accountBalances;
@@ -54,7 +55,7 @@ export function AccountBalancesWidget({ widget }: WidgetRenderProps) {
           Accounts
         </div>
         <span className="text-sm font-semibold tabular-nums text-content-primary">
-          {formatCurrency(total, periodStats.currency)}
+          {formatCurrency(total, preferredCurrency)}
         </span>
       </div>
       {accountBalances.length === 0 ? (
@@ -78,7 +79,7 @@ export function AccountBalancesWidget({ widget }: WidgetRenderProps) {
           <div className="mt-auto flex items-center justify-between border-t border-edge-default/80 pt-3 text-[10px] font-medium uppercase tracking-[0.18em] text-content-tertiary">
             <span>Live balances</span>
             <span className="text-[11px] font-semibold text-content-primary">
-              {formatCurrency(total, periodStats.currency)}
+              {formatCurrency(total, preferredCurrency)}
             </span>
           </div>
         </div>
@@ -110,7 +111,7 @@ export function AccountBalancesWidget({ widget }: WidgetRenderProps) {
                       : "text-content-tertiary"
                 }`}
               >
-                {formatCurrency(ab.balance, periodStats.currency)}
+                {formatCurrency(ab.balance, preferredCurrency)}
               </span>
             </div>
           ))}

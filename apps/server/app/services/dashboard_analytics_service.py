@@ -4,9 +4,11 @@ Keeps monthly-trend, weekday-heatmap, account-trend, and recurring-detection
 queries out of the expense_service.py file, which is already large.
 """
 
+import threading
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
+from sqlalchemy import case, extract, func
 from sqlalchemy import false as sa_false
 from sqlalchemy import true as sa_true
 from sqlalchemy.orm import Session
@@ -24,17 +26,52 @@ from app.db.schemas import (
     WeekdayHeatmapResponse,
 )
 
+_user_cache: dict[str, tuple[str, datetime]] = {}
+_user_cache_lock = threading.Lock()
+USER_CACHE_TTL_SECONDS = 300  # 5 minutes
+
+
+def _get_user_currency(user_id: str, db: Session) -> tuple[str, bool]:
+    """Get user's preferred currency with caching."""
+    global _user_cache
+
+    now = datetime.now(UTC)
+    with _user_cache_lock:
+        cached = _user_cache.get(user_id)
+        if cached:
+            currency, cached_at = cached
+            if (now - cached_at).total_seconds() < USER_CACHE_TTL_SECONDS:
+                return currency, True
+
+    user = db.query(User).filter(User.id == user_id).first()
+    currency = user.preferred_currency if user else "USD"
+
+    with _user_cache_lock:
+        _user_cache[user_id] = (currency, now)
+
+    return currency, True
+
+
+def invalidate_user_cache(user_id: str | None = None) -> None:
+    """Clear user cache."""
+    global _user_cache
+    with _user_cache_lock:
+        if user_id:
+            _user_cache.pop(user_id, None)
+        else:
+            _user_cache.clear()
+
 
 def _resolve_currency(db: Session, user_id: str, override: str | None) -> tuple[str, bool]:
     if override:
         return override, False
-    user = db.query(User).filter(User.id == user_id).first()
-    return (user.preferred_currency if user else "USD"), True
+    return _get_user_currency(user_id, db)
 
 
 def _rate_map(db: Session) -> dict[str, float]:
-    rows = db.query(ExchangeRate.currency_code, ExchangeRate.rate_to_usd).all()
-    return {code: float(rate) for code, rate in rows if rate}
+    from app.services.exchange_rates import get_rates_from_db
+
+    return get_rates_from_db(db, use_cache=True)
 
 
 def _as_utc(ts: datetime) -> datetime:
@@ -64,7 +101,7 @@ class DashboardAnalyticsService:
     ) -> MonthlyTrendResponse:
         resolved, is_converted = _resolve_currency(self.db, user_id, currency)
         now = datetime.now(UTC)
-        # start of month (months-1) ago
+
         year = now.year
         month = now.month - (months - 1)
         while month <= 0:
@@ -78,35 +115,80 @@ class DashboardAnalyticsService:
             Transaction.is_opening_balance == sa_false(),
             Transaction.is_transfer == sa_false(),
         ]
+
         if currency:
-            filters.append(Transaction.currency == currency)
-
-        rows = (
-            self.db.query(
-                Transaction.timestamp,
-                Transaction.amount,
-                Transaction.currency,
-                Category.type,
+            target_rate = (
+                self.db.query(ExchangeRate.rate_to_usd)
+                .filter(ExchangeRate.currency_code == currency)
+                .scalar()
+                or 1.0
             )
-            .join(Category, Transaction.category_id == Category.id)
-            .filter(*filters)
-            .all()
-        )
 
-        rates = _rate_map(self.db) if is_converted else {}
-        buckets: dict[str, dict[str, float]] = defaultdict(lambda: {"income": 0.0, "spent": 0.0})
-        for ts, amount, ccy, cat_type in rows:
-            ts = _as_utc(ts)
-            amt = float(amount)
-            if is_converted:
-                amt = _convert(amt, ccy, resolved, rates)
-            key = f"{ts.year:04d}-{ts.month:02d}"
-            if cat_type == "income":
-                buckets[key]["income"] += amt
-            elif cat_type == "expense":
-                buckets[key]["spent"] += amt
+            rows = (
+                self.db.query(
+                    extract("year", Transaction.timestamp).label("year"),
+                    extract("month", Transaction.timestamp).label("month"),
+                    Category.type,
+                    func.sum(Transaction.amount).label("total"),
+                )
+                .join(Category, Transaction.category_id == Category.id)
+                .filter(*filters, Transaction.currency == currency)
+                .group_by(
+                    extract("year", Transaction.timestamp),
+                    extract("month", Transaction.timestamp),
+                    Category.type,
+                )
+                .all()
+            )
 
-        # Ensure every month in the window is represented.
+            buckets: dict[str, dict[str, float]] = defaultdict(
+                lambda: {"income": 0.0, "spent": 0.0}
+            )
+            for row_year, row_month, cat_type, total in rows:
+                key = f"{int(row_year):04d}-{int(row_month):02d}"
+                amt = float(total) if total else 0.0
+                if cat_type == "income":
+                    buckets[key]["income"] += amt
+                elif cat_type == "expense":
+                    buckets[key]["spent"] += amt
+        else:
+            rates = _rate_map(self.db)
+            target_rate = rates.get(resolved, 1.0)
+            converted_amount = case(
+                (
+                    ExchangeRate.rate_to_usd.isnot(None),
+                    Transaction.amount / ExchangeRate.rate_to_usd * target_rate,
+                ),
+                else_=Transaction.amount,
+            )
+
+            rows = (
+                self.db.query(
+                    extract("year", Transaction.timestamp).label("year"),
+                    extract("month", Transaction.timestamp).label("month"),
+                    Category.type,
+                    func.sum(converted_amount).label("total"),
+                )
+                .join(Category, Transaction.category_id == Category.id)
+                .outerjoin(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
+                .filter(*filters)
+                .group_by(
+                    extract("year", Transaction.timestamp),
+                    extract("month", Transaction.timestamp),
+                    Category.type,
+                )
+                .all()
+            )
+
+            buckets = defaultdict(lambda: {"income": 0.0, "spent": 0.0})
+            for row_year, row_month, cat_type, total in rows:
+                key = f"{int(row_year):04d}-{int(row_month):02d}"
+                amt = float(total) if total else 0.0
+                if cat_type == "income":
+                    buckets[key]["income"] += amt
+                elif cat_type == "expense":
+                    buckets[key]["spent"] += amt
+
         points: list[MonthlyTrendPoint] = []
         cursor_year, cursor_month = start.year, start.month
         for _ in range(months):
@@ -177,8 +259,6 @@ class DashboardAnalyticsService:
         self, user_id: str, days: int = 90, currency: str | None = None
     ) -> AccountTrendResponse:
         resolved, is_converted = _resolve_currency(self.db, user_id, currency)
-        rates = _rate_map(self.db) if is_converted else {}
-
         now = datetime.now(UTC).replace(hour=23, minute=59, second=59, microsecond=0)
         end_date = now.date()
         start_date = end_date - timedelta(days=days - 1)
@@ -194,75 +274,108 @@ class DashboardAnalyticsService:
                 series=[], days=days, currency=resolved, is_converted=is_converted
             )
 
-        # Preload every non-opening transaction; compute running balance per account.
-        all_txs = (
-            self.db.query(
-                Transaction.account_id,
-                Transaction.amount,
-                Transaction.currency,
-                Transaction.timestamp,
-                Transaction.is_transfer,
-                Transaction.transfer_direction,
-                Category.type,
+        if is_converted:
+            target_rate = (
+                self.db.query(ExchangeRate.rate_to_usd)
+                .filter(ExchangeRate.currency_code == resolved)
+                .scalar_subquery()
             )
-            .outerjoin(Category, Transaction.category_id == Category.id)
-            .filter(
-                Transaction.user_id == user_id,
-                Transaction.is_opening_balance == sa_false(),
+            amount_expr = case(
+                (
+                    ExchangeRate.rate_to_usd.isnot(None),
+                    Transaction.amount / ExchangeRate.rate_to_usd * func.coalesce(target_rate, 1.0),
+                ),
+                else_=Transaction.amount,
             )
-            .order_by(Transaction.timestamp.asc())
-            .all()
+        else:
+            amount_expr = Transaction.amount
+
+        signed_amount = case(
+            (
+                Transaction.is_transfer == True,  # noqa: E712
+                case(
+                    (Transaction.transfer_direction == "to", amount_expr),
+                    else_=-amount_expr,
+                ),
+            ),
+            (Category.type == "income", amount_expr),
+            else_=-amount_expr,
         )
 
         # Opening balances per account (counted as day-0 starting point).
         opening_rows = (
-            self.db.query(Transaction.account_id, Transaction.amount, Transaction.currency)
+            self.db.query(Transaction.account_id, func.coalesce(func.sum(amount_expr), 0))
+            .outerjoin(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
             .filter(
                 Transaction.user_id == user_id,
                 Transaction.is_opening_balance == sa_true(),
             )
+            .group_by(Transaction.account_id)
             .all()
         )
         opening_by_account: dict[str, float] = defaultdict(float)
-        for acct_id, amount, ccy in opening_rows:
-            amt = float(amount)
-            if is_converted:
-                amt = _convert(amt, ccy, resolved, rates)
-            opening_by_account[str(acct_id)] += amt
+        for acct_id, amount in opening_rows:
+            opening_by_account[str(acct_id)] += float(amount or 0.0)
 
-        # Group txs by account, cumulative by date.
-        by_account: dict[str, list[tuple[datetime, float]]] = defaultdict(list)
-        for acct_id, amount, ccy, ts, is_transfer, direction, cat_type in all_txs:
-            ts = _as_utc(ts)
-            amt = float(amount)
-            if is_converted:
-                amt = _convert(amt, ccy, resolved, rates)
-            if is_transfer:
-                signed = amt if direction == "to" else -amt
-            elif cat_type == "income":
-                signed = amt
+        tx_query = (
+            self.db.query(Transaction.account_id, signed_amount.label("delta"))
+            .outerjoin(Category, Transaction.category_id == Category.id)
+            .outerjoin(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
+            .filter(
+                Transaction.user_id == user_id,
+                Transaction.is_opening_balance == sa_false(),
+            )
+        )
+
+        tx_day = func.date(Transaction.timestamp)
+        start_day = start_date.isoformat()
+        end_day = end_date.isoformat()
+
+        prestart_rows = (
+            tx_query.filter(tx_day < start_day)
+            .with_entities(
+                Transaction.account_id,
+                func.coalesce(func.sum(signed_amount), 0).label("delta"),
+            )
+            .group_by(Transaction.account_id)
+            .all()
+        )
+        prestart_by_account = {
+            str(acct_id): float(delta or 0.0) for acct_id, delta in prestart_rows
+        }
+
+        window_rows = (
+            tx_query.filter(tx_day >= start_day)
+            .filter(tx_day <= end_day)
+            .with_entities(
+                Transaction.account_id,
+                tx_day.label("day"),
+                func.coalesce(func.sum(signed_amount), 0).label("delta"),
+            )
+            .group_by(Transaction.account_id, tx_day)
+            .order_by(tx_day.asc())
+            .all()
+        )
+
+        by_account_day: dict[str, dict[date, float]] = defaultdict(dict)
+        for acct_id, day_value, delta in window_rows:
+            if isinstance(day_value, str):
+                day_key = date.fromisoformat(day_value)
             else:
-                signed = -amt
-            by_account[str(acct_id)].append((ts, signed))
+                day_key = day_value
+            by_account_day[str(acct_id)][day_key] = float(delta or 0.0)
 
         series: list[AccountTrendSeries] = []
         date_range = [start_date + timedelta(days=i) for i in range(days)]
 
         for idx, account in enumerate(accounts):
             acct_id = str(account.id)
-            running = opening_by_account.get(acct_id, 0.0)
-            # Apply all transactions strictly before start_date up-front.
-            tx_list = by_account.get(acct_id, [])
-            cursor = 0
-            while cursor < len(tx_list) and tx_list[cursor][0].date() < start_date:
-                running += tx_list[cursor][1]
-                cursor += 1
+            running = opening_by_account.get(acct_id, 0.0) + prestart_by_account.get(acct_id, 0.0)
+            deltas_by_day = by_account_day.get(acct_id, {})
 
             points: list[AccountTrendPoint] = []
             for d in date_range:
-                while cursor < len(tx_list) and tx_list[cursor][0].date() <= d:
-                    running += tx_list[cursor][1]
-                    cursor += 1
+                running += deltas_by_day.get(d, 0.0)
                 points.append(AccountTrendPoint(date=d.isoformat(), balance=round(running, 2)))
 
             series.append(

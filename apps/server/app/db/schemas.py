@@ -214,6 +214,19 @@ class RecurringResponse(BaseModel):
     is_converted: bool = False
 
 
+class DashboardBootstrapResponse(BaseModel):
+    preferred_currency: str = Field(default="USD", pattern="^[A-Z]{3}$")
+    expenses: ExpensesResponse
+    period_stats: MonthlyStats
+    lifetime_stats: LifetimeStats
+    account_balances: list[AccountBalance]
+    sparkline: SparklineResponse
+    monthly_trend: MonthlyTrendResponse
+    weekday_heatmap: WeekdayHeatmapResponse
+    account_trend: AccountTrendResponse
+    recurring: RecurringResponse
+
+
 class ExpenseCreateRequest(BaseModel):
     amount: float = Field(ge=0)
     category_id: str
