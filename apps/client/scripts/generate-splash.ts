@@ -43,11 +43,12 @@ async function generateSplash() {
     // Logo size: ~15% of the smaller dimension, capped
     const logoSize = Math.round(Math.min(width, height) * 0.15);
 
-    // Invert the logo for dark background (the logo is dark, we need it light)
+    // Match the CSS dark-mode treatment: invert(1) hue-rotate(180deg) brightness(1.2)
+    // negate inverts all channels, then hue:180 restores original hues
     const resizedLogo = await sharp(logoBuffer)
       .resize(logoSize, logoSize, { fit: "inside" })
       .negate({ alpha: false })
-      .modulate({ brightness: 1.2 })
+      .modulate({ brightness: 1.2, hue: 180 })
       .toBuffer();
 
     const resizedMeta = await sharp(resizedLogo).metadata();
