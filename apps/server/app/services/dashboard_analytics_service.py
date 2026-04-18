@@ -4,9 +4,11 @@ Keeps monthly-trend, weekday-heatmap, account-trend, and recurring-detection
 queries out of the expense_service.py file, which is already large.
 """
 
+import threading
 from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
+from sqlalchemy import extract, func
 from sqlalchemy import false as sa_false
 from sqlalchemy import true as sa_true
 from sqlalchemy.orm import Session
@@ -24,17 +26,52 @@ from app.db.schemas import (
     WeekdayHeatmapResponse,
 )
 
+_user_cache: dict[str, tuple[str, datetime]] = {}
+_user_cache_lock = threading.Lock()
+USER_CACHE_TTL_SECONDS = 300  # 5 minutes
+
+
+def _get_user_currency(user_id: str, db: Session) -> tuple[str, bool]:
+    """Get user's preferred currency with caching."""
+    global _user_cache
+
+    now = datetime.now(UTC)
+    with _user_cache_lock:
+        cached = _user_cache.get(user_id)
+        if cached:
+            currency, cached_at = cached
+            if (now - cached_at).total_seconds() < USER_CACHE_TTL_SECONDS:
+                return currency, True
+
+    user = db.query(User).filter(User.id == user_id).first()
+    currency = user.preferred_currency if user else "USD"
+
+    with _user_cache_lock:
+        _user_cache[user_id] = (currency, now)
+
+    return currency, True
+
+
+def invalidate_user_cache(user_id: str | None = None) -> None:
+    """Clear user cache."""
+    global _user_cache
+    with _user_cache_lock:
+        if user_id:
+            _user_cache.pop(user_id, None)
+        else:
+            _user_cache.clear()
+
 
 def _resolve_currency(db: Session, user_id: str, override: str | None) -> tuple[str, bool]:
     if override:
         return override, False
-    user = db.query(User).filter(User.id == user_id).first()
-    return (user.preferred_currency if user else "USD"), True
+    return _get_user_currency(user_id, db)
 
 
 def _rate_map(db: Session) -> dict[str, float]:
-    rows = db.query(ExchangeRate.currency_code, ExchangeRate.rate_to_usd).all()
-    return {code: float(rate) for code, rate in rows if rate}
+    from app.services.exchange_rates import get_rates_from_db
+
+    return get_rates_from_db(db, use_cache=True)
 
 
 def _as_utc(ts: datetime) -> datetime:
@@ -64,7 +101,7 @@ class DashboardAnalyticsService:
     ) -> MonthlyTrendResponse:
         resolved, is_converted = _resolve_currency(self.db, user_id, currency)
         now = datetime.now(UTC)
-        # start of month (months-1) ago
+
         year = now.year
         month = now.month - (months - 1)
         while month <= 0:
@@ -78,35 +115,74 @@ class DashboardAnalyticsService:
             Transaction.is_opening_balance == sa_false(),
             Transaction.is_transfer == sa_false(),
         ]
+
         if currency:
-            filters.append(Transaction.currency == currency)
-
-        rows = (
-            self.db.query(
-                Transaction.timestamp,
-                Transaction.amount,
-                Transaction.currency,
-                Category.type,
+            target_rate = (
+                self.db.query(ExchangeRate.rate_to_usd)
+                .filter(ExchangeRate.currency_code == currency)
+                .scalar()
+                or 1.0
             )
-            .join(Category, Transaction.category_id == Category.id)
-            .filter(*filters)
-            .all()
-        )
 
-        rates = _rate_map(self.db) if is_converted else {}
-        buckets: dict[str, dict[str, float]] = defaultdict(lambda: {"income": 0.0, "spent": 0.0})
-        for ts, amount, ccy, cat_type in rows:
-            ts = _as_utc(ts)
-            amt = float(amount)
-            if is_converted:
-                amt = _convert(amt, ccy, resolved, rates)
-            key = f"{ts.year:04d}-{ts.month:02d}"
-            if cat_type == "income":
-                buckets[key]["income"] += amt
-            elif cat_type == "expense":
-                buckets[key]["spent"] += amt
+            rows = (
+                self.db.query(
+                    extract("year").label("year"),
+                    extract("month").label("month"),
+                    Category.type,
+                    func.sum(Transaction.amount).label("total"),
+                )
+                .join(Category, Transaction.category_id == Category.id)
+                .filter(*filters, Transaction.currency == currency)
+                .group_by(
+                    extract("year"),
+                    extract("month"),
+                    Category.type,
+                )
+                .all()
+            )
 
-        # Ensure every month in the window is represented.
+            buckets: dict[str, dict[str, float]] = defaultdict(
+                lambda: {"income": 0.0, "spent": 0.0}
+            )
+            for row_year, row_month, cat_type, total in rows:
+                key = f"{int(row_year):04d}-{int(row_month):02d}"
+                amt = float(total) if total else 0.0
+                if cat_type == "income":
+                    buckets[key]["income"] += amt
+                elif cat_type == "expense":
+                    buckets[key]["spent"] += amt
+        else:
+            rates = _rate_map(self.db)
+            target_rate = rates.get(resolved, 1.0)
+
+            rows = (
+                self.db.query(
+                    extract("year").label("year"),
+                    extract("month").label("month"),
+                    Category.type,
+                    func.sum(Transaction.amount / ExchangeRate.rate_to_usd * target_rate).label(
+                        "total"
+                    ),
+                )
+                .join(ExchangeRate, ExchangeRate.currency_code == Transaction.currency)
+                .filter(*filters)
+                .group_by(
+                    extract("year"),
+                    extract("month"),
+                    Category.type,
+                )
+                .all()
+            )
+
+            buckets = defaultdict(lambda: {"income": 0.0, "spent": 0.0})
+            for row_year, row_month, cat_type, total in rows:
+                key = f"{int(row_year):04d}-{int(row_month):02d}"
+                amt = float(total) if total else 0.0
+                if cat_type == "income":
+                    buckets[key]["income"] += amt
+                elif cat_type == "expense":
+                    buckets[key]["spent"] += amt
+
         points: list[MonthlyTrendPoint] = []
         cursor_year, cursor_month = start.year, start.month
         for _ in range(months):

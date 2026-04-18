@@ -124,6 +124,12 @@ async def update_preferred_currency(
         raise HTTPException(status_code=404, detail="User not found")
     user.preferred_currency = body.preferred_currency
     db.commit()
+
+    from app.services.dashboard_analytics_service import invalidate_user_cache
+    from app.services.expense_service import invalidate_user_cache as invalidate_expense_cache
+
+    invalidate_user_cache(user_id)
+    invalidate_expense_cache(user_id)
     return ProfileResponse(
         preferred_currency=user.preferred_currency,
         session_timeout_minutes=user.session_timeout_minutes,
@@ -214,6 +220,13 @@ async def update_preferences(
     if "timezone" in data.model_fields_set:
         user.timezone = data.timezone
     db.commit()
+
+    if data.preferred_currency is not None:
+        from app.services.dashboard_analytics_service import invalidate_user_cache
+        from app.services.expense_service import invalidate_user_cache as invalidate_expense_cache
+
+        invalidate_user_cache(user_id)
+        invalidate_expense_cache(user_id)
     return PreferencesResponse(
         preferred_currency=user.preferred_currency,
         session_timeout_minutes=user.session_timeout_minutes,
