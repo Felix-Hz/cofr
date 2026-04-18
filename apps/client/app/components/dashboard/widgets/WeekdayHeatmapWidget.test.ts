@@ -3,10 +3,10 @@ import { createRoot } from "react-dom/client";
 
 import { WeekdayHeatmapWidget } from "./WeekdayHeatmapWidget";
 
-const useDashboardData = vi.fn();
+const useDashboardWeekdayHeatmap = vi.fn();
 
 vi.mock("~/lib/dashboard/data-context", () => ({
-  useDashboardData: () => useDashboardData(),
+  useDashboardWeekdayHeatmap: () => useDashboardWeekdayHeatmap(),
 }));
 
 describe("WeekdayHeatmapWidget", () => {
@@ -17,17 +17,15 @@ describe("WeekdayHeatmapWidget", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-    useDashboardData.mockReturnValue({
-      weekdayHeatmap: {
-        currency: "NZD",
-        weeks: 3,
-        is_converted: false,
-        cells: Array.from({ length: 21 }, (_, index) => ({
-          week: Math.floor(index / 7),
-          weekday: index % 7,
-          total: index + 1,
-        })),
-      },
+    useDashboardWeekdayHeatmap.mockReturnValue({
+      currency: "NZD",
+      weeks: 3,
+      is_converted: false,
+      cells: Array.from({ length: 21 }, (_, index) => ({
+        week: Math.floor(index / 7),
+        weekday: index % 7,
+        total: index + 1,
+      })),
     });
   });
 

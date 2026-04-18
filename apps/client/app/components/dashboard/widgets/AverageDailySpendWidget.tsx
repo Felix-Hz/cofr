@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardMeta, useDashboardPeriodStats } from "~/lib/dashboard/data-context";
 import { formatCurrency } from "~/lib/utils";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -20,7 +20,8 @@ function todayAsDateOnly(now: Date): Date {
 }
 
 export function AverageDailySpendWidget() {
-  const { periodStats, startDate, endDate } = useDashboardData();
+  const periodStats = useDashboardPeriodStats();
+  const { startDate, endDate } = useDashboardMeta();
 
   const { daysElapsed, daysTotal, avgPerDay, projected, isCurrent } = useMemo(() => {
     const start = parseDateOnly(startDate);

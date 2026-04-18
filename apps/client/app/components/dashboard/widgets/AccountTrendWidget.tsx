@@ -1,5 +1,5 @@
 import { useId, useMemo } from "react";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardAccountTrend } from "~/lib/dashboard/data-context";
 import { formatCurrency } from "~/lib/utils";
 
 const VIEWBOX_W = 320;
@@ -8,7 +8,7 @@ const PAD_X = 4;
 const PAD_Y = 6;
 
 export function AccountTrendWidget() {
-  const { accountTrend } = useDashboardData();
+  const accountTrend = useDashboardAccountTrend();
   const clipId = useId();
 
   const { lines, latestTotal, deltaTotal, axisLabels } = useMemo(() => {

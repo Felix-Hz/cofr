@@ -1,8 +1,8 @@
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardPeriodStats } from "~/lib/dashboard/data-context";
 import { formatCurrency } from "~/lib/utils";
 
 export function IncomeSpendCompareWidget() {
-  const { periodStats } = useDashboardData();
+  const periodStats = useDashboardPeriodStats();
   const income = periodStats.total_income;
   const spent = periodStats.total_spent;
   const net = income - spent;

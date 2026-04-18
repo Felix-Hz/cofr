@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardAccountBalances, useDashboardMeta } from "~/lib/dashboard/data-context";
 import type { WidgetRenderProps } from "~/lib/dashboard/registry";
 import { formatCurrency } from "~/lib/utils";
 
@@ -28,7 +28,8 @@ const ACCOUNT_ICONS: Record<string, ReactElement> = {
 };
 
 export function AccountBalancesWidget({ widget }: WidgetRenderProps) {
-  const { accountBalances, preferredCurrency } = useDashboardData();
+  const accountBalances = useDashboardAccountBalances();
+  const { preferredCurrency } = useDashboardMeta();
   const total = accountBalances.reduce((sum, ab) => sum + ab.balance, 0);
   const isCompact = widget.row_span <= 1;
   const visibleBalances = isCompact ? accountBalances.slice(0, 2) : accountBalances;

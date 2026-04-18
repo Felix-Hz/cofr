@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import Tooltip from "~/components/Tooltip";
-import { useDashboardData } from "~/lib/dashboard/data-context";
+import { useDashboardMonthlyTrend } from "~/lib/dashboard/data-context";
 import { formatCurrency } from "~/lib/utils";
 
 const MONTH_LABELS = [
@@ -25,7 +25,7 @@ function formatMonth(key: string): string {
 }
 
 export function MonthlyTrendBarsWidget() {
-  const { monthlyTrend } = useDashboardData();
+  const monthlyTrend = useDashboardMonthlyTrend();
 
   const { points, max, totalIncome, totalSpent, axisLabels } = useMemo(() => {
     const pts = monthlyTrend.points;
