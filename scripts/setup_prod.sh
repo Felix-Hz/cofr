@@ -139,14 +139,26 @@ if command -v curl >/dev/null 2>&1; then
 fi
 
 echo ""
+if command -v sudo >/dev/null 2>&1; then
+    SUDO="sudo"
+else
+    SUDO=""
+fi
+
+# ── Ensure AWS CLI is installed (required by backup_postgres.sh) ──
+if ! command -v aws >/dev/null 2>&1; then
+    echo "AWS CLI not found, installing v2 from official source..."
+    $SUDO apt-get update -qq
+    $SUDO apt-get install -y -qq unzip curl
+    AWS_TMP_DIR="$(mktemp -d)"
+    curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "$AWS_TMP_DIR/awscliv2.zip"
+    (cd "$AWS_TMP_DIR" && unzip -q awscliv2.zip && $SUDO ./aws/install)
+    rm -rf "$AWS_TMP_DIR"
+    echo "AWS CLI installed: $(aws --version)"
+fi
+
 echo "Installing PostgreSQL backup systemd service..."
 if [ -d "/etc/systemd/system" ]; then
-    if command -v sudo >/dev/null 2>&1; then
-        SUDO="sudo"
-    else
-        SUDO=""
-    fi
-
     if [ -n "$SUDO" ] || [ "$(id -u)" -eq 0 ]; then
         # Copy systemd service and timer files
         $SUDO cp infra/systemd/postgres-backup.service /etc/systemd/system/
