@@ -543,7 +543,7 @@ function FloatingWidget() {
 
 function Privacy() {
   return (
-    <section className="content-defer py-20 sm:py-28 md:py-36 px-5 sm:px-6 bg-surface-elevated/50">
+    <section className="content-defer landing-band-accent py-20 sm:py-28 md:py-36 px-5 sm:px-6">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
         {/* Encryption visualization */}
         <Reveal className="order-2 lg:order-1 flex items-center justify-center">
@@ -1004,7 +1004,7 @@ function HowItWorks() {
   ];
 
   return (
-    <section className="content-defer py-20 sm:py-28 md:py-36 px-5 sm:px-6">
+    <section className="content-defer landing-band py-20 sm:py-28 md:py-36 px-5 sm:px-6">
       <div className="max-w-2xl mx-auto">
         <Reveal className="text-center mb-14 sm:mb-16">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">

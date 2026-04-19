@@ -716,6 +716,47 @@ h6 {
   animation: widgetFloat 4s ease-in-out infinite;
 }
 
+/* Landing section tonal rhythm — light mode needs deliberate shifts
+   since surface-page and surface-elevated are nearly identical (#f9fafb).
+   Dark mode already has natural depth via its distinct surface values. */
+
+.landing-band {
+  background: linear-gradient(
+    180deg,
+    rgba(226, 232, 240, 0.22) 0%,
+    rgba(226, 232, 240, 0.32) 50%,
+    rgba(226, 232, 240, 0.22) 100%
+  );
+}
+.dark .landing-band {
+  background: var(--surface-elevated);
+}
+
+.landing-band-accent {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(16, 185, 129, 0.03) 0%,
+      rgba(16, 185, 129, 0.05) 50%,
+      rgba(16, 185, 129, 0.03) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(226, 232, 240, 0.18) 0%,
+      rgba(226, 232, 240, 0.28) 50%,
+      rgba(226, 232, 240, 0.18) 100%
+    );
+}
+.dark .landing-band-accent {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(16, 185, 129, 0.03) 0%,
+      rgba(16, 185, 129, 0.05) 50%,
+      rgba(16, 185, 129, 0.03) 100%
+    ), var(--surface-elevated);
+}
+
 /* Section divider */
 .section-divider {
   height: 1px;
