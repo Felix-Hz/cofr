@@ -100,6 +100,12 @@ def setup_test_db():
     With StaticPool the same connection is reused, so we can't just drop_all
     due to FK ordering issues. Instead we delete rows from all tables.
     """
+    from app.email.rate_limit import email_rate_limiter
+    from app.rate_limit import auth_rate_limiter
+
+    auth_rate_limiter._store.clear()
+    email_rate_limiter._store.clear()
+
     Base.metadata.create_all(bind=test_engine)
     yield
     # Truncate all tables with FK checks disabled (accounts↔users has a cycle)

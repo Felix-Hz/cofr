@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy.orm import Session
@@ -25,11 +25,22 @@ from app.email.tokens import (
     validate_password_reset_token,
     validate_verification_token,
 )
+from app.rate_limit import auth_rate_limiter
 from app.services.account_service import ensure_system_accounts
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth/local", tags=["Local Auth"])
+
+
+def _client_ip(request: Request) -> str:
+    cf = request.headers.get("CF-Connecting-IP")
+    if cf:
+        return cf.strip()
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 class RegisterRequest(BaseModel):
@@ -67,8 +78,15 @@ class ResetPasswordRequest(BaseModel):
 
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def register(body: RegisterRequest, db: Session = Depends(get_db)):
+async def register(request: Request, body: RegisterRequest, db: Session = Depends(get_db)):
     """Register a new account with email and password."""
+    ip = _client_ip(request)
+    if not auth_rate_limiter.check(f"register:ip:{ip}", max_count=3, window_seconds=3600):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many registration attempts. Please try again later.",
+        )
+
     email_normalized = body.email.lower().strip()
 
     existing = (
@@ -113,9 +131,25 @@ async def register(body: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=AuthResponse)
-async def login(body: LoginRequest, db: Session = Depends(get_db)):
+async def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
     """Log in with email and password."""
     email_normalized = body.email.lower().strip()
+    ip = _client_ip(request)
+
+    # Per-IP: all attempts count — 20 per 15 min guards against credential stuffing
+    if not auth_rate_limiter.check(f"login:ip:{ip}", max_count=20, window_seconds=900):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Please try again later.",
+        )
+
+    # Per-account: peek without recording — only failed password checks count (OWASP standard)
+    account_key = f"login:email:{email_normalized}"
+    if not auth_rate_limiter.is_allowed(account_key, max_count=5, window_seconds=900):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts for this account. Please try again later.",
+        )
 
     auth_provider = (
         db.query(AuthProvider)
@@ -127,12 +161,14 @@ async def login(body: LoginRequest, db: Session = Depends(get_db)):
     )
 
     if not auth_provider or not auth_provider.password_hash:
+        auth_rate_limiter.record(account_key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
 
     if not verify_password(body.password, auth_provider.password_hash):
+        auth_rate_limiter.record(account_key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",

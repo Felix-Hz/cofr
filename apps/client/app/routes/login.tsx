@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, redirect, useNavigate, useSearchParams } from "react-router";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
-import { loginWithEmail, registerWithEmail } from "~/lib/api";
+import { ApiError, loginWithEmail, registerWithEmail } from "~/lib/api";
 import { isAuthenticated, saveToken } from "~/lib/auth";
 import { isPasswordValid } from "~/lib/password";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const LOCKOUT_DURATION_S = 15 * 60;
 
 export function meta() {
   return [{ title: "cofr — Login" }];
@@ -17,6 +19,43 @@ export async function clientLoader() {
     throw redirect("/dashboard");
   }
   return null;
+}
+
+function lockoutKey(mode: "signin" | "signup") {
+  return `cofr_lockout_${mode}`;
+}
+
+function readLockout(mode: "signin" | "signup"): number | null {
+  try {
+    const raw = localStorage.getItem(lockoutKey(mode));
+    if (!raw) return null;
+    const until = parseInt(raw, 10);
+    if (isNaN(until) || until <= Date.now()) {
+      localStorage.removeItem(lockoutKey(mode));
+      return null;
+    }
+    return until;
+  } catch {
+    return null;
+  }
+}
+
+function writeLockout(mode: "signin" | "signup", until: number) {
+  try {
+    localStorage.setItem(lockoutKey(mode), String(until));
+  } catch {}
+}
+
+function clearLockout(mode: "signin" | "signup") {
+  try {
+    localStorage.removeItem(lockoutKey(mode));
+  } catch {}
+}
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
 export default function Login() {
@@ -33,6 +72,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(errorParam);
   const [notice, setNotice] = useState<string | null>(null);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => readLockout("signin"));
+  const [lockoutRemaining, setLockoutRemaining] = useState<number>(0);
 
   useEffect(() => {
     document.title = `cofr — ${mode === "signin" ? "Login" : "Sign up"}`;
@@ -56,8 +97,38 @@ export default function Login() {
     }
   }, [verifiedParam, resetParam]);
 
+  // Re-check localStorage lockout when mode changes
+  useEffect(() => {
+    const until = readLockout(mode);
+    setLockoutUntil(until);
+    if (until) {
+      setLockoutRemaining(Math.max(0, Math.ceil((until - Date.now()) / 1000)));
+    } else {
+      setLockoutRemaining(0);
+    }
+  }, [mode]);
+
+  // Countdown ticker
+  useEffect(() => {
+    if (!lockoutUntil) return;
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((lockoutUntil - Date.now()) / 1000));
+      setLockoutRemaining(remaining);
+      if (remaining <= 0) {
+        setLockoutUntil(null);
+        clearLockout(mode);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lockoutUntil, mode]);
+
+  const isLocked = lockoutUntil !== null && lockoutRemaining > 0;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocked) return;
     setError(null);
     setLoading(true);
 
@@ -70,11 +141,25 @@ export default function Login() {
       saveToken(result.token);
       navigate("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      if (err instanceof ApiError && err.status === 429) {
+        const until = Date.now() + LOCKOUT_DURATION_MS;
+        writeLockout(mode, until);
+        setLockoutUntil(until);
+        setLockoutRemaining(LOCKOUT_DURATION_S);
+        setError(err.message);
+      } else {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      }
       setNotice(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  const switchMode = (next: "signin" | "signup") => {
+    setMode(next);
+    setError(null);
+    setNotice(null);
   };
 
   return (
@@ -109,38 +194,72 @@ export default function Login() {
           <div className="auth-mode-toggle">
             <button
               type="button"
-              onClick={() => {
-                setMode("signin");
-                setError(null);
-                setNotice(null);
-              }}
+              onClick={() => switchMode("signin")}
               className={`auth-mode-toggle__button ${mode === "signin" ? "is-active" : ""}`}
             >
               Sign in
             </button>
             <button
               type="button"
-              onClick={() => {
-                setMode("signup");
-                setError(null);
-                setNotice(null);
-              }}
+              onClick={() => switchMode("signup")}
               className={`auth-mode-toggle__button ${mode === "signup" ? "is-active" : ""}`}
             >
               Create account
             </button>
           </div>
 
-          {error && (
-            <div className="rounded-lg border border-negative-text/25 bg-negative-bg px-4 py-3 text-sm text-negative-text">
-              <p>{error}</p>
+          {isLocked ? (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/8 px-4 py-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 shrink-0 text-amber-400">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="h-5 w-5"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-amber-300">
+                    {mode === "signin" ? "Sign-in" : "Registration"} temporarily locked
+                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-amber-400/80">{error}</p>
+                  <div className="mt-3 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-amber-500/70">Retry available in</span>
+                      <span className="font-mono text-sm font-bold tabular-nums text-amber-300">
+                        {formatTime(lockoutRemaining)}
+                      </span>
+                    </div>
+                    <div className="h-1 overflow-hidden rounded-full bg-amber-900/40">
+                      <div
+                        className="h-full rounded-full bg-amber-500 transition-[width] duration-1000 ease-linear"
+                        style={{ width: `${(lockoutRemaining / LOCKOUT_DURATION_S) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-
-          {notice && (
-            <div className="rounded-lg border border-positive-border bg-positive-bg px-4 py-3 text-sm text-positive-text">
-              <p>{notice}</p>
-            </div>
+          ) : (
+            <>
+              {error && (
+                <div className="rounded-lg border border-negative-text/25 bg-negative-bg px-4 py-3 text-sm text-negative-text">
+                  <p>{error}</p>
+                </div>
+              )}
+              {notice && (
+                <div className="rounded-lg border border-positive-border bg-positive-bg px-4 py-3 text-sm text-positive-text">
+                  <p>{notice}</p>
+                </div>
+              )}
+            </>
           )}
 
           <a href={`${API_BASE_URL}/auth/oauth/google/login`} className="auth-provider-button">
@@ -182,6 +301,7 @@ export default function Login() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
                   className="auth-input"
+                  disabled={isLocked}
                 />
               </div>
             )}
@@ -198,6 +318,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="auth-input"
+                disabled={isLocked}
               />
             </div>
 
@@ -209,7 +330,7 @@ export default function Login() {
                 {mode === "signin" && (
                   <Link
                     to="/forgot-password"
-                    className="text-xs font-semibold text-emerald hover:text-emerald-hover transition-colors"
+                    className="text-xs font-semibold text-emerald transition-colors hover:text-emerald-hover"
                   >
                     Forgot password?
                   </Link>
@@ -222,19 +343,36 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={mode === "signup" ? "At least 8 characters" : "Your password"}
                 className="auth-input"
+                disabled={isLocked}
               />
               {mode === "signup" && <PasswordRequirements password={password} />}
             </div>
 
             <button
               type="submit"
-              disabled={loading || (mode === "signup" && !isPasswordValid(password))}
+              disabled={loading || isLocked || (mode === "signup" && !isPasswordValid(password))}
               className="auth-submit-button"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
                   {mode === "signin" ? "Signing in..." : "Creating account..."}
+                </span>
+              ) : isLocked ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="h-4 w-4"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1Zm3 8V5.5a3 3 0 1 0-6 0V9h6Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Locked — {formatTime(lockoutRemaining)}
                 </span>
               ) : mode === "signin" ? (
                 "Sign in"
@@ -249,12 +387,8 @@ export default function Login() {
               {mode === "signin" ? "Need a new account?" : "Already set up?"}{" "}
               <button
                 type="button"
-                onClick={() => {
-                  setMode(mode === "signin" ? "signup" : "signin");
-                  setError(null);
-                  setNotice(null);
-                }}
-                className="font-semibold text-emerald hover:text-emerald-hover transition-colors"
+                onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
+                className="font-semibold text-emerald transition-colors hover:text-emerald-hover"
               >
                 {mode === "signin" ? "Create one" : "Sign in"}
               </button>
