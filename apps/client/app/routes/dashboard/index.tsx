@@ -1467,6 +1467,7 @@ export default function Dashboard() {
           expense={selectedExpense}
           isLoading={isLoading}
           onMakeRecurring={handleMakeRecurring}
+          defaultCurrency={preferredCurrency}
         />
         <TransferFormModal
           isOpen={isTransferModalOpen}
@@ -1476,6 +1477,7 @@ export default function Dashboard() {
           expense={selectedExpense}
           isLoading={isLoading}
           onMakeRecurring={handleMakeRecurring}
+          defaultCurrency={preferredCurrency}
         />
         <RecurringFormModal
           isOpen={isRecurringModalOpen}
@@ -1486,6 +1488,7 @@ export default function Dashboard() {
           onSubmit={handleRecurringSubmit}
           prefill={recurringPrefill}
           isLoading={isRecurringLoading}
+          defaultCurrency={preferredCurrency}
         />
         <DeleteConfirmModal
           isOpen={isDeleteModalOpen}

@@ -21,6 +21,7 @@ interface RecurringFormModalProps {
   isLoading?: boolean;
   /** Optional prefill from "make recurring" hand-off in another modal. */
   prefill?: Partial<RecurringRuleCreate> | null;
+  defaultCurrency?: string;
 }
 
 type CadencePreset = "weekly" | "fortnightly" | "monthly" | "yearly" | "custom";
@@ -73,6 +74,7 @@ export default function RecurringFormModal({
   rule,
   isLoading = false,
   prefill,
+  defaultCurrency = "USD",
 }: RecurringFormModalProps) {
   const { activeCategories } = useCategories();
   const { accounts } = useAccounts();
@@ -80,7 +82,7 @@ export default function RecurringFormModal({
   const [type, setType] = useState<RecurringRuleType>("expense");
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(defaultCurrency);
   const [accountId, setAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -146,7 +148,7 @@ export default function RecurringFormModal({
     setType(initialType);
     setName(prefill?.name ?? "");
     setAmount(prefill?.amount != null ? String(prefill.amount) : "");
-    setCurrency(prefill?.currency ?? "USD");
+    setCurrency(prefill?.currency ?? defaultCurrency);
     setAccountId(prefill?.account_id ?? defaultAccountId);
     setToAccountId(prefill?.to_account_id ?? "");
     setCategoryId(
