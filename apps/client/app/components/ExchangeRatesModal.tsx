@@ -117,7 +117,7 @@ export default function ExchangeRatesModal({
                 {updatedAt && (
                   <p className="text-[11px] text-content-tertiary">{formatUpdatedAt(updatedAt)}</p>
                 )}
-                <p className="text-[11px] text-content-tertiary">Source: frankfurter.app</p>
+                <p className="text-[11px] text-content-tertiary">Source: exchangerate-api.com</p>
               </div>
             </>
           ) : (
