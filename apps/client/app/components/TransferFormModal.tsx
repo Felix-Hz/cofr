@@ -15,6 +15,7 @@ interface TransferFormModalProps {
   expense?: Expense | null;
   isLoading?: boolean;
   onMakeRecurring?: (prefill: Partial<RecurringRuleCreate>) => void;
+  defaultCurrency?: string;
 }
 
 export default function TransferFormModal({
@@ -25,6 +26,7 @@ export default function TransferFormModal({
   expense,
   isLoading = false,
   onMakeRecurring,
+  defaultCurrency = "USD",
 }: TransferFormModalProps) {
   const { accounts } = useAccounts();
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([]);
@@ -32,7 +34,7 @@ export default function TransferFormModal({
   const [toAccountId, setToAccountId] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(defaultCurrency);
   const [date, setDate] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -88,7 +90,7 @@ export default function TransferFormModal({
       setToAccountId(defaultToAccountId);
       setAmount("");
       setDescription("");
-      setCurrency("USD");
+      setCurrency(defaultCurrency);
       setShowDeleteConfirm(false);
       const now = new Date();
       const pad = (n: number) => n.toString().padStart(2, "0");

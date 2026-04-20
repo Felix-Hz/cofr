@@ -14,6 +14,7 @@ interface ExpenseFormModalProps {
   expense?: Expense | null;
   isLoading?: boolean;
   onMakeRecurring?: (prefill: Partial<RecurringRuleCreate>) => void;
+  defaultCurrency?: string;
 }
 
 export default function ExpenseFormModal({
@@ -24,6 +25,7 @@ export default function ExpenseFormModal({
   expense,
   isLoading = false,
   onMakeRecurring,
+  defaultCurrency = "USD",
 }: ExpenseFormModalProps) {
   const { activeCategories } = useCategories();
   const { accounts } = useAccounts();
@@ -33,7 +35,7 @@ export default function ExpenseFormModal({
   const [accountId, setAccountId] = useState("");
   const [description, setDescription] = useState("");
   const [merchant, setMerchant] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState(defaultCurrency);
   const [date, setDate] = useState("");
   const [isOpeningBalance, setIsOpeningBalance] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -82,7 +84,7 @@ export default function ExpenseFormModal({
       setAccountId(defaultAccountId);
       setDescription("");
       setMerchant("");
-      setCurrency("USD");
+      setCurrency(defaultCurrency);
       setIsOpeningBalance(false);
       setShowDeleteConfirm(false);
       const now = new Date();

@@ -521,7 +521,7 @@ export default function Settings() {
       setNewAccountName("");
       setNewAccountType("checking");
       setNewAccountStartingBalance("");
-      setNewAccountCurrency("USD");
+      setNewAccountCurrency(preferredCurrency);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create account");
     } finally {
@@ -564,7 +564,7 @@ export default function Settings() {
       await refreshAccounts();
       setBalanceAccountId(null);
       setBalanceAmount("");
-      setBalanceCurrency("USD");
+      setBalanceCurrency(preferredCurrency);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set balance");
     } finally {
@@ -598,6 +598,8 @@ export default function Settings() {
     try {
       const prefs = await getPreferences();
       setPreferredCurrency(prefs.preferred_currency);
+      setNewAccountCurrency(prefs.preferred_currency);
+      setBalanceCurrency(prefs.preferred_currency);
       setSessionTimeout(prefs.session_timeout_minutes);
       setDefaultAccountId(prefs.default_account_id ?? null);
       localStorage.setItem("cofr_default_account_id", prefs.default_account_id ?? "");
@@ -1033,7 +1035,7 @@ export default function Settings() {
                             onClick={() => {
                               setBalanceAccountId(acct.id);
                               setBalanceAmount("");
-                              setBalanceCurrency("USD");
+                              setBalanceCurrency(preferredCurrency);
                               setAcctMenuOpen(null);
                             }}
                             className="w-full px-3 py-2 text-left text-xs font-medium text-emerald hover:bg-surface-hover"
@@ -1213,7 +1215,7 @@ export default function Settings() {
                               onClick={() => {
                                 setBalanceAccountId(acct.id);
                                 setBalanceAmount("");
-                                setBalanceCurrency("USD");
+                                setBalanceCurrency(preferredCurrency);
                                 setAcctMenuOpen(null);
                               }}
                               className="w-full px-3 py-2 text-left text-xs font-medium text-emerald hover:bg-surface-hover"
@@ -1342,7 +1344,7 @@ export default function Settings() {
                     setNewAccountName("");
                     setNewAccountType("checking");
                     setNewAccountStartingBalance("");
-                    setNewAccountCurrency("USD");
+                    setNewAccountCurrency(preferredCurrency);
                   }}
                   className="text-xs font-medium text-content-tertiary px-2 py-1.5"
                 >
@@ -1877,6 +1879,7 @@ export default function Settings() {
         onDelete={editingRule ? handleRecurringDelete : undefined}
         rule={editingRule}
         isLoading={recurringLoading}
+        defaultCurrency={preferredCurrency}
       />
 
       <CategoryFormModal
