@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_CURRENCIES = ["NZD", "EUR", "USD", "GBP", "AUD", "BRL", "ARS", "COP", "JPY"]
 
-FRANKFURTER_URL = "https://api.frankfurter.dev/v1/latest?from=USD"
+EXCHANGE_RATE_URL = "https://open.er-api.com/v6/latest/USD"
 
 _rates_cache: dict[str, float] | None = None
 _rates_cache_updated_at: datetime | None = None
@@ -89,16 +89,16 @@ def convert(amount: float, from_currency: str, to_currency: str, rates: dict[str
 
 
 def refresh_rates_in_db(db: Session) -> bool:
-    """Fetch latest rates from frankfurter.app and upsert into DB.
+    """Fetch latest rates from exchangerate-api.com and upsert into DB.
 
     Returns True on success, False on failure (DB keeps last known values).
     """
     try:
-        resp = httpx.get(FRANKFURTER_URL, timeout=10, follow_redirects=True)
+        resp = httpx.get(EXCHANGE_RATE_URL, timeout=10, follow_redirects=True)
         resp.raise_for_status()
         data = resp.json()
         api_rates: dict[str, float] = data.get("rates", {})
-        api_rates["USD"] = 1.0  # frankfurter omits the base currency
+        api_rates["USD"] = 1.0  # base currency omitted from response
 
         now = datetime.now(UTC)
         for code in SUPPORTED_CURRENCIES:
