@@ -22,8 +22,8 @@ def _verify_webhook_signature(request: Request, body: bytes) -> bool:
     """Verify Resend webhook signature using Svix."""
     secret = settings.RESEND_WEBHOOK_SECRET
     if not secret:
-        logger.warning("RESEND_WEBHOOK_SECRET not configured — skipping signature verification")
-        return True
+        logger.warning("RESEND_WEBHOOK_SECRET not configured — rejecting webhook")
+        return False
 
     try:
         from svix.webhooks import Webhook

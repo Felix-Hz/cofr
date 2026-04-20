@@ -1,9 +1,20 @@
 """Webhook tests: Resend event parsing, bounce/complaint handling, suppression."""
 
 import json
+from unittest.mock import patch
+
+import pytest
 
 from app.db.models import EmailEvent, EmailSuppression
 from app.routers.webhooks import _hash_email
+
+
+@pytest.fixture(autouse=True)
+def bypass_webhook_signature():
+    """Bypass Svix signature verification in all webhook tests."""
+    with patch("app.routers.webhooks._verify_webhook_signature", return_value=True):
+        yield
+
 
 # ── Bounce → event + suppression ──
 
