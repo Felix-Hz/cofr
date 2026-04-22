@@ -232,7 +232,7 @@ function Nav() {
           </Link>
           <Link
             to="/login?mode=signup"
-            className="h-9 px-4 sm:px-5 inline-flex items-center text-[13px] font-medium text-white bg-emerald hover:bg-emerald-hover rounded-lg transition-colors"
+            className="h-9 px-4 sm:px-5 inline-flex items-center text-[13px] font-medium text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors"
           >
             Get Started
           </Link>
@@ -280,7 +280,7 @@ function Hero() {
         <div className="hero-enter hero-enter-d3 mt-9 sm:mt-11 flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-center gap-3 w-full sm:w-auto">
           <Link
             to="/login?mode=signup"
-            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-semibold text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
+            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-semibold text-white bg-accent hover:bg-accent-hover rounded-xl transition-colors"
           >
             Start building
           </Link>
@@ -814,10 +814,9 @@ function Features() {
           return (
             <div
               key={f.eyebrow}
-              className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center ${reversed ? "lg:direction-rtl" : ""}`}
-              style={reversed ? { direction: "rtl" } : undefined}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
             >
-              <div style={reversed ? { direction: "ltr" } : undefined}>
+              <div className={reversed ? "lg:order-2" : ""}>
                 <Reveal>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
                     {f.eyebrow}
@@ -834,11 +833,7 @@ function Features() {
                   </p>
                 </Reveal>
               </div>
-              <Reveal
-                delay={2}
-                className={reversed ? "direction-ltr" : ""}
-                style={reversed ? { direction: "ltr" } : undefined}
-              >
+              <Reveal delay={2} className={reversed ? "lg:order-1" : ""}>
                 <FeatureVisual type={f.visual} />
               </Reveal>
             </div>
@@ -1045,6 +1040,166 @@ function HowItWorks() {
   );
 }
 
+// --- Self-Host Section ---
+
+function SelfHostSection() {
+  type Platform = "unix" | "windows";
+  const [platform, setPlatform] = useState<Platform>("unix");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    const pl = navigator.platform?.toLowerCase() ?? "";
+    if (pl.includes("win") || ua.includes("windows")) setPlatform("windows");
+  }, []);
+
+  const tabs: { id: Platform; label: string; cmd: string; note: string }[] = [
+    {
+      id: "unix",
+      label: "Linux / macOS",
+      cmd: "curl -fsSL https://cofr.cash/install.sh | bash",
+      note: "Requires Docker — apt install docker.io on Linux, Docker Desktop on macOS",
+    },
+    {
+      id: "windows",
+      label: "Windows",
+      cmd: "irm https://cofr.cash/install.ps1 | iex",
+      note: "Requires Docker Desktop for Windows — run in PowerShell as Administrator",
+    },
+  ];
+
+  const activeTab = tabs.find((t) => t.id === platform)!;
+
+  const copy = () => {
+    navigator.clipboard.writeText(activeTab.cmd).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  const perks = [
+    "Generates secrets automatically",
+    "Auto-HTTPS via Let's Encrypt (bring your domain)",
+    "Runs in about 2 minutes",
+    "All data stays on your machine",
+  ];
+
+  return (
+    <section className="content-defer landing-band-accent py-20 sm:py-28 md:py-36 px-5 sm:px-6 relative">
+      <div
+        className="section-divider absolute top-0 left-1/2 -translate-x-1/2 w-64"
+        aria-hidden="true"
+      />
+      <div className="max-w-2xl mx-auto">
+        <Reveal className="text-center mb-12 sm:mb-14">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
+            Open source
+          </p>
+          <h2 className="text-[2rem] sm:text-[2.5rem] md:text-[3rem] font-bold tracking-[-0.03em] text-content-heading leading-[1.08] mb-4">
+            Self-host in minutes.
+          </h2>
+          <p className="text-[15px] sm:text-base text-content-secondary max-w-lg mx-auto leading-relaxed">
+            Own your data. No cloud accounts or API keys required. No tracking.
+          </p>
+        </Reveal>
+
+        <Reveal delay={1}>
+          {/* Platform tabs */}
+          <div className="flex gap-1 p-1 bg-surface-elevated rounded-xl border border-edge-default mb-4 w-full sm:w-fit sm:mx-auto">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setPlatform(t.id)}
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-[13px] font-medium rounded-lg transition-colors ${
+                  platform === t.id
+                    ? "bg-surface-primary text-content-primary shadow-sm"
+                    : "text-content-tertiary hover:text-content-secondary"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Code block */}
+          <div className="bg-surface-elevated rounded-xl border border-edge-strong overflow-hidden flex items-center gap-3 px-4 py-3">
+            <div className="overflow-x-auto flex-1 min-w-0">
+              <code className="text-[13px] sm:text-sm font-mono text-content-primary whitespace-nowrap select-all">
+                <span className="text-accent font-semibold">
+                  {platform === "windows" ? ">" : "$"}
+                </span>{" "}
+                {activeTab.cmd}
+              </code>
+            </div>
+            <button
+              type="button"
+              onClick={copy}
+              aria-label={copied ? "Copied!" : "Copy install command"}
+              className={`shrink-0 flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 rounded-md transition-all duration-200 ${
+                copied
+                  ? "bg-accent-soft-bg text-accent-soft-text"
+                  : "bg-surface-hover text-content-muted hover:text-content-primary hover:bg-edge-default"
+              }`}
+            >
+              {copied ? (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <path
+                      d="M2 7L5 10L11 3"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Copied
+                </>
+              ) : (
+                <>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <rect
+                      x="4.5"
+                      y="1.5"
+                      width="7"
+                      height="8.5"
+                      rx="1.25"
+                      stroke="currentColor"
+                      strokeWidth="1.25"
+                    />
+                    <path
+                      d="M2.5 4.5H2A1.5 1.5 0 0 0 .5 6v5A1.5 1.5 0 0 0 2 12.5h5A1.5 1.5 0 0 0 8.5 11v-.5"
+                      stroke="currentColor"
+                      strokeWidth="1.25"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Prereq note */}
+          <p className="text-[12px] text-content-muted text-left sm:text-center mt-3 leading-relaxed">
+            {activeTab.note}
+          </p>
+
+          {/* Perks */}
+          <ul className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {perks.map((p) => (
+              <li key={p} className="flex items-center gap-3 text-[14px] text-content-secondary">
+                <span className="text-accent font-bold shrink-0">✓</span>
+                {p}
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 // --- Final CTA ---
 
 function FinalCTA() {
@@ -1068,7 +1223,7 @@ function FinalCTA() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-center gap-3">
           <Link
             to="/login?mode=signup"
-            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-semibold text-white bg-emerald hover:bg-emerald-hover rounded-xl transition-colors"
+            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-semibold text-white bg-accent hover:bg-accent-hover rounded-xl transition-colors"
           >
             Start building for free
           </Link>
@@ -1116,6 +1271,7 @@ export default function Index() {
         <Privacy />
         <Features />
         <HowItWorks />
+        <SelfHostSection />
         <FinalCTA />
       </main>
       <Footer />

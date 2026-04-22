@@ -1,0 +1,24 @@
+{
+    admin off
+}
+
+{$COFR_DOMAIN:localhost} {
+    handle /api/* {
+        uri strip_prefix /api
+        reverse_proxy server:5784 {
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+    handle /health {
+        reverse_proxy server:5784
+    }
+    handle {
+        reverse_proxy client:3000 {
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+    log {
+        output stdout
+        format json
+    }
+}

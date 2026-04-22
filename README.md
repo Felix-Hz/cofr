@@ -1,71 +1,68 @@
-# <img width="25" height="25" alt="cofr" src="https://github.com/user-attachments/assets/574a7125-4c7a-4697-9080-7b3636e6f5ee" /> _**cofr**_
+# <img width="20" height="20" alt="cofr" src="https://github.com/user-attachments/assets/574a7125-4c7a-4697-9080-7b3636e6f5ee" /> cofr
 
-<img width="1536" height="649" alt="banner" src="https://github.com/user-attachments/assets/73ab85f0-9a72-481b-b185-cd4f06ccb41e" />
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
+[![CI](https://github.com/felix-hz/cofr/actions/workflows/ci.yml/badge.svg)](https://github.com/felix-hz/cofr/actions)
 
+Personal finance tracker. Self-host in seconds, or use [cofr.cash](https://cofr.cash).
 
-## Structure
-
-```
-cofr/
-├── apps/
-│   ├── server/      # FastAPI backend (Python, internal port 5784)
-│   └── client/      # Web dashboard (React Router 7 / Bun, internal port 3000)
-├── infra/           # Docker Compose, Caddyfiles, Cloudflare Tunnel config
-└── scripts/         # Dev/prod setup helpers
-```
-
-## Quick Start
-
-### Prerequisites
-
-- Docker & Docker Compose
-- Environment files: copy `.env.example` values into `apps/server/.env`,
-  `apps/client/.env`
-- Generate a Fernet encryption key for the server:
-  ```bash
-  python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-  ```
-
-### Local development (Docker)
+## Self-hosting
 
 ```bash
-./scripts/setup_dev.sh
+curl -fsSL https://cofr.cash/install.sh | bash
 ```
 
-Dev entrypoints:
+Bring your own domain or run on localhost. The installer auto-generates all secrets, pulls pre-built images, and starts everything via Docker Compose. No accounts, no telemetry.
 
-- App: `http://localhost:8080`
-- API: `http://localhost:8080/api`
-- API health: `http://localhost:8080/health`
+**Optional:** set `COFR_DOMAIN=yourdomain.com` before running to get automatic HTTPS via Let's Encrypt.
 
-OAuth in Docker dev uses the public dev API URL from `apps/server/.dev.env`:
+See [`scripts/install.sh`](scripts/install.sh) for the full installer source.
 
-- `API_URL=http://localhost:8080/api`
-- Google redirect URI: `http://localhost:8080/api/auth/oauth/google/callback`
+## Hosted
 
-### Production (Docker)
+[cofr.cash](https://cofr.cash) runs the same open-source codebase. Free tier available.
+
+## Features
+
+- Expense tracking with accounts, categories, and inter-account transfers
+- Composable dashboard - drag widgets into place
+- Multi-currency support with daily exchange rate updates
+- CSV, XLSX, and PDF exports (Rust-accelerated via PyO3)
+- Google OAuth + email/password auth, email verification
+- PII encrypted at rest (Fernet). No telemetry unless you opt in.
+
+## Architecture
+
+```
+Client (React Router 7)
+    |
+   Caddy (reverse proxy, auto-HTTPS)
+    |-- /api/*  --> Server (FastAPI, port 5784)
+    |-- /*      --> Client (Bun SSR, port 3000)
+                        |
+                   PostgreSQL 16
+```
+
+Deployed via Docker Compose. Self-hosted variant uses `docker-compose.selfhost.yml` (direct ports, no Cloudflare Tunnel). Production variant at cofr.cash adds Cloudflare Tunnel + S3-backed Postgres.
+
+## Development
 
 ```bash
-./scripts/setup_prod.sh
+./scripts/setup_dev.sh          # hot-reload dev stack at http://localhost:8080
+cd apps/server && uv run pytest # 131 server tests
+cd apps/scribe && cargo test    # 25 Rust serialization tests
+cd apps/client && bun run test  # 54 client tests
 ```
 
-## Services
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for prerequisites and PR guidelines.
 
-| Service     | Tech                              | Port | Description                                      |
-| ----------- | --------------------------------- | ---- | ------------------------------------------------ |
-| server      | Python / FastAPI                  | 5784 | REST API for expenses, auth, accounts            |
-| client      | TypeScript / React Router 7 / Bun | 3000 | Web dashboard with SSR                           |
-| caddy       | Caddy 2                           | 8080 in dev, 80/443 in prod | Reverse proxy (`/api/*` → server, `/*` → client) |
-| cloudflared | Cloudflare Tunnel                 | —    | Exposes services at `cofr.cash`                  |
+## Contributing
 
-## Database
-
-All services share a PostgreSQL database, running as a Docker Compose service.
-Connection configured via `DATABASE_URL` in each app's `.env`.
+Pull requests welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Security
 
-- UUID primary keys prevent ID enumeration
-- PII encrypted at rest (Fernet symmetric encryption)
-- OAuth email auto-linking disabled
-- CORS restricted to `FRONTEND_URL`
+No telemetry by default. See [`SECURITY.md`](SECURITY.md) for the disclosure process and data protection details.
+
+## License
+
+[AGPL-3.0](LICENSE)
