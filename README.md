@@ -17,6 +17,22 @@ Bring your own domain or run on localhost. The installer auto-generates all secr
 
 See [`scripts/install.sh`](scripts/install.sh) for the full installer source.
 
+## Updating
+
+Re-run the installer — it is safe to run on an existing installation:
+
+```bash
+curl -fsSL https://cofr.cash/install.sh | bash
+```
+
+Env files are never overwritten. Images are pulled fresh and services restarted with zero data loss.
+
+To pin a specific release:
+
+```bash
+COFR_VERSION=2026.3.0 curl -fsSL https://cofr.cash/install.sh | bash
+```
+
 ## Hosted
 
 [cofr.cash](https://cofr.cash) runs the same open-source codebase. Free tier available.

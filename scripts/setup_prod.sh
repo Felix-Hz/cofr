@@ -1,4 +1,6 @@
 #!/bin/bash
+# This script deploys the cofr.cash hosted service from this repo.
+# Self-hosters: use scripts/install.sh instead.
 set -e
 
 echo "=== Cofr — Production Deployment ==="
@@ -69,8 +71,8 @@ fi
 
 # ── Warnings ────────────────────────────────────────────────
 FRONTEND_URL=$(grep "^FRONTEND_URL=" apps/server/.prod.env 2>/dev/null | cut -d'=' -f2-)
-if [ "$FRONTEND_URL" != "https://cofr.cash" ]; then
-    echo "Warning: FRONTEND_URL in .prod.env is '$FRONTEND_URL' (expected 'https://cofr.cash')"
+if [ -z "$FRONTEND_URL" ]; then
+    echo "Warning: FRONTEND_URL in apps/server/.prod.env is not set"
 fi
 
 ENV_VAL=$(grep "^ENV=" apps/server/.prod.env 2>/dev/null | cut -d'=' -f2-)

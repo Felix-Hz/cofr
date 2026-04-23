@@ -14,9 +14,12 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # Registration — set to false to close sign-ups on personal/private instances
+    REGISTRATION_ENABLED: bool = True
+
     # Email — Resend
     RESEND_API_KEY: str = ""
-    EMAIL_FROM_ADDRESS: str = "hello@cofr.cash"
+    EMAIL_FROM_ADDRESS: str = ""
     EMAIL_FROM_NAME: str = "cofr"
     RESEND_WEBHOOK_SECRET: str = ""
 

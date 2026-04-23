@@ -34,12 +34,14 @@ router = APIRouter(prefix="/auth/local", tags=["Local Auth"])
 
 
 def _client_ip(request: Request) -> str:
+    # X-Real-IP is set by Caddy to the real connection IP (selfhost/dev, not spoofable by clients)
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    # CF-Connecting-IP is set by Cloudflare (prod deployment behind cloudflared)
     cf = request.headers.get("CF-Connecting-IP")
     if cf:
         return cf.strip()
-    forwarded = request.headers.get("X-Forwarded-For")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
 
 
@@ -85,6 +87,12 @@ async def register(request: Request, body: RegisterRequest, db: Session = Depend
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many registration attempts. Please try again later.",
+        )
+
+    if not settings.REGISTRATION_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration is disabled on this instance.",
         )
 
     email_normalized = body.email.lower().strip()

@@ -12,13 +12,18 @@
     handle /api/* {
         uri strip_prefix /api
         reverse_proxy server:5784 {
+            # Override XFF so the client can't inject a spoofed value.
+            # CF-Connecting-IP is passed through untouched — Cloudflare sets it.
+            header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto https
         }
     }
 
     # Health check endpoint (direct to API)
     handle /health {
-        reverse_proxy server:5784
+        reverse_proxy server:5784 {
+            header_up X-Forwarded-For {remote_host}
+        }
     }
 
     # Frontend - everything else (React Router SSR)

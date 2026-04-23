@@ -3,7 +3,11 @@ set -euo pipefail
 
 COFR_VERSION="${COFR_VERSION:-latest}"
 INSTALL_DIR="${COFR_DIR:-$HOME/.cofr}"
-GITHUB_RAW="https://raw.githubusercontent.com/felix-hz/cofr/main"
+# Use the version tag as the git ref so compose files match the running images.
+# "latest" maps to main; a pinned version (e.g. 2025.4.0) uses that tag directly.
+GIT_REF="main"
+[[ "$COFR_VERSION" != "latest" ]] && GIT_REF="$COFR_VERSION"
+GITHUB_RAW="https://raw.githubusercontent.com/felix-hz/cofr/${GIT_REF}"
 
 bold()  { printf "\033[1m%s\033[0m\n" "$*"; }
 green() { printf "\033[32m%s\033[0m\n" "$*"; }
@@ -86,9 +90,7 @@ docker compose -p cofr \
   up -d
 
 # --- health check ---
-PORT=80
-[[ "${COFR_DOMAIN:-localhost}" == "localhost" ]] && PORT=80
-HEALTH_URL="http://localhost:${PORT}/health"
+HEALTH_URL="http://localhost:80/health"
 
 dim "  waiting for cofr to be ready..."
 for i in $(seq 1 15); do

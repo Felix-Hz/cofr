@@ -37,16 +37,35 @@ if [ -n "$S3_ENDPOINT_URL" ]; then
     AWS_CLI_BASE="$AWS_CLI_BASE --endpoint-url $S3_ENDPOINT_URL"
 fi
 
-# Validate required environment variables
+# Validate required environment variables.
+# At least one backup destination (S3 or local path) must be configured.
 MISSING_VARS=()
-for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY BACKUP_S3_BUCKET POSTGRES_USER POSTGRES_DB; do
+for var in POSTGRES_USER POSTGRES_DB; do
     if [ -z "${!var:-}" ]; then
         MISSING_VARS+=("$var")
     fi
 done
 
+HAS_S3=true
+for var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY BACKUP_S3_BUCKET; do
+    if [ -z "${!var:-}" ]; then
+        HAS_S3=false
+        break
+    fi
+done
+
+HAS_LOCAL=false
+[ -n "${BACKUP_LOCAL_PATH:-}" ] && HAS_LOCAL=true
+
 if [ ${#MISSING_VARS[@]} -gt 0 ]; then
     echo "Error: Missing required environment variables: ${MISSING_VARS[*]}"
+    exit 1
+fi
+
+if ! $HAS_S3 && ! $HAS_LOCAL; then
+    echo "Error: No backup destination configured."
+    echo "  Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and BACKUP_S3_BUCKET for S3 backups."
+    echo "  Or set BACKUP_LOCAL_PATH=/path/to/backups for local backups."
     exit 1
 fi
 
@@ -67,46 +86,65 @@ echo "[$(date -Iseconds)] Calculating checksum..."
 cd "$TEMP_DIR"
 sha256sum "$BACKUP_FILENAME" > "$BACKUP_FILENAME.sha256"
 
-# Upload to S3
-S3_BASE_PATH="s3://${BACKUP_S3_BUCKET}/${BACKUP_S3_PREFIX}"
-echo "[$(date -Iseconds)] Uploading backup to S3..."
-$AWS_CLI_BASE cp "$BACKUP_FILE" "$S3_BASE_PATH/$BACKUP_FILENAME"
-$AWS_CLI_BASE cp "$BACKUP_FILENAME.sha256" "$S3_BASE_PATH/$BACKUP_FILENAME.sha256"
+# Upload to S3 (if configured)
+if $HAS_S3; then
+    S3_BASE_PATH="s3://${BACKUP_S3_BUCKET}/${BACKUP_S3_PREFIX}"
+    echo "[$(date -Iseconds)] Uploading backup to S3..."
+    $AWS_CLI_BASE cp "$BACKUP_FILE" "$S3_BASE_PATH/$BACKUP_FILENAME"
+    $AWS_CLI_BASE cp "$BACKUP_FILENAME.sha256" "$S3_BASE_PATH/$BACKUP_FILENAME.sha256"
+    echo "[$(date -Iseconds)] S3 backup uploaded successfully: $BACKUP_FILENAME"
+fi
 
-echo "[$(date -Iseconds)] Backup uploaded successfully: $BACKUP_FILENAME"
+# Write to local path (if configured)
+if $HAS_LOCAL; then
+    mkdir -p "$BACKUP_LOCAL_PATH"
+    cp "$BACKUP_FILE" "$BACKUP_LOCAL_PATH/$BACKUP_FILENAME"
+    cp "$TEMP_DIR/$BACKUP_FILENAME.sha256" "$BACKUP_LOCAL_PATH/$BACKUP_FILENAME.sha256"
+    echo "[$(date -Iseconds)] Local backup written to $BACKUP_LOCAL_PATH/$BACKUP_FILENAME"
 
-# Prune old backups: keep only last 3
-echo "[$(date -Iseconds)] Pruning old backups (keeping last 3)..."
-BACKUP_LIST=$($AWS_CLI_BASE ls "$S3_BASE_PATH/" 2>/dev/null || echo "")
-
-if [ -n "$BACKUP_LIST" ]; then
-    # Get list of .sql.gz files, sort by date descending
-    BACKUP_FILES=$(echo "$BACKUP_LIST" | grep -E '\.sql\.gz$' | sort -r)
-    TOTAL_BACKUPS=$(echo "$BACKUP_FILES" | wc -l)
-    
-    if [ "$TOTAL_BACKUPS" -gt 3 ]; then
-        echo "[$(date -Iseconds)] Found $TOTAL_BACKUPS backups, removing old ones..."
-        
-        # Get files beyond the 3 most recent
-        OLD_BACKUPS=$(echo "$BACKUP_FILES" | tail -n +4)
-        
-        for backup_line in $OLD_BACKUPS; do
-            OLD_FILE=$(echo "$backup_line" | awk '{print $NF}')
-            echo "[$(date -Iseconds)] Removing old backup: $OLD_FILE"
-            
-            # Remove backup file
-            $AWS_CLI_BASE rm "$S3_BASE_PATH/$OLD_FILE"
-            
-            # Remove corresponding checksum file if it exists
-            CHECKSUM_FILE="${OLD_FILE}.sha256"
-            $AWS_CLI_BASE rm "$S3_BASE_PATH/$CHECKSUM_FILE" 2>/dev/null || true
+    # Prune local backups: keep only last 3
+    LOCAL_BACKUPS=$(find "$BACKUP_LOCAL_PATH" -maxdepth 1 -name "*.sql.gz" | sort -r)
+    LOCAL_TOTAL=$(echo "$LOCAL_BACKUPS" | grep -c . || true)
+    if [ "$LOCAL_TOTAL" -gt 3 ]; then
+        echo "$LOCAL_BACKUPS" | tail -n +4 | while read -r old_file; do
+            echo "[$(date -Iseconds)] Removing old local backup: $old_file"
+            rm -f "$old_file" "${old_file}.sha256"
         done
-    else
-        echo "[$(date -Iseconds)] Found $TOTAL_BACKUPS backups (≤3), no pruning needed"
     fi
 fi
 
-echo "[$(date -Iseconds)] Backup completed successfully. Current backups in S3:"
-$AWS_CLI_BASE ls "$S3_BASE_PATH/" 2>/dev/null | grep -E '\.sql\.gz$' | sort -r || true
+# Prune old S3 backups: keep only last 3
+if $HAS_S3; then
+    echo "[$(date -Iseconds)] Pruning old S3 backups (keeping last 3)..."
+    BACKUP_LIST=$($AWS_CLI_BASE ls "$S3_BASE_PATH/" 2>/dev/null || echo "")
+
+    if [ -n "$BACKUP_LIST" ]; then
+        # Get list of .sql.gz files, sort by date descending
+        BACKUP_FILES=$(echo "$BACKUP_LIST" | grep -E '\.sql\.gz$' | sort -r)
+        TOTAL_BACKUPS=$(echo "$BACKUP_FILES" | wc -l)
+
+        if [ "$TOTAL_BACKUPS" -gt 3 ]; then
+            echo "[$(date -Iseconds)] Found $TOTAL_BACKUPS backups, removing old ones..."
+
+            # Get files beyond the 3 most recent
+            OLD_BACKUPS=$(echo "$BACKUP_FILES" | tail -n +4)
+
+            for backup_line in $OLD_BACKUPS; do
+                OLD_FILE=$(echo "$backup_line" | awk '{print $NF}')
+                echo "[$(date -Iseconds)] Removing old backup: $OLD_FILE"
+                $AWS_CLI_BASE rm "$S3_BASE_PATH/$OLD_FILE"
+                CHECKSUM_FILE="${OLD_FILE}.sha256"
+                $AWS_CLI_BASE rm "$S3_BASE_PATH/$CHECKSUM_FILE" 2>/dev/null || true
+            done
+        else
+            echo "[$(date -Iseconds)] Found $TOTAL_BACKUPS S3 backups (≤3), no pruning needed"
+        fi
+    fi
+
+    echo "[$(date -Iseconds)] Current S3 backups:"
+    $AWS_CLI_BASE ls "$S3_BASE_PATH/" 2>/dev/null | grep -E '\.sql\.gz$' | sort -r || true
+fi
+
+echo "[$(date -Iseconds)] Backup completed successfully."
 
 exit 0
