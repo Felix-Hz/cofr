@@ -1,5 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 
 import sentry_sdk
 from fastapi import FastAPI
@@ -24,6 +26,11 @@ from app.routers import (
     transfers,
     webhooks,
 )
+
+try:
+    _APP_VERSION = _pkg_version("cofr-server")
+except PackageNotFoundError:
+    _APP_VERSION = "dev"
 
 _DEV_EMAIL_ENVS = {"local", "development", "dev", "test"}
 
@@ -91,7 +98,7 @@ async def _recurring_materialize_loop():
     """Materialize due recurring rules every hour.
 
     Hourly polling (not daily) is needed because rules are due in each user's
-    local timezone — a user crossing midnight in Auckland is several hours
+    local timezone. A user crossing midnight in Auckland is several hours
     before a user in London. The query is cheap and indexed.
     """
     from app.database import SessionLocal
@@ -110,7 +117,7 @@ async def _recurring_materialize_loop():
 app = FastAPI(
     title="Cofr — Expense Dashboard API",
     description="API for expense tracking with Google OAuth",
-    version="1.0.0",
+    version=_APP_VERSION,
     lifespan=lifespan,
 )
 
@@ -134,8 +141,7 @@ app.middleware("http")(log_requests)
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "ok", "version": _APP_VERSION}
 
 
 app.include_router(expenses.router)

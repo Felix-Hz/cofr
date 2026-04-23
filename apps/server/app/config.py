@@ -10,20 +10,23 @@ class Settings(BaseSettings):
     API_PORT: int = 5784
     ENV: str = "production"
 
-    # OAuth — Google
+    # OAuth (Google)
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
-    # Email — Resend
+    # Set to false to disable new account registration
+    REGISTRATION_ENABLED: bool = True
+
+    # Email (Resend)
     RESEND_API_KEY: str = ""
-    EMAIL_FROM_ADDRESS: str = "hello@cofr.cash"
+    EMAIL_FROM_ADDRESS: str = ""
     EMAIL_FROM_NAME: str = "cofr"
     RESEND_WEBHOOK_SECRET: str = ""
 
     # Sentry (empty = disabled)
     SENTRY_DSN: str = ""
 
-    # AWS S3 — export file storage (empty = disabled, exports still work via temp files)
+    # AWS S3 for export file storage (empty = disabled, exports still work via temp files)
     AWS_ACCESS_KEY_ID: str = ""
     AWS_SECRET_ACCESS_KEY: str = ""
     AWS_REGION: str = "ap-southeast-2"

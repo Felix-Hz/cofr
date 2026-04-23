@@ -42,7 +42,7 @@ def test_advance_monthly():
 
 def test_advance_monthly_preserves_end_of_month():
     start = date(2026, 1, 31)
-    # From Jan 31 → Feb 28 → Mar 31 (not Mar 28 — anchored on start's 31)
+    # Jan 31 -> Feb 28 -> Mar 31 (not Mar 28, anchored to the original day-of-month)
     first = advance(start, "month", 1, start)
     assert first == date(2026, 2, 28)
     second = advance(start, "month", 1, first)

@@ -199,7 +199,7 @@ def test_account_balances_includes_opening_balance(client, auth_headers, system_
     checking_id = next(a["id"] for a in accts if a["name"] == "Checking")
     salary_id = str(system_categories["salary"].id)
 
-    # Opening balance — should count toward account balance
+    # Opening balance should count toward the account balance
     client.post(
         "/expenses/",
         json={

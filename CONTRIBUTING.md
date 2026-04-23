@@ -1,20 +1,22 @@
 # Contributing
 
-## Prerequisites
+## Running (Docker only)
 
-- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
-- [Bun](https://bun.sh) (client)
-- [uv](https://docs.astral.sh/uv/) (server)
-- [Rust](https://rustup.rs) + [maturin](https://github.com/PyO3/maturin) (scribe extension)
-
-## Local dev
+To run cofr locally, you only need [Docker](https://docs.docker.com/get-docker/) with the Compose plugin:
 
 ```bash
 ./scripts/setup_dev.sh
 ```
 
-- This starts all services at `http://localhost:8080`. 
-- The server `.env` is loaded from `apps/server/.env`, copy from `.env.example` and fill in values.
+This starts all services at `http://localhost:8080`. The server `.env` is loaded from `apps/server/.env`. Copy from `.env.example` and fill in values.
+
+## Development prerequisites
+
+To build from source or run the test suites outside Docker, you also need:
+
+- [Bun](https://bun.sh) (client)
+- [uv](https://docs.astral.sh/uv/) (server)
+- [Rust](https://rustup.rs) + [maturin](https://github.com/PyO3/maturin) (scribe extension)
 
 ## Tests
 

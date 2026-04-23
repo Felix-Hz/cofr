@@ -90,7 +90,7 @@ def upgrade() -> None:
         ["is_active", "next_due_at"],
     )
 
-    # 3. transactions.recurring_rule_id — marks materialized rows
+    # 3. transactions.recurring_rule_id: marks materialized rows
     op.add_column(
         "transactions",
         sa.Column("recurring_rule_id", UUID(as_uuid=True), nullable=True),

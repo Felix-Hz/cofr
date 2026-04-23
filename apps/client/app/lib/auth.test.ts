@@ -63,7 +63,7 @@ describe("auth", () => {
   });
 
   it("isTokenExpired true within 5-min buffer", () => {
-    // exp is 200s from now — within the 300s buffer
+    // exp is 200s from now, within the 300s buffer
     const token = fakeJwt({ user_id: "u1", username: "test", exp: Date.now() / 1000 + 200 });
     saveToken(token);
     expect(isTokenExpired()).toBe(true);

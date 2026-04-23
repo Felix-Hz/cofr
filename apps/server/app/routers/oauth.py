@@ -1,7 +1,7 @@
 import logging
 
 from authlib.integrations.starlette_client import OAuth
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -119,6 +119,12 @@ def _resolve_user(
         return user
 
     # 2. Create new user + auth_provider
+    if not settings.REGISTRATION_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration is disabled on this instance.",
+        )
+
     # Generate unique username from email or provider info
     username = email if email else f"{provider}_{provider_user_id}"
     user = User(

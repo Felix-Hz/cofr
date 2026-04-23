@@ -7,12 +7,20 @@
     # API routes - strip /api prefix before forwarding
     handle /api/* {
         uri strip_prefix /api
-        reverse_proxy server:5784
+        reverse_proxy server:5784 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up -CF-Connecting-IP
+        }
     }
 
     # Health check endpoint (direct to API)
     handle /health {
-        reverse_proxy server:5784
+        reverse_proxy server:5784 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up -CF-Connecting-IP
+        }
     }
 
     # Frontend - everything else (React Router SSR)

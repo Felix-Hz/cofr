@@ -145,7 +145,7 @@ class CategoryService:
         }
 
     async def toggle_category(self, user_id: str, category_id: str) -> dict:
-        """Toggle active state — system via preferences, custom directly."""
+        """Toggle active state. System categories go through user preferences; custom categories update directly."""
         category = self.db.query(Category).filter(Category.id == category_id).first()
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")

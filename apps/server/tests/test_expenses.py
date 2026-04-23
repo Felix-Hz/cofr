@@ -260,7 +260,7 @@ def test_delete_expense_other_user_404(client, auth_headers, second_auth, system
     assert resp.status_code == 404
 
 
-# ── Stats (range — SQLite-compatible) ──
+# ── Stats (range, SQLite-compatible) ──
 
 
 def test_range_stats_basic(client, auth_headers, system_categories):
@@ -306,7 +306,7 @@ def test_range_stats_excludes_transfers(client, auth_headers, system_categories)
 
     _create_expense(client, headers, food_id, amount=40, created_at=ts)
 
-    # Create a transfer — goes through transfer endpoint
+    # Create a transfer via the transfer endpoint
     accounts_resp = client.get("/accounts/", headers=headers)
     accts = accounts_resp.json()
     if len(accts) >= 2:

@@ -17,6 +17,6 @@ export default [
   // Logout action route
   route("logout", "./routes/logout.tsx"),
 
-  // Catch-all — render root ErrorBoundary for unmatched routes
+  // Catch-all: renders the root ErrorBoundary for unmatched routes
   route("*", "./routes/catch-all.tsx"),
 ] satisfies RouteConfig;

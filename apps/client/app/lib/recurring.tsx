@@ -24,7 +24,7 @@ function isoDate(d: Date): string {
 }
 
 function parseIsoDate(s: string): Date | null {
-  // Accepts "YYYY-MM-DD" — interpret as local-date so the preview matches the user's calendar.
+  // Accepts "YYYY-MM-DD". Interpreted as a local date so the preview matches the user's calendar.
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
   if (!m) return null;
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));

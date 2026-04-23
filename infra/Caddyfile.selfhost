@@ -6,11 +6,18 @@
     handle /api/* {
         uri strip_prefix /api
         reverse_proxy server:5784 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto {scheme}
+            header_up -CF-Connecting-IP
         }
     }
     handle /health {
-        reverse_proxy server:5784
+        reverse_proxy server:5784 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up -CF-Connecting-IP
+        }
     }
     handle {
         reverse_proxy client:3000 {

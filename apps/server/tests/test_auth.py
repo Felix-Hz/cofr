@@ -2,6 +2,7 @@
 
 import os
 from datetime import UTC, datetime, timedelta
+from unittest.mock import patch
 
 import jwt as pyjwt
 import pytest
@@ -104,6 +105,18 @@ def test_register_duplicate_email_409(client):
         json={"email": "dup@example.com", "password": VALID_PASSWORD, "name": "Dup"},
     )
     assert resp.status_code == 409
+
+
+def test_register_disabled_returns_403(client):
+    from app.config import settings
+
+    with patch.object(settings, "REGISTRATION_ENABLED", False):
+        resp = client.post(
+            "/auth/local/register",
+            json={"email": "blocked@test.com", "password": VALID_PASSWORD},
+        )
+    assert resp.status_code == 403
+    assert "disabled" in resp.json()["detail"].lower()
 
 
 @pytest.mark.parametrize(
