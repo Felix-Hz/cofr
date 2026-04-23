@@ -19,13 +19,11 @@ See [`scripts/install.sh`](scripts/install.sh) for the full installer source.
 
 ## Updating
 
-Re-run the installer — it is safe to run on an existing installation:
+Re-run the installer on an existing installation. Env files are left untouched, images are pulled fresh, and data volumes are preserved:
 
 ```bash
 curl -fsSL https://cofr.cash/install.sh | bash
 ```
-
-Env files are never overwritten. Images are pulled fresh and services restarted with zero data loss.
 
 To pin a specific release:
 

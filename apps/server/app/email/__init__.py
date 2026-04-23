@@ -11,8 +11,8 @@ def get_email_provider() -> EmailProvider:
     if settings.RESEND_API_KEY:
         if not settings.EMAIL_FROM_ADDRESS:
             logger.warning(
-                "RESEND_API_KEY is set but EMAIL_FROM_ADDRESS is empty — falling back to "
-                "ConsoleProvider. Set EMAIL_FROM_ADDRESS to your verified sender address."
+                "RESEND_API_KEY is set but EMAIL_FROM_ADDRESS is empty. "
+                "Falling back to ConsoleProvider. Set EMAIL_FROM_ADDRESS to your verified sender address."
             )
             return ConsoleProvider()
         return ResendProvider(api_key=settings.RESEND_API_KEY)

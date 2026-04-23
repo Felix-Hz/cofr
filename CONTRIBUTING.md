@@ -8,7 +8,7 @@ To run cofr locally, you only need [Docker](https://docs.docker.com/get-docker/)
 ./scripts/setup_dev.sh
 ```
 
-This starts all services at `http://localhost:8080`. The server `.env` is loaded from `apps/server/.env` — copy from `.env.example` and fill in values.
+This starts all services at `http://localhost:8080`. The server `.env` is loaded from `apps/server/.env`. Copy from `.env.example` and fill in values.
 
 ## Development prerequisites
 

@@ -12,8 +12,8 @@
     handle /api/* {
         uri strip_prefix /api
         reverse_proxy server:5784 {
-            # Override XFF so the client can't inject a spoofed value.
-            # CF-Connecting-IP is passed through untouched — Cloudflare sets it.
+            # Override XFF with the real peer IP so clients can't spoof it.
+            # CF-Connecting-IP is left alone. Cloudflare sets it to the real client IP.
             header_up X-Forwarded-For {remote_host}
             header_up X-Forwarded-Proto https
         }

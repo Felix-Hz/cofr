@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
-    # Registration — set to false to close sign-ups on personal/private instances
+    # Set to false to disable new account registration
     REGISTRATION_ENABLED: bool = True
 
     # Email — Resend
