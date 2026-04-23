@@ -118,5 +118,5 @@ def refresh_rates_in_db(db: Session) -> bool:
         return True
     except Exception:
         db.rollback()
-        logger.exception("Failed to refresh exchange rates — keeping last known values")
+        logger.exception("Failed to refresh exchange rates, keeping last known values")
         return False

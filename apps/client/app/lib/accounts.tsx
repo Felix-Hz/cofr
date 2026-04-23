@@ -23,7 +23,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       const accts = await getAccounts();
       setAccounts(accts);
     } catch {
-      // Silently fail — accounts will be empty
+      // Silently fail; accounts will be empty
     } finally {
       setLoading(false);
     }

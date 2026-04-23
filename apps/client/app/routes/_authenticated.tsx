@@ -72,7 +72,7 @@ export default function AuthenticatedLayout() {
         .then(() => localStorage.setItem("cofr_tz_synced", tz))
         .catch(() => {});
     } catch {
-      // Intl unavailable — skip silently
+      // Intl unavailable, skip silently
     }
   }, []);
 

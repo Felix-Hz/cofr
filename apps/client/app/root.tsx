@@ -41,7 +41,7 @@ export function meta() {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  // Re-apply theme after hydration — React may strip the .dark class that theme.js set
+  // Re-apply theme after hydration. React may strip the .dark class that theme.js set.
   useEffect(() => {
     const stored = localStorage.getItem("cofr-theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;

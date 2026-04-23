@@ -353,11 +353,11 @@ export default function Settings() {
 
   const systemCategories = categories.filter((c) => c.is_system);
   const customCategories = categories.filter((c) => !c.is_system);
-  // Income is always active — not toggleable
+  // Income is always active, not toggleable
   const POSITIVE_TYPES = ["income"];
 
   const hasLocalAuth = providers.some((p) => p.provider === "local");
-  // Filter sections — hide Security if no local auth
+  // Filter sections: hide Security if no local auth
   const visibleSections = SECTIONS.filter((s) => s.id !== "security" || hasLocalAuth);
 
   // Show tab bar once the title scrolls out of view
@@ -711,7 +711,7 @@ export default function Settings() {
         </Link>
       </div>
 
-      {/* Tab bar — appears on scroll (fixed to viewport) */}
+      {/* Tab bar: appears on scroll, fixed to viewport */}
       <div
         className={`flex gap-1 overflow-x-auto scrollbar-hide fixed top-0 left-0 right-0 z-40 bg-surface-page/80 backdrop-blur-md border-b border-edge-default shadow-sm px-4 py-2.5 transition-all duration-200 ${
           showTabs ? "opacity-100 translate-y-0" : "opacity-0 pointer-events-none -translate-y-full"

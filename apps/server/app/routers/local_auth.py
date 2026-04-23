@@ -144,14 +144,14 @@ async def login(request: Request, body: LoginRequest, db: Session = Depends(get_
     email_normalized = body.email.lower().strip()
     ip = _client_ip(request)
 
-    # Per-IP: all attempts count — 20 per 15 min guards against credential stuffing
+    # Per-IP: all attempts count. 20 per 15 min to guard against credential stuffing.
     if not auth_rate_limiter.check(f"login:ip:{ip}", max_count=20, window_seconds=900):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Too many login attempts. Please try again later.",
         )
 
-    # Per-account: peek without recording — only failed password checks count (OWASP standard)
+    # Per-account: peek without recording. Only failed password checks increment the counter (OWASP standard).
     account_key = f"login:email:{email_normalized}"
     if not auth_rate_limiter.is_allowed(account_key, max_count=5, window_seconds=900):
         raise HTTPException(

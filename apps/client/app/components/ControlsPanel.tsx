@@ -98,7 +98,7 @@ export default function ControlsPanel({
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [anchorRefs, isMobile, isOpen, onClose]);
 
-  // Swipe down to close on mobile — follows finger
+  // Swipe down to close on mobile, follows the finger
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const el = panelRef.current;
     // Only start drag if panel is scrolled to top
@@ -176,7 +176,7 @@ export default function ControlsPanel({
           : undefined
       }
     >
-      {/* Drag handle — mobile */}
+      {/* Drag handle (mobile) */}
       <div className="flex justify-center sm:hidden -mx-5 -mt-5 pt-3 pb-1">
         <div className="h-1 w-10 rounded-full bg-edge-strong" />
       </div>
@@ -489,7 +489,7 @@ export function getPresetLabel(preset: Preset, startDate: string, endDate: strin
     const suffix = isCurrentYear ? "" : ` ${shortYear(sYear)}`;
     return `${dayMonth(s)} – ${dayMonth(e)}${suffix}`;
   }
-  // Cross year: drop days, month + 'YY both sides — "Jan '25 – Mar '26"
+  // Cross year: drop days, month + 'YY on both sides, e.g. "Jan '25 – Mar '26"
   return `${MONTHS_SHORT[sMonth]} ${shortYear(sYear)} – ${MONTHS_SHORT[eMonth]} ${shortYear(eYear)}`;
 }
 

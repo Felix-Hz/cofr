@@ -25,7 +25,7 @@ export function CategoriesProvider({ children }: { children: ReactNode }) {
       const cats = await getCategories();
       setCategories(cats);
     } catch {
-      // Silently fail — categories will be empty
+      // Silently fail; categories will be empty
     } finally {
       setLoading(false);
     }

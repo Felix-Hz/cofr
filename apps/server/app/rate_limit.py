@@ -19,7 +19,7 @@ class RateLimiter:
         return True
 
     def is_allowed(self, key: str, max_count: int, window_seconds: int) -> bool:
-        """Check without recording — use to peek before a conditional record()."""
+        """Check without recording. Use to peek before a conditional record()."""
         cutoff = time.time() - window_seconds
         self._store[key] = [t for t in self._store[key] if t > cutoff]
         return len(self._store[key]) < max_count

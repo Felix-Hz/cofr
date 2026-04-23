@@ -98,7 +98,7 @@ async def _recurring_materialize_loop():
     """Materialize due recurring rules every hour.
 
     Hourly polling (not daily) is needed because rules are due in each user's
-    local timezone — a user crossing midnight in Auckland is several hours
+    local timezone. A user crossing midnight in Auckland is several hours
     before a user in London. The query is cheap and indexed.
     """
     from app.database import SessionLocal
