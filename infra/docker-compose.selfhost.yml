@@ -9,7 +9,7 @@ services:
           memory: 512m
 
   server:
-    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-server:${COFR_VERSION:-latest}
+    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-server:${COFR_VERSION:-main}
     pull_policy: always
     deploy:
       resources:
@@ -17,7 +17,7 @@ services:
           memory: 512m
 
   client:
-    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-client:${COFR_VERSION:-latest}
+    image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-client:${COFR_VERSION:-main}
     pull_policy: always
     deploy:
       resources:

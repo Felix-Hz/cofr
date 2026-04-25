@@ -153,6 +153,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -164,10 +165,13 @@ jobs:
           context: ./apps/server
           build-contexts: |
             scribe=./apps/scribe
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ needs.changes.outputs.registry-namespace }}/cofr-server:${{ needs.changes.outputs.image-tag }}
             ${{ needs.changes.outputs.registry-namespace }}/cofr-server:main
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build-client:
     name: build / client
@@ -178,6 +182,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -187,6 +192,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ./apps/client
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ needs.changes.outputs.registry-namespace }}/cofr-client:${{ needs.changes.outputs.image-tag }}
@@ -195,6 +201,8 @@ jobs:
             VITE_SENTRY_DSN=${{ secrets.SENTRY_DSN_CLIENT }}
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
             SENTRY_ORG=${{ secrets.SENTRY_ORG }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build-postgres:
     name: build / postgres
@@ -205,6 +213,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
+      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -215,10 +224,13 @@ jobs:
         with:
           context: .
           file: ./infra/docker/postgres/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ needs.changes.outputs.registry-namespace }}/cofr-postgres:${{ needs.changes.outputs.image-tag }}
             ${{ needs.changes.outputs.registry-namespace }}/cofr-postgres:main
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     name: deploy
