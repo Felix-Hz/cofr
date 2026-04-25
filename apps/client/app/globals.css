@@ -15,6 +15,7 @@
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --font-sans: "Manrope", system-ui, sans-serif;
+  --font-brand: "Syne", system-ui, sans-serif;
 
   /* Semantic tokens — auto-switch via .dark class */
   --color-surface-page: var(--surface-page);
@@ -964,8 +965,53 @@ h6 {
   animation: ptrSpin 0.7s linear infinite;
 }
 
+/* Brand name inline rendering */
+.cofr-brand {
+  font-family: var(--font-brand);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* FAQ accordion */
+.faq-answer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.faq-answer.is-open {
+  grid-template-rows: 1fr;
+}
+.faq-answer > div {
+  overflow: hidden;
+}
+.faq-item {
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+.faq-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.faq-item.is-open {
+  background-color: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.faq-item.is-open::before {
+  opacity: 1;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  .faq-answer {
+    transition: none;
+  }
   .animate-fade-in-up,
   .animate-glow-pulse {
     animation: none;

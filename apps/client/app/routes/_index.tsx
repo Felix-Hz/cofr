@@ -54,29 +54,106 @@ export async function clientLoader() {
 
 const JSON_LD = JSON.stringify({
   "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "cofr",
-  url: "https://cofr.cash",
-  applicationCategory: "FinanceApplication",
-  operatingSystem: "Web",
-  description:
-    "Personal finance infrastructure with composable dashboards, multi-currency support, and privacy-first encryption.",
-  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-  author: {
-    "@type": "Organization",
-    name: "cofr",
-    url: "https://cofr.cash",
-  },
-  screenshot: "https://cofr.cash/og-image.png",
-  featureList: [
-    "Composable drag-and-drop dashboards",
-    "Multi-currency tracking with real-time exchange rates",
-    "End-to-end encryption for personal data",
-    "CSV, XLSX, and PDF data exports",
-    "Financial account management with transfers",
-    "Custom and built-in spending categories",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      name: "cofr",
+      url: "https://cofr.cash",
+      applicationCategory: "FinanceApplication",
+      operatingSystem: "Web",
+      description:
+        "Personal finance infrastructure with composable dashboards, multi-currency support, and privacy-first encryption.",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      author: {
+        "@type": "Organization",
+        name: "cofr",
+        url: "https://cofr.cash",
+      },
+      screenshot: "https://cofr.cash/og-image.png",
+      featureList: [
+        "Composable drag-and-drop dashboards",
+        "Multi-currency tracking with real-time exchange rates",
+        "End-to-end encryption for personal data",
+        "CSV, XLSX, and PDF data exports",
+        "Financial account management with transfers",
+        "Custom and built-in spending categories",
+      ],
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "Is cofr free?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Free to sign up at cofr.cash. No credit card required, no data harvesting. If you prefer full control, self-hosting via Docker is also completely free with no feature restrictions.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How is my data encrypted and protected?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Personal information is encrypted field-by-field before it reaches the database using AES-128 (Fernet). All traffic is protected by TLS in transit. There are no marketing trackers, no ad networks, and no third-party data sharing.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can I self-host cofr?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. cofr is open-source under AGPL-3.0. A single installer command spins up the full stack via Docker on Linux, macOS, or Windows. Secrets are generated automatically, and Caddy handles HTTPS via Let's Encrypt if you bring a domain. All data stays on your machine.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What currencies does cofr support?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "USD, EUR, GBP, AUD, BRL, ARS, COP, JPY, and NZD. Exchange rates are refreshed daily from a public rates API. You can record each transaction in its native currency and view all totals converted to your preferred currency.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can I export my data?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Export your transactions, accounts, and categories as CSV, XLSX, or PDF. A full dump bundles everything into a ZIP. Your data is always yours — no lock-in.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Does cofr connect to my bank?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Not currently. Transactions are entered manually. cofr is built for people who want deliberate, eyes-open control over their finances.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Is there a mobile app?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "cofr is a Progressive Web App (PWA). Open it in your mobile browser and add it to your home screen for a full standalone experience with an icon and offline support. No app store required.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can I permanently delete my account?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Settings offers two options: a soft delete that deactivates your account and preserves your data (reactivatable by logging back in), and a hard delete that permanently removes your profile, all transactions, and auth connections with no recovery.",
+          },
+        },
+      ],
+    },
   ],
 });
+
+function CofrBrand({ className = "" }: { className?: string }) {
+  return <span className={`cofr-brand ${className}`.trim()}>cofr</span>;
+}
 
 function JsonLd() {
   const ref = useRef<HTMLScriptElement>(null);
@@ -218,9 +295,7 @@ function Nav() {
       <div className="max-w-6xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
           <img src="/logo.png" alt="" width={28} height={28} className="h-7 w-7 logo-auto" />
-          <span className="text-[15px] font-semibold text-content-heading tracking-tight">
-            cofr
-          </span>
+          <CofrBrand className="text-[15px] text-content-heading" />
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -784,11 +859,17 @@ function EncryptionVisual() {
 
 // --- Features ---
 
-const FEATURES = [
+const FEATURES: { eyebrow: string; title: string; body: React.ReactNode; visual: string }[] = [
   {
     eyebrow: "Multi-currency",
     title: "One ledger. Every currency handled.",
-    body: "NZD, EUR, USD, GBP and more. cofr keeps the original detail, then translates the big picture into the currency you actually think in. Real-time exchange rates, automatic conversion, zero mental math.",
+    body: (
+      <>
+        NZD, EUR, USD, GBP and more. <CofrBrand /> keeps the original detail, then translates the
+        big picture into the currency you actually think in. Real-time exchange rates, automatic
+        conversion, zero mental math.
+      </>
+    ),
     visual: "currency",
   },
   {
@@ -1200,6 +1281,159 @@ function SelfHostSection() {
   );
 }
 
+// --- FAQ ---
+
+const FAQ_ITEMS: { id: string; q: React.ReactNode; a: React.ReactNode }[] = [
+  {
+    id: "free",
+    q: (
+      <>
+        Is <CofrBrand /> free?
+      </>
+    ),
+    a: (
+      <>
+        Free to sign up at{" "}
+        <Link to="/login?mode=signup" className="text-accent hover:underline">
+          cofr.cash
+        </Link>
+        . No credit card required, no data harvesting. If you prefer full control, self-hosting via
+        Docker is also completely free with no feature restrictions.
+      </>
+    ),
+  },
+  {
+    id: "encryption",
+    q: "How is my data encrypted and protected?",
+    a: "Personal information is encrypted field-by-field before it reaches the database using AES-128 (Fernet). All traffic is protected by TLS in transit. There are no marketing trackers, no ad networks, and no third-party data sharing.",
+  },
+  {
+    id: "self-host",
+    q: (
+      <>
+        Can I self-host <CofrBrand />?
+      </>
+    ),
+    a: (
+      <>
+        <CofrBrand /> is open-source under AGPL-3.0. A single installer command spins up the full
+        stack via Docker on Linux, macOS, or Windows. Secrets are generated automatically, and Caddy
+        handles HTTPS via Let's Encrypt if you bring a domain. All data stays on your machine.
+      </>
+    ),
+  },
+  {
+    id: "currencies",
+    q: (
+      <>
+        What currencies does <CofrBrand /> support?
+      </>
+    ),
+    a: "USD, EUR, GBP, AUD, BRL, ARS, COP, JPY, and NZD. Exchange rates are refreshed daily from a public rates API. Record each transaction in its native currency and view all totals converted to your preferred currency.",
+  },
+  {
+    id: "export",
+    q: "Can I export my data?",
+    a: "Yes. Export your transactions, accounts, and categories as CSV, XLSX, or PDF. A full dump bundles everything into a ZIP. Your data is always yours — no lock-in.",
+  },
+  {
+    id: "bank",
+    q: (
+      <>
+        Does <CofrBrand /> connect to my bank?
+      </>
+    ),
+    a: (
+      <>
+        Not currently. Transactions are entered manually. <CofrBrand /> is built for people who want
+        deliberate, eyes-open control over their finances.
+      </>
+    ),
+  },
+  {
+    id: "mobile",
+    q: "Is there a mobile app?",
+    a: (
+      <>
+        <CofrBrand /> is a Progressive Web App (PWA). Open it in your mobile browser and add it to
+        your home screen for a full standalone experience with an icon and offline support. No app
+        store required.
+      </>
+    ),
+  },
+  {
+    id: "delete",
+    q: "Can I permanently delete my account?",
+    a: "Yes. Settings offers two options: a soft delete that deactivates your account and preserves your data (you can reactivate simply by logging back in), and a hard delete that permanently removes your profile, all transactions, and auth connections with no recovery.",
+  },
+];
+
+function FAQ() {
+  const [open, setOpen] = useState<number | null>(null);
+
+  return (
+    <section className="content-defer landing-band py-20 sm:py-28 md:py-36 px-5 sm:px-6">
+      <div className="max-w-2xl mx-auto">
+        <Reveal className="text-center mb-12 sm:mb-14">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent mb-4">
+            Frequently asked
+          </p>
+          <h2 className="text-[2rem] sm:text-[2.5rem] md:text-[3rem] font-bold tracking-[-0.03em] text-content-heading leading-[1.08]">
+            Questions, answered.
+          </h2>
+        </Reveal>
+
+        <Reveal delay={1}>
+          <div>
+            {FAQ_ITEMS.map((item, i) => {
+              const isOpen = open === i;
+              return (
+                <div
+                  key={item.id}
+                  className={`faq-item${isOpen ? " is-open" : ""} ${i === 0 ? "border-t border-edge-default " : ""}border-b border-edge-default px-4 -mx-4 rounded-sm`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpen(isOpen ? null : i)}
+                    aria-expanded={isOpen}
+                    className="w-full flex items-center gap-4 py-5 text-left group"
+                  >
+                    <span className="shrink-0 text-[11px] font-bold tabular-nums text-accent opacity-60 w-5 select-none">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span
+                      className={`flex-1 text-[15px] sm:text-base font-semibold transition-colors duration-200 ${isOpen ? "text-accent" : "text-content-heading group-hover:text-accent"}`}
+                    >
+                      {item.q}
+                    </span>
+                    <svg
+                      className={`shrink-0 w-4 h-4 text-content-muted transition-transform duration-300 ${isOpen ? "rotate-180 text-accent" : ""}`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div className={`faq-answer${isOpen ? " is-open" : ""}`}>
+                    <div>
+                      <p className="text-[14px] sm:text-[15px] leading-relaxed text-content-secondary pb-5 pl-9">
+                        {item.a}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
 // --- Final CTA ---
 
 function FinalCTA() {
@@ -1242,7 +1476,7 @@ function Footer() {
         <div className="flex items-center gap-2.5">
           <img src="/logo.png" alt="" width={20} height={20} className="h-5 w-5 logo-auto" />
           <span className="text-sm text-content-tertiary">
-            cofr &copy; {new Date().getFullYear()}
+            <CofrBrand /> &copy; {new Date().getFullYear()}
           </span>
         </div>
         <div className="flex items-center gap-6 text-sm text-content-tertiary">
@@ -1272,6 +1506,7 @@ export default function Index() {
         <Features />
         <HowItWorks />
         <SelfHostSection />
+        <FAQ />
         <FinalCTA />
       </main>
       <Footer />
