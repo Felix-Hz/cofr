@@ -73,6 +73,34 @@ if (-not $upgrading) {
     }
 }
 
+# --- upgrade detection ---
+$upgrading = $false
+try {
+    $running = & docker compose -p cofr ps -q 2>$null
+    if ($running) { $upgrading = $true }
+} catch { }
+
+if ($upgrading) {
+    Write-Step "existing installation detected — upgrading to $COFR_VERSION"
+} else {
+    Write-Step "fresh install"
+}
+Write-Host ""
+
+# --- port conflict check (skip if already running, those are ours) ---
+function Test-PortInUse { param([int]$port)
+    $listeners = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()
+    return ($listeners | Where-Object { $_.Port -eq $port }).Count -gt 0
+}
+
+if (-not $upgrading) {
+    foreach ($port in @(80, 443)) {
+        if (Test-PortInUse $port) {
+            Write-Fatal "Port $port is already in use. Stop the conflicting service and re-run."
+        }
+    }
+}
+
 # --- dirs ---
 New-Item -ItemType Directory -Force -Path "$INSTALL_DIR\infra"        | Out-Null
 New-Item -ItemType Directory -Force -Path "$INSTALL_DIR\apps\server"  | Out-Null
