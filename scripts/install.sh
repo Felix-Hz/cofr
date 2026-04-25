@@ -37,6 +37,33 @@ echo ""
 if ! command -v docker &>/dev/null; then
   die "Docker not found. Install it from https://docs.docker.com/get-docker/ and re-run."
 fi
+if ! docker info &>/dev/null; then
+  die "Docker is installed but not running. Start Docker Desktop (or 'sudo systemctl start docker') and re-run."
+fi
+
+# --- upgrade detection ---
+UPGRADING=false
+if docker compose -p cofr ps -q 2>/dev/null | grep -q .; then
+  UPGRADING=true
+  dim "  existing installation detected — upgrading to $COFR_VERSION"
+else
+  dim "  fresh install"
+fi
+echo ""
+
+# --- port conflict check (skip if already running, those are ours) ---
+port_in_use() {
+  (ss -tlnH 2>/dev/null | grep -q ":$1 ") || \
+  (command -v lsof &>/dev/null && lsof -iTCP:"$1" -sTCP:LISTEN -P -n 2>/dev/null | grep -q .)
+}
+
+if [ "$UPGRADING" = "false" ]; then
+  for port in 80 443; do
+    if port_in_use "$port"; then
+      die "Port $port is already in use. Stop the conflicting service and re-run."
+    fi
+  done
+fi
 
 # --- upgrade detection ---
 UPGRADING=false
