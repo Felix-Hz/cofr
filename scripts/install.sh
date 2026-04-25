@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-COFR_VERSION="${COFR_VERSION:-latest}"
 INSTALL_DIR="${COFR_DIR:-$HOME/.cofr}"
-# Use the version tag as the git ref so compose files match the running images.
-# "latest" maps to main; a pinned version (e.g. 2025.4.0) uses that tag directly.
-GIT_REF="main"
-[[ "$COFR_VERSION" != "latest" ]] && GIT_REF="$COFR_VERSION"
-GITHUB_RAW="https://raw.githubusercontent.com/felix-hz/cofr/${GIT_REF}"
+
+if [ -n "${COFR_VERSION:-}" ]; then
+  : # caller-provided, keep as-is
+elif COFR_VERSION=$(curl -fsSL "https://api.github.com/repos/felix-hz/cofr/releases/latest" 2>/dev/null \
+      | grep '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/') && [ -n "$COFR_VERSION" ]; then
+  : # resolved from latest GitHub release
+else
+  COFR_VERSION="main"
+fi
+
+GITHUB_RAW="https://raw.githubusercontent.com/felix-hz/cofr/${COFR_VERSION}"
 
 bold()  { printf "\033[1m%s\033[0m\n" "$*"; }
 green() { printf "\033[32m%s\033[0m\n" "$*"; }

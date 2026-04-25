@@ -2,9 +2,21 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$COFR_VERSION = if ($env:COFR_VERSION) { $env:COFR_VERSION } else { "latest" }
-$INSTALL_DIR  = if ($env:COFR_DIR)     { $env:COFR_DIR }     else { "$env:USERPROFILE\.cofr" }
-$GITHUB_RAW   = "https://raw.githubusercontent.com/felix-hz/cofr/main"
+$INSTALL_DIR = if ($env:COFR_DIR) { $env:COFR_DIR } else { "$env:USERPROFILE\.cofr" }
+
+if ($env:COFR_VERSION) {
+    $COFR_VERSION = $env:COFR_VERSION
+} else {
+    try {
+        $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/felix-hz/cofr/releases/latest" -UseBasicParsing
+        $COFR_VERSION = $rel.tag_name
+    } catch {
+        $COFR_VERSION = "main"
+    }
+}
+
+$GIT_REF    = $COFR_VERSION
+$GITHUB_RAW = "https://raw.githubusercontent.com/felix-hz/cofr/$GIT_REF"
 
 function Write-Step  { param($msg) Write-Host "  $msg" -ForegroundColor DarkGray }
 function Write-Ok    { param($msg) Write-Host $msg -ForegroundColor Green }
@@ -25,14 +37,21 @@ New-Item -ItemType Directory -Force -Path "$INSTALL_DIR\apps\server"  | Out-Null
 Set-Location $INSTALL_DIR
 
 # --- secret helpers ---
+# Use instance API — the static GetBytes overload requires .NET 6+ (PS 7.2+).
+function New-RandomBytes { param([int]$count)
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $buf = New-Object byte[] $count
+    $rng.GetBytes($buf)
+    $rng.Dispose()
+    return $buf
+}
+
 function New-HexSecret { param([int]$bytes)
-    $raw = [System.Security.Cryptography.RandomNumberGenerator]::GetBytes($bytes)
-    return [System.BitConverter]::ToString($raw).Replace('-', '').ToLower()
+    return [System.BitConverter]::ToString((New-RandomBytes $bytes)).Replace('-', '').ToLower()
 }
 
 function New-FernetKey {
-    $raw    = [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
-    $b64    = [Convert]::ToBase64String($raw)
+    $b64 = [Convert]::ToBase64String((New-RandomBytes 32))
     return $b64.Replace('+', '-').Replace('/', '_').TrimEnd('=')
 }
 
