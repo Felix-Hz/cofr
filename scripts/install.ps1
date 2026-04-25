@@ -23,12 +23,48 @@ function Write-Ok    { param($msg) Write-Host $msg -ForegroundColor Green }
 function Write-Fatal { param($msg) Write-Host "error: $msg" -ForegroundColor Red; exit 1 }
 
 Write-Host ""
-Write-Host "cofr self-hosted installer" -ForegroundColor White
+Write-Host '  _____   _____     _____  __ __   '
+Write-Host ' /\ __/\ ) ___ (  /\_____\/_/\__/\ '
+Write-Host ' ) )__\// /\_/\ \( (  ___/) ) ) ) )'
+Write-Host '/ / /  / /_/ (_\ \\ \ \_ /_/ /_/_/ '
+Write-Host '\ \ \_ \ \ )_/ / // / /_\\ \ \ \ \ '
+Write-Host ' ) )__/\\ \/_\/ // /____/ )_) ) \ \'
+Write-Host ' \/___\/ )_____( \/_/     \_\/ \_\/'
+Write-Host ""
+Write-Step "version: $COFR_VERSION"
 Write-Host ""
 
 # --- prereq check ---
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     Write-Fatal "Docker not found. Install Docker Desktop from https://docs.docker.com/get-docker/ and re-run."
+}
+
+# --- upgrade detection ---
+$upgrading = $false
+try {
+    $running = & docker compose -p cofr ps -q 2>$null
+    if ($running) { $upgrading = $true }
+} catch { }
+
+if ($upgrading) {
+    Write-Step "existing installation detected — upgrading to $COFR_VERSION"
+} else {
+    Write-Step "fresh install"
+}
+Write-Host ""
+
+# --- port conflict check (skip if already running, those are ours) ---
+function Test-PortInUse { param([int]$port)
+    $listeners = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()
+    return ($listeners | Where-Object { $_.Port -eq $port }).Count -gt 0
+}
+
+if (-not $upgrading) {
+    foreach ($port in @(80, 443)) {
+        if (Test-PortInUse $port) {
+            Write-Fatal "Port $port is already in use. Stop the conflicting service and re-run."
+        }
+    }
 }
 
 # --- dirs ---
@@ -76,7 +112,7 @@ if (-not (Test-Path $serverEnv)) {
     $jwtSecret = New-HexSecret 64
     $encKey    = New-FernetKey
     $domain    = if ($env:COFR_DOMAIN) { $env:COFR_DOMAIN } else { "localhost" }
-    $baseUrl   = if ($domain -eq "localhost") { "http://localhost:8080" } else { "https://$domain" }
+    $baseUrl   = if ($domain -eq "localhost") { "http://localhost" } else { "https://$domain" }
     @"
 ENV=production
 DATABASE_URL=postgresql://cofr:${pgPass}@postgres:5432/cofr
@@ -109,11 +145,10 @@ Pop-Location
 
 # --- health check ---
 Write-Step "waiting for cofr to be ready..."
-$healthUrl = "http://localhost/health"
 $ready = $false
 for ($i = 1; $i -le 15; $i++) {
     try {
-        $r = Invoke-WebRequest -Uri $healthUrl -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
+        $r = Invoke-WebRequest -Uri "http://localhost/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
         if ($r.StatusCode -eq 200) { $ready = $true; break }
     } catch { }
     Start-Sleep -Seconds 4
@@ -124,15 +159,16 @@ if (-not $ready) {
 
 # --- done ---
 Write-Host ""
-Write-Ok "cofr is running"
+Write-Ok "cofr is running  ($COFR_VERSION)"
 Write-Host ""
 if ($domain -eq "localhost") {
-    Write-Host "  -> http://localhost:8080"
+    Write-Host "  -> http://localhost"
 } else {
     Write-Host "  -> https://$domain"
 }
 Write-Host ""
-Write-Step "Logs:  docker compose -p cofr logs -f"
-Write-Step "Stop:  docker compose -p cofr down"
-Write-Step "Data:  $INSTALL_DIR"
+Write-Step "Logs:    docker compose -p cofr logs -f"
+Write-Step "Stop:    docker compose -p cofr down"
+Write-Step "Upgrade: irm https://cofr.cash/install.ps1 | iex"
+Write-Step "Data:    $INSTALL_DIR"
 Write-Host ""
