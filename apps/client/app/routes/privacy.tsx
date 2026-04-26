@@ -96,7 +96,8 @@ export default function Privacy() {
               "N/A (one-way hash, never recoverable)",
             ],
             ["Auth: Google OAuth", "Google provider user ID", "No (needed for account lookup)"],
-            ["Auth: Google OAuth", "Display name (from Google)", "Yes (Fernet/AES-128)"],
+            ["Auth: Google OAuth", "Email address (from Google profile)", "Yes (Fernet/AES-128)"],
+            ["Auth: Google OAuth", "Display name (from Google profile)", "Yes (Fernet/AES-128)"],
             [
               "Financial",
               "Transactions, amounts, categories, accounts, merchant tags",
@@ -191,8 +192,8 @@ export default function Privacy() {
             ["Resend", "Transactional email delivery", "Your email address"],
             [
               "Sentry",
-              "Error tracking & diagnostics (production only)",
-              "Error context, anonymised session data, user agent",
+              "Error tracking, performance tracing & session replay (production only)",
+              "Error context, session replay data (text masked by default), user agent",
             ],
             [
               "DigitalOcean (Sydney, Australia)",
@@ -317,17 +318,19 @@ export default function Privacy() {
         <p>
           International transfer notice: the hosted Service stores data on DigitalOcean
           infrastructure in Sydney, Australia. Australia is not recognised as adequate by the
-          European Commission under Article 45 GDPR. By voluntarily using the Service, you provide
-          explicit consent to this transfer under Article 49(1)(a) GDPR. If you do not consent, you
-          should not use the hosted Service. You may instead self-host cofr on infrastructure in
-          your preferred jurisdiction.
+          European Commission under Article 45 GDPR. By creating an account and explicitly accepting
+          this Privacy Policy at registration, you provide specific, informed consent to this
+          international transfer under Article 49(1)(a) GDPR. If you do not consent, you should not
+          use the hosted Service. You may instead self-host cofr on infrastructure in your preferred
+          jurisdiction.
         </p>
       </LegalSection>
 
-      <LegalSection id="ccpa" number="11" title="CCPA: California Residents">
+      <LegalSection id="ccpa" number="11" title="CCPA / CPRA: California Residents">
         <p>
           If you are a California resident, you have the following rights under the California
-          Consumer Privacy Act (CCPA):
+          Consumer Privacy Act (CCPA) as amended by the California Privacy Rights Act (CPRA,
+          effective January 1, 2023):
         </p>
         <ul className="ml-4 list-disc space-y-1.5 marker:opacity-50">
           <li>
@@ -336,16 +339,29 @@ export default function Privacy() {
             collected about you
           </li>
           <li>
+            <strong style={{ color: "var(--content-heading)" }}>Right to correct:</strong> you may
+            request correction of inaccurate personal information we hold about you (most data can
+            be corrected directly within the app)
+          </li>
+          <li>
             <strong style={{ color: "var(--content-heading)" }}>Right to delete:</strong> you may
             request deletion of your personal information (available directly via hard-delete in
             Settings)
+          </li>
+          <li>
+            <strong style={{ color: "var(--content-heading)" }}>
+              Right to limit use of sensitive personal information:
+            </strong>{" "}
+            under CPRA, financial transaction history and account balances qualify as sensitive
+            personal information. We use this data solely to operate the Service for you and do not
+            use it for any secondary purpose. You may contact us to exercise this right.
           </li>
           <li>
             <strong style={{ color: "var(--content-heading)" }}>Right to opt out of sale:</strong>{" "}
             we do not sell your personal information. This right is not applicable.
           </li>
         </ul>
-        <p>We do not discriminate against users who exercise their CCPA rights.</p>
+        <p>We do not discriminate against users who exercise their CCPA/CPRA rights.</p>
       </LegalSection>
 
       <LegalSection id="cookies" number="12" title="Cookies & Local Storage">
