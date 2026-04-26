@@ -20,6 +20,10 @@ services:
       dockerfile: infra/docker/postgres/Dockerfile
     image: ${GHCR_NAMESPACE:-ghcr.io/felix-hz}/cofr-postgres:${APP_IMAGE_TAG:-main}
     pull_policy: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     environment:
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
