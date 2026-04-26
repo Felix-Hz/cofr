@@ -495,7 +495,7 @@ export async function registerWithEmail(
   const response = await fetch(`${API_BASE_URL}/auth/local/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name: name || undefined }),
+    body: JSON.stringify({ email, password, name: name || undefined, terms_accepted: true }),
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: "Registration failed" }));

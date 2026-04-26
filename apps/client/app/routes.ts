@@ -14,6 +14,10 @@ export default [
     route("settings", "./routes/settings.tsx"),
   ]),
 
+  // Legal pages
+  route("terms", "./routes/terms.tsx"),
+  route("privacy", "./routes/privacy.tsx"),
+
   // Logout action route
   route("logout", "./routes/logout.tsx"),
 

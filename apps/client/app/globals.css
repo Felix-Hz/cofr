@@ -917,6 +917,32 @@ h6 {
   animation: glowPulse 4s ease-in-out infinite;
 }
 
+@keyframes scanLine {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+.animate-scan-line {
+  animation: scanLine 6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scan-line {
+    animation: none;
+  }
+}
+
 /* Dashboard mockup perspective */
 .mockup-perspective {
   perspective: 1200px;

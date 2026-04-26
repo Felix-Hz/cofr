@@ -62,6 +62,9 @@ class User(Base):
         SaUuid, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True
     )
     timezone: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="user")
     auth_providers: Mapped[list["AuthProvider"]] = relationship(back_populates="user")
