@@ -54,8 +54,12 @@ export default defineConfig({
           org: process.env.SENTRY_ORG,
           project: "cofr-client",
           authToken: process.env.SENTRY_AUTH_TOKEN,
+          release: { name: process.env.SENTRY_RELEASE },
           sourcemaps: {
             filesToDeleteAfterUpload: ["./build/client/**/*.map"],
+          },
+          errorHandler: (err) => {
+            console.warn("[sentry] source map upload failed:", err.message);
           },
         })
       : null,

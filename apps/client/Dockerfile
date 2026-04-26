@@ -11,6 +11,8 @@ ARG SENTRY_AUTH_TOKEN=""
 ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
 ARG SENTRY_ORG=""
 ENV SENTRY_ORG=${SENTRY_ORG}
+ARG SENTRY_RELEASE=""
+ENV SENTRY_RELEASE=${SENTRY_RELEASE}
 
 COPY package.json bun.lock ./
 
@@ -18,7 +20,7 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN bun run build
+RUN bun run build && find /app/build -name "*.map" -delete
 
 FROM oven/bun:1-slim
 
