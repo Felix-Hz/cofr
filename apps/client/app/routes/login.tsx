@@ -72,6 +72,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(errorParam);
   const [notice, setNotice] = useState<string | null>(null);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(() => readLockout("signin"));
@@ -310,7 +311,7 @@ export default function Login() {
 
             <div>
               <label htmlFor="email" className="auth-label">
-                Email
+                Email {mode === "signup" && <span className="text-negative-text">*</span>}
               </label>
               <input
                 id="email"
@@ -327,7 +328,7 @@ export default function Login() {
             <div>
               <div className="mb-1 flex items-center justify-between gap-3">
                 <label htmlFor="password" className="auth-label mb-0">
-                  Password
+                  Password {mode === "signup" && <span className="text-negative-text">*</span>}
                 </label>
                 {mode === "signin" && (
                   <Link
@@ -350,9 +351,45 @@ export default function Login() {
               {mode === "signup" && <PasswordRequirements password={password} />}
             </div>
 
+            {mode === "signup" && (
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  disabled={isLocked}
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-emerald"
+                />
+                <span className="text-xs leading-relaxed text-content-tertiary">
+                  I agree to the{" "}
+                  <a
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-emerald hover:text-emerald-hover transition-colors"
+                  >
+                    Terms of Service
+                  </a>{" "}
+                  and{" "}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-emerald hover:text-emerald-hover transition-colors"
+                  >
+                    Privacy Policy
+                  </a>
+                </span>
+              </label>
+            )}
+
             <button
               type="submit"
-              disabled={loading || isLocked || (mode === "signup" && !isPasswordValid(password))}
+              disabled={
+                loading ||
+                isLocked ||
+                (mode === "signup" && (!isPasswordValid(password) || !termsAccepted))
+              }
               className="auth-submit-button"
             >
               {loading ? (

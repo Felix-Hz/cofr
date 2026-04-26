@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
@@ -49,11 +50,19 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     name: str | None = None
+    terms_accepted: bool = False
 
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:
         return validate_password_strength(v)
+
+    @field_validator("terms_accepted")
+    @classmethod
+    def must_accept_terms(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("You must accept the Terms of Service and Privacy Policy to register.")
+        return v
 
 
 class LoginRequest(BaseModel):
@@ -115,6 +124,7 @@ async def register(request: Request, body: RegisterRequest, db: Session = Depend
         first_name=body.name or "",
         last_name="",
         username=email_normalized,
+        terms_accepted_at=datetime.now(UTC),
     )
     db.add(user)
     db.flush()

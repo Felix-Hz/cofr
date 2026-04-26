@@ -293,9 +293,8 @@ function Nav() {
       style={{ paddingTop: "var(--safe-top)" }}
     >
       <div className="max-w-6xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5">
-          <img src="/logo.png" alt="" width={28} height={28} className="h-7 w-7 logo-auto" />
-          <CofrBrand className="text-[15px] text-content-heading" />
+        <Link to="/" className="flex items-center">
+          <CofrBrand className="text-[20px] text-content-heading" />
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -1519,9 +1518,8 @@ function Footer() {
           <div className="py-14 sm:py-16 grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-10 sm:gap-20">
             {/* Brand column */}
             <div>
-              <Link to="/" className="flex items-center gap-2.5 mb-4">
-                <img src="/logo.png" alt="" width={24} height={24} className="h-6 w-6 logo-auto" />
-                <CofrBrand className="text-[15px] text-content-heading" />
+              <Link to="/" className="flex items-center mb-4">
+                <CofrBrand className="text-[20px] text-content-heading" />
               </Link>
               <p className="text-[13px] text-content-tertiary leading-relaxed max-w-[220px]">
                 clarity &gt; vibes.
