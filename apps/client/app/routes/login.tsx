@@ -65,7 +65,9 @@ export default function Login() {
   const verifiedParam = searchParams.get("verified");
   const resetParam = searchParams.get("reset");
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup">(
+    searchParams.get("mode") === "signup" ? "signup" : "signin",
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
