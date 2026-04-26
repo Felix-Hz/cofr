@@ -201,6 +201,7 @@ jobs:
             VITE_SENTRY_DSN=${{ secrets.SENTRY_DSN_CLIENT }}
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
             SENTRY_ORG=${{ secrets.SENTRY_ORG }}
+            SENTRY_RELEASE=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
