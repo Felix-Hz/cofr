@@ -276,7 +276,7 @@ export default function Login() {
               if (isCaptive) {
                 e.preventDefault();
                 setError(
-                  "Google Login is blocked in this app's browser. Please tap the '...' or share icon and select 'Open in System Browser' (Safari/Chrome) to continue.",
+                  "Google Login is blocked in this app's browser. Please tap the '...' and select 'Open in System Browser' to continue.",
                 );
               }
             }}
