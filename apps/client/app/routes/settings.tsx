@@ -340,7 +340,10 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState<string>("preferences");
   const [showTabs, setShowTabs] = useState(false);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const isManualScrolling = useRef(false);
+  const manualScrollTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Categories
   const { categories, refresh: refreshCategories } = useCategories();
@@ -412,6 +415,82 @@ export default function Settings() {
     return () => observer.disconnect();
   }, [loading]);
 
+  // Update active tab based on scroll position
+  const intersectingSections = useRef<Record<string, boolean>>({});
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: stable observer logic
+  useEffect(() => {
+    if (loading) return;
+
+    const getIsAtBottom = () => {
+      const scrollPos = window.innerHeight + window.scrollY;
+      const totalHeight = document.documentElement.scrollHeight;
+      return scrollPos >= totalHeight - 60;
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          intersectingSections.current[entry.target.id] = entry.isIntersecting;
+        }
+
+        if (isManualScrolling.current) return;
+
+        // 1. Bottom of page priority
+        if (getIsAtBottom()) {
+          setActiveTab(visibleSections[visibleSections.length - 1].id);
+          return;
+        }
+
+        // 2. Furthest-down intersection logic
+        // We iterate in order; the last one that is intersecting wins.
+        let bestSectionId = "";
+        for (const section of visibleSections) {
+          if (intersectingSections.current[section.id]) {
+            bestSectionId = section.id;
+          }
+        }
+
+        if (bestSectionId) {
+          setActiveTab(bestSectionId);
+        }
+      },
+      {
+        // Generous margin: Top 60% of the viewport
+        rootMargin: "-80px 0px -40% 0px",
+        threshold: 0,
+      },
+    );
+
+    for (const section of visibleSections) {
+      const el = sectionRefs.current[section.id];
+      if (el) observer.observe(el);
+    }
+
+    const handleScroll = () => {
+      if (isManualScrolling.current) return;
+      if (getIsAtBottom()) {
+        setActiveTab(visibleSections[visibleSections.length - 1].id);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [loading, visibleSections]);
+
+  // Sync horizontal scroll of tab bar when activeTab changes
+  useEffect(() => {
+    if (!activeTab || !tabsContainerRef.current) return;
+    const activeBtn = tabsContainerRef.current.querySelector(`button[data-section="${activeTab}"]`);
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+  }, [activeTab]);
+
   // Close account ellipsis menu on click outside
   useEffect(() => {
     if (!acctMenuOpen) return;
@@ -444,11 +523,16 @@ export default function Settings() {
   }, [budgetMenuOpen]);
 
   const scrollToSection = useCallback((id: string) => {
+    if (manualScrollTimeout.current) clearTimeout(manualScrollTimeout.current);
+    isManualScrolling.current = true;
     setActiveTab(id);
     const el = sectionRefs.current[id];
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+    manualScrollTimeout.current = setTimeout(() => {
+      isManualScrolling.current = false;
+    }, 800);
   }, []);
 
   const handleToggleCategory = async (id: string) => {
@@ -801,6 +885,7 @@ export default function Settings() {
 
       {/* Tab bar: appears on scroll, fixed to viewport */}
       <div
+        ref={tabsContainerRef}
         className={`flex gap-1 overflow-x-auto scrollbar-hide fixed top-0 left-0 right-0 z-40 bg-surface-page/80 backdrop-blur-md border-b border-edge-default shadow-sm px-4 py-2.5 transition-all duration-200 ${
           showTabs ? "opacity-100 translate-y-0" : "opacity-0 pointer-events-none -translate-y-full"
         }`}
@@ -809,6 +894,7 @@ export default function Settings() {
           <button
             key={section.id}
             type="button"
+            data-section={section.id}
             onClick={() => scrollToSection(section.id)}
             className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
               activeTab === section.id
