@@ -3,6 +3,9 @@
 
 services:
   postgres:
+    volumes:
+      - ./pg_hba.selfhost.conf:/etc/postgresql/pg_hba.conf:ro
+    command: postgres -c hba_file=/etc/postgresql/pg_hba.conf
     deploy:
       resources:
         limits:

@@ -73,34 +73,6 @@ if (-not $upgrading) {
     }
 }
 
-# --- upgrade detection ---
-$upgrading = $false
-try {
-    $running = & docker compose -p cofr ps -q 2>$null
-    if ($running) { $upgrading = $true }
-} catch { }
-
-if ($upgrading) {
-    Write-Step "existing installation detected — upgrading to $COFR_VERSION"
-} else {
-    Write-Step "fresh install"
-}
-Write-Host ""
-
-# --- port conflict check (skip if already running, those are ours) ---
-function Test-PortInUse { param([int]$port)
-    $listeners = [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()
-    return ($listeners | Where-Object { $_.Port -eq $port }).Count -gt 0
-}
-
-if (-not $upgrading) {
-    foreach ($port in @(80, 443)) {
-        if (Test-PortInUse $port) {
-            Write-Fatal "Port $port is already in use. Stop the conflicting service and re-run."
-        }
-    }
-}
-
 # --- dirs ---
 New-Item -ItemType Directory -Force -Path "$INSTALL_DIR\infra"        | Out-Null
 New-Item -ItemType Directory -Force -Path "$INSTALL_DIR\apps\server"  | Out-Null
@@ -122,7 +94,7 @@ function New-HexSecret { param([int]$bytes)
 
 function New-FernetKey {
     $b64 = [Convert]::ToBase64String((New-RandomBytes 32))
-    return $b64.Replace('+', '-').Replace('/', '_').TrimEnd('=')
+    return $b64.Replace('+', '-').Replace('/', '_')
 }
 
 # --- env files (idempotent) ---
@@ -166,6 +138,7 @@ $wc = New-Object System.Net.WebClient
 $wc.DownloadFile("$GITHUB_RAW/infra/docker-compose.yml",          "$INSTALL_DIR\infra\docker-compose.yml")
 $wc.DownloadFile("$GITHUB_RAW/infra/docker-compose.selfhost.yml", "$INSTALL_DIR\infra\docker-compose.selfhost.yml")
 $wc.DownloadFile("$GITHUB_RAW/infra/Caddyfile.selfhost",          "$INSTALL_DIR\infra\Caddyfile.selfhost")
+$wc.DownloadFile("$GITHUB_RAW/infra/pg_hba.selfhost.conf",        "$INSTALL_DIR\infra\pg_hba.selfhost.conf")
 
 # --- start ---
 Write-Step "pulling images and starting services..."
