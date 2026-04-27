@@ -11,7 +11,7 @@ function readLockout(): number | null {
     const raw = localStorage.getItem(LOCKOUT_KEY);
     if (!raw) return null;
     const until = parseInt(raw, 10);
-    if (isNaN(until) || until <= Date.now()) {
+    if (Number.isNaN(until) || until <= Date.now()) {
       localStorage.removeItem(LOCKOUT_KEY);
       return null;
     }

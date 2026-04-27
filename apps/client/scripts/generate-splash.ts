@@ -52,8 +52,8 @@ async function generateSplash() {
       .toBuffer();
 
     const resizedMeta = await sharp(resizedLogo).metadata();
-    const logoW = resizedMeta.width!;
-    const logoH = resizedMeta.height!;
+    const logoW = resizedMeta.width || logoSize;
+    const logoH = resizedMeta.height || logoSize;
 
     const filename = `apple-splash-${width}x${height}.png`;
 

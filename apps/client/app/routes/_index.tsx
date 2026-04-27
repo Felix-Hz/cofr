@@ -1148,7 +1148,7 @@ function SelfHostSection() {
     },
   ];
 
-  const activeTab = tabs.find((t) => t.id === platform)!;
+  const activeTab = tabs.find((t) => t.id === platform) || tabs[0];
 
   const copy = () => {
     navigator.clipboard.writeText(activeTab.cmd).then(() => {
