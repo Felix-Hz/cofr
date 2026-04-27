@@ -227,17 +227,12 @@ function AlertTriangleIcon() {
 
 function RepeatIcon() {
   return (
-    <svg
-      className="w-5 h-5"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      viewBox="0 0 24 24"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17.5 7.5h-6a4 4 0 00-4 4" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M17 4.5l3 3-3 3" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 16.5h6a4 4 0 004-4" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7 13.5l-3 3 3 3" />
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4 4v6h6M20 20v-6h-6M20 9A8 8 0 006.34 5.34M4 15a8 8 0 0013.66 3.66"
+      />
     </svg>
   );
 }

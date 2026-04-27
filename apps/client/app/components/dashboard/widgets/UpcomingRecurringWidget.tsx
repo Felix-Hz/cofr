@@ -27,7 +27,7 @@ export function UpcomingRecurringWidget() {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M16.023 9.348h4.992V4.356M2.985 19.644v-4.992h4.992m0 0h8.046m-8.046 0L4.5 18.227A8.25 8.25 0 0016.5 18.5l3-3m0-7.5A8.25 8.25 0 007.5 7.773L4.985 10.288"
+              d="M4 4v6h6M20 20v-6h-6M20 9A8 8 0 006.34 5.34M4 15a8 8 0 0013.66 3.66"
             />
           </svg>
           Upcoming recurring

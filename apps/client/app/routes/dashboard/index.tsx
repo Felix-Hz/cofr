@@ -30,6 +30,7 @@ import {
   updateExpense,
   updateTransfer,
 } from "~/lib/api";
+import { useBudgets } from "~/lib/budgets";
 import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 import { DashboardDataProvider } from "~/lib/dashboard/data-context";
@@ -537,11 +538,13 @@ export default function Dashboard() {
       else await createExpense(data);
       setIsFormModalOpen(false);
       revalidator.revalidate();
+      refreshBudgets();
     } finally {
       setIsLoading(false);
     }
   };
   const { refresh: refreshRecurring } = useRecurring();
+  const { refresh: refreshBudgets } = useBudgets();
 
   const handleMakeRecurring = useCallback((prefill: Partial<RecurringRuleCreate>) => {
     setRecurringPrefill(prefill);
@@ -570,6 +573,7 @@ export default function Dashboard() {
       else await createTransfer(data);
       setIsTransferModalOpen(false);
       revalidator.revalidate();
+      refreshBudgets();
     } finally {
       setIsLoading(false);
     }
@@ -581,6 +585,7 @@ export default function Dashboard() {
       await deleteExpense(selectedExpense.id);
       setIsFormModalOpen(false);
       revalidator.revalidate();
+      refreshBudgets();
     } finally {
       setIsLoading(false);
     }
@@ -592,6 +597,7 @@ export default function Dashboard() {
       await deleteTransfer(selectedExpense.id);
       setIsTransferModalOpen(false);
       revalidator.revalidate();
+      refreshBudgets();
     } finally {
       setIsLoading(false);
     }
@@ -603,6 +609,7 @@ export default function Dashboard() {
       await deleteExpense(selectedExpense.id);
       setIsDeleteModalOpen(false);
       revalidator.revalidate();
+      refreshBudgets();
     } finally {
       setIsLoading(false);
     }

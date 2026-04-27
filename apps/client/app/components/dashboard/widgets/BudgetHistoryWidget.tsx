@@ -41,7 +41,7 @@ function HistoryBar({
         style={{ height: `${Math.max(spentH, period.spent > 0 ? 2 : 0)}%` }}
       />
       {/* Tooltip */}
-      <div className="absolute bottom-full mb-1.5 hidden group-hover:block z-10 pointer-events-none">
+      <div className="absolute top-1 left-1/2 -translate-x-1/2 hidden group-hover:block z-10 pointer-events-none">
         <div className="bg-surface-primary border border-edge-default rounded-md px-2.5 py-1.5 shadow-lg text-[10px] whitespace-nowrap">
           <div className="font-medium text-content-primary">{period.period_label}</div>
           <div className="text-content-secondary">
@@ -122,7 +122,7 @@ export function BudgetHistoryWidget() {
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="text-[10px] bg-surface-elevated border border-edge-default rounded px-1.5 py-0.5 text-content-secondary focus:outline-none focus:ring-1 focus:ring-emerald max-w-[120px] truncate"
+            className="text-[10px] bg-surface-elevated border border-edge-default rounded px-1.5 py-0.5 text-content-secondary focus:outline-none focus:ring-1 focus:ring-emerald max-w-[180px] truncate"
           >
             {periodicBudgets.map((b) => (
               <option key={b.id} value={b.id}>
