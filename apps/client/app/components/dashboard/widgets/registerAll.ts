@@ -2,6 +2,8 @@ import { registerWidgets } from "~/lib/dashboard/registry";
 import { AccountBalancesWidget } from "./AccountBalancesWidget";
 import { AccountTrendWidget } from "./AccountTrendWidget";
 import { AverageDailySpendWidget } from "./AverageDailySpendWidget";
+import { BudgetHistoryWidget } from "./BudgetHistoryWidget";
+import { BudgetOverviewWidget } from "./BudgetOverviewWidget";
 import { CategoryPieWidget } from "./CategoryPieWidget";
 import { IncomeSpendCompareWidget } from "./IncomeSpendCompareWidget";
 import { MonthlyTrendBarsWidget } from "./MonthlyTrendBarsWidget";
@@ -43,6 +45,8 @@ export function ensureWidgetsRegistered(): void {
     net_worth: NetWorthWidget,
     savings_investment: SavingsInvestmentWidget,
     spend_sparkline: SpendSparklineWidget,
+    budget_overview: BudgetOverviewWidget,
+    budget_history: BudgetHistoryWidget,
   });
   registered = true;
 }

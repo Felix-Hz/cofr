@@ -21,14 +21,12 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
   const markerGradientId = useId();
   const isCompact = widget.row_span <= 2;
   const lineStrokeWidth = isCompact ? 2.25 : 2.75;
-  const todayOuterRadius = isCompact ? 3.5 : 4.5;
-  const todayInnerRadius = isCompact ? 2 : 2.5;
-  const latestRadius = isCompact ? 2 : 2.5;
   const {
     path,
     total,
     peak,
     latest,
+    latestDotY,
     average,
     change,
     changeTone,
@@ -46,6 +44,7 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
         total: 0,
         peak: 0,
         latest: 0,
+        latestDotY: 0,
         average: 0,
         change: 0,
         changeTone: "flat" as const,
@@ -72,11 +71,13 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
     const todayKey = getTodayKey();
     const todayPoint = coords.find((point) => point.date === todayKey);
     const latestDate = points[points.length - 1]?.date ?? "";
+    const latestDotY = VIEWBOX_H - PAD - (latestPoint / Math.max(max, 1)) * (VIEWBOX_H - PAD * 2);
     return {
       path: line,
       total: points.reduce((sum, p) => sum + p.total, 0),
       peak: max,
       latest: latestPoint,
+      latestDotY,
       average: avg,
       change: delta,
       changeTone: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
@@ -228,33 +229,47 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
               />
-              {hasTodayInRange &&
-              todayX !== null &&
-              todayY !== null &&
-              !isTodayLatest &&
-              todayY < VIEWBOX_H - PAD - 1 ? (
-                <g>
-                  <circle
-                    cx={todayX}
-                    cy={todayY}
-                    r={todayOuterRadius}
-                    fill="#ffffff"
-                    fillOpacity={0.96}
-                  />
-                  <circle cx={todayX} cy={todayY} r={todayInnerRadius} fill="#059669" />
-                  <circle cx={todayX} cy={todayY} r={10} fill="transparent">
-                    <title>Today</title>
-                  </circle>
-                </g>
-              ) : null}
-              <circle
-                cx={VIEWBOX_W - PAD}
-                cy={VIEWBOX_H - PAD - (latest / Math.max(peak, 1)) * (VIEWBOX_H - PAD * 2)}
-                r={latestRadius}
-                fill="#059669"
-                fillOpacity={0.92}
-              />
             </svg>
+            {/* Dots rendered as HTML so they stay circular regardless of widget aspect ratio */}
+            <div
+              className={`pointer-events-none absolute ${isCompact ? "inset-x-2 inset-y-1.5" : "inset-3"}`}
+            >
+              {hasTodayInRange &&
+                todayX !== null &&
+                todayY !== null &&
+                !isTodayLatest &&
+                todayY < VIEWBOX_H - PAD - 1 && (
+                  <div
+                    title="Today"
+                    className="absolute flex items-center justify-center rounded-full bg-white/95"
+                    style={{
+                      left: `${(todayX / VIEWBOX_W) * 100}%`,
+                      top: `${(todayY / VIEWBOX_H) * 100}%`,
+                      transform: "translate(-50%, -50%)",
+                      width: isCompact ? 7 : 9,
+                      height: isCompact ? 7 : 9,
+                    }}
+                  >
+                    <div
+                      className="rounded-full bg-[#059669]"
+                      style={{ width: isCompact ? 4 : 5, height: isCompact ? 4 : 5 }}
+                    />
+                  </div>
+                )}
+              {path && (
+                <div
+                  className="absolute rounded-full bg-[#059669]"
+                  style={{
+                    left: `${((VIEWBOX_W - PAD) / VIEWBOX_W) * 100}%`,
+                    top: `${(latestDotY / VIEWBOX_H) * 100}%`,
+                    transform: "translate(-50%, -50%)",
+                    width: isCompact ? 4 : 5,
+                    height: isCompact ? 4 : 5,
+                    opacity: 0.92,
+                  }}
+                />
+              )}
+            </div>
           </div>
 
           {!isCompact ? (

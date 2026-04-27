@@ -392,6 +392,68 @@ class ExportHistoryResponse(BaseModel):
     offset: int
 
 
+# ── Budget Schemas ──
+
+
+class BudgetSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    period_type: str
+    amount: float
+    currency: str
+    budget_type: str
+    start_date: date | None = None
+    end_date: date | None = None
+    is_active: bool
+    category_ids: list[str]
+    # Runtime computed (current period)
+    spent: float
+    remaining: float
+    period_start: date
+    period_end: date
+
+
+class BudgetCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    period_type: str = Field(pattern=r"^(weekly|monthly|custom)$")
+    amount: float = Field(gt=0)
+    currency: str = Field(pattern="^[A-Z]{3}$")
+    budget_type: str = Field(default="expense", pattern=r"^(expense|income)$")
+    start_date: date | None = None
+    end_date: date | None = None
+    category_ids: list[str] = Field(default_factory=list)
+
+
+class BudgetUpdateRequest(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    period_type: str | None = Field(default=None, pattern=r"^(weekly|monthly|custom)$")
+    amount: float | None = Field(default=None, gt=0)
+    currency: str | None = Field(default=None, pattern="^[A-Z]{3}$")
+    budget_type: str | None = Field(default=None, pattern=r"^(expense|income)$")
+    start_date: date | None = None
+    end_date: date | None = None
+    category_ids: list[str] | None = None
+    is_active: bool | None = None
+
+
+class BudgetHistoryPeriod(BaseModel):
+    period_label: str
+    period_start: date
+    period_end: date
+    budgeted: float
+    spent: float
+
+
+class BudgetHistoryResponse(BaseModel):
+    budget_id: str
+    budget_name: str
+    currency: str
+    budget_type: str
+    periods: list[BudgetHistoryPeriod]
+
+
 # ── Dashboard Schemas ──
 
 

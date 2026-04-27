@@ -470,9 +470,9 @@ export function getPresetLabel(preset: Preset, startDate: string, endDate: strin
   const sameYear = sYear === eYear;
   const isCurrentYear = sameYear && sYear === currentYear;
 
-  // lastYear: "Mar 25–26"
+  // lastYear: "Mar '25–'26" (apostrophes make years unambiguous)
   if (preset === "lastYear") {
-    return `${MONTHS_SHORT[sMonth]} ${String(sYear).slice(2)}–${String(eYear).slice(2)}`;
+    return `${MONTHS_SHORT[sMonth]} '${String(sYear).slice(2)}–'${String(eYear).slice(2)}`;
   }
 
   // last7Days + custom: smart compression
@@ -480,9 +480,9 @@ export function getPresetLabel(preset: Preset, startDate: string, endDate: strin
   const dayMonth = (d: Date) => `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`;
 
   if (sameMonth) {
-    // "14–21 Mar" or "14–21 Mar '25"
+    // "Apr 14–21" or "Apr 14–21 '25" (month first avoids year confusion)
     const suffix = isCurrentYear ? "" : ` ${shortYear(sYear)}`;
-    return `${s.getDate()}–${e.getDate()} ${MONTHS_SHORT[sMonth]}${suffix}`;
+    return `${MONTHS_SHORT[sMonth]} ${s.getDate()}–${e.getDate()}${suffix}`;
   }
   if (sameYear) {
     // "28 Feb – 7 Mar" or "28 Feb – 7 Mar '25"

@@ -32,6 +32,8 @@ ALLOWED_WIDGET_TYPES: frozenset[str] = frozenset(
         "account_trend",
         "recurring_subscriptions",
         "upcoming_recurring",
+        "budget_overview",
+        "budget_history",
     }
 )
 

@@ -96,6 +96,7 @@ class Category(Base):
     type: Mapped[str] = mapped_column(String(10), default="expense")
     alias: Mapped[str | None] = mapped_column(String(10), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     user: Mapped["User | None"] = relationship(back_populates="categories")
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="category_rel")
@@ -305,6 +306,44 @@ class DashboardWidget(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     space: Mapped["DashboardSpace"] = relationship(back_populates="widgets")
+
+
+class Budget(Base):
+    __tablename__ = "budgets"
+
+    id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(80))
+    period_type: Mapped[str] = mapped_column(String(10))  # weekly | monthly | custom
+    amount: Mapped[float] = mapped_column(Float)
+    currency: Mapped[str] = mapped_column(String(3), default="USD")
+    budget_type: Mapped[str] = mapped_column(String(10), default="expense")  # expense | income
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    categories: Mapped[list["BudgetCategory"]] = relationship(
+        back_populates="budget", cascade="all, delete-orphan"
+    )
+
+
+class BudgetCategory(Base):
+    __tablename__ = "budget_categories"
+
+    budget_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("budgets.id", ondelete="CASCADE"), primary_key=True
+    )
+    category_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("categories.id", ondelete="CASCADE"), primary_key=True
+    )
+
+    budget: Mapped["Budget"] = relationship(back_populates="categories")
 
 
 class EmailSuppression(Base):

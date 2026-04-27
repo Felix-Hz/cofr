@@ -1,10 +1,11 @@
 import re
+from datetime import UTC, datetime
 
 from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.models import Category, Transaction, UserCategoryPreference
+from app.db.models import Category, RecurringRule, UserCategoryPreference
 from app.db.schemas import CategoryCreateRequest, CategorySchema, CategoryUpdateRequest
 
 
@@ -21,7 +22,10 @@ class CategoryService:
                 (UserCategoryPreference.category_id == Category.id)
                 & (UserCategoryPreference.user_id == user_id),
             )
-            .filter((Category.user_id == user_id) | Category.user_id.is_(None))
+            .filter(
+                ((Category.user_id == user_id) & Category.deleted_at.is_(None))
+                | Category.user_id.is_(None)
+            )
             .order_by(Category.display_order)
             .all()
         )
@@ -39,11 +43,7 @@ class CategoryService:
         return result
 
     async def create_category(self, user_id: str, data: CategoryCreateRequest) -> CategorySchema:
-        """Create a custom category (max 20 per user)."""
-        count = self.db.query(func.count(Category.id)).filter(Category.user_id == user_id).scalar()
-        if count >= 20:
-            raise HTTPException(status_code=400, detail="Maximum 20 custom categories allowed")
-
+        """Create a custom category (max 20 per user). If a soft-deleted category with the same slug exists, restores it."""
         slug = _generate_slug(data.name)
 
         existing = (
@@ -51,8 +51,29 @@ class CategoryService:
             .filter(Category.user_id == user_id, Category.slug == slug)
             .first()
         )
+
         if existing:
+            if existing.deleted_at is not None:
+                # Restore the soft-deleted category with updated fields
+                existing.deleted_at = None
+                existing.name = data.name
+                existing.color_light = data.color_light
+                existing.color_dark = data.color_dark
+                existing.type = data.type
+                existing.alias = data.alias.upper() if data.alias else None
+                existing.is_active = True
+                self.db.commit()
+                self.db.refresh(existing)
+                return _to_schema(existing, existing.is_active)
             raise HTTPException(status_code=409, detail="A category with this name already exists")
+
+        live_count = (
+            self.db.query(func.count(Category.id))
+            .filter(Category.user_id == user_id, Category.deleted_at.is_(None))
+            .scalar()
+        )
+        if live_count >= 20:
+            raise HTTPException(status_code=400, detail="Maximum 20 custom categories allowed")
 
         if data.alias:
             if _check_alias_conflict(self.db, user_id, data.alias.upper()):
@@ -119,7 +140,7 @@ class CategoryService:
         return _to_schema(category, category.is_active)
 
     async def delete_category(self, user_id: str, category_id: str) -> dict:
-        """Delete a custom category, reassign transactions to Miscellaneous."""
+        """Soft-delete a custom category. Transactions keep their category reference. Recurring rules using this category are paused."""
         category = self.db.query(Category).filter(Category.id == category_id).first()
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
@@ -127,22 +148,19 @@ class CategoryService:
             raise HTTPException(status_code=403, detail="Cannot delete system categories")
         if str(category.user_id) != user_id:
             raise HTTPException(status_code=403, detail="Not authorized")
+        if category.deleted_at is not None:
+            raise HTTPException(status_code=409, detail="Category already deleted")
 
-        misc = (
-            self.db.query(Category)
-            .filter(Category.user_id.is_(None), Category.slug == "miscellaneous")
-            .first()
-        )
+        category.deleted_at = datetime.now(UTC)
 
-        self.db.query(Transaction).filter(Transaction.category_id == category_id).update(
-            {Transaction.category_id: misc.id}
-        )
-        self.db.delete(category)
+        self.db.query(RecurringRule).filter(
+            RecurringRule.user_id == user_id,
+            RecurringRule.category_id == category_id,
+            RecurringRule.is_active.is_(True),
+        ).update({RecurringRule.is_active: False})
+
         self.db.commit()
-        return {
-            "success": True,
-            "message": "Category deleted, transactions reassigned to Miscellaneous",
-        }
+        return {"success": True, "message": "Category deleted"}
 
     async def toggle_category(self, user_id: str, category_id: str) -> dict:
         """Toggle active state. System categories go through user preferences; custom categories update directly."""

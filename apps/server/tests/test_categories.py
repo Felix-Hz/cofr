@@ -117,15 +117,14 @@ def test_update_system_category_403(client, auth_headers, system_categories):
     assert resp.status_code == 403
 
 
-def test_delete_category_reassigns_to_miscellaneous(
+def test_delete_category_keeps_transaction_reference(
     client, auth_headers, system_categories, db_session
 ):
     headers, user_id = auth_headers
     cat = make_category(db_session, user_id, name="Doomed")
     cat_id = str(cat.id)
-    misc_id = str(system_categories["miscellaneous"].id)
 
-    # Create expense with the doomed category
+    # Create expense with the category
     client.post(
         "/expenses/",
         json={"amount": 10, "category_id": cat_id, "currency": "NZD"},
@@ -135,10 +134,15 @@ def test_delete_category_reassigns_to_miscellaneous(
     resp = client.delete(f"/categories/{cat_id}", headers=headers)
     assert resp.status_code == 200
 
-    # Verify the expense was reassigned to Miscellaneous
+    # Category is soft-deleted: transaction still references the original category_id
     expenses = client.get("/expenses/", headers=headers).json()["expenses"]
     assert len(expenses) == 1
-    assert expenses[0]["category_id"] == misc_id
+    assert expenses[0]["category_id"] == cat_id
+
+    # Category no longer appears in the category list
+    cats = client.get("/categories/", headers=headers).json()
+    cat_ids = [c["id"] for c in cats]
+    assert cat_id not in cat_ids
 
 
 def test_delete_system_category_403(client, auth_headers, system_categories):

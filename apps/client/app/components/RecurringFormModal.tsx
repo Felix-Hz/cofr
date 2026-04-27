@@ -94,7 +94,6 @@ export default function RecurringFormModal({
     count: 1,
   });
   const [startDate, setStartDate] = useState(todayIso());
-  const [hasEndDate, setHasEndDate] = useState(false);
   const [endDate, setEndDate] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -138,7 +137,6 @@ export default function RecurringFormModal({
         count: rule.interval_count,
       });
       setStartDate(rule.start_date);
-      setHasEndDate(!!rule.end_date);
       setEndDate(rule.end_date ?? "");
       setShowDeleteConfirm(false);
       return;
@@ -159,7 +157,6 @@ export default function RecurringFormModal({
     setDescription(prefill?.description ?? "");
     setCadence({ preset: "monthly", unit: "month", count: 1 });
     setStartDate(prefill?.start_date ?? todayIso());
-    setHasEndDate(!!prefill?.end_date);
     setEndDate(prefill?.end_date ?? "");
     setShowDeleteConfirm(false);
   }, [isOpen, rule, prefill, defaultAccountId, defaultExpenseCategoryId, defaultIncomeCategoryId]);
@@ -195,15 +192,8 @@ export default function RecurringFormModal({
   };
 
   const upcoming = useMemo(
-    () =>
-      previewUpcoming(
-        startDate,
-        cadence.unit,
-        cadence.count,
-        3,
-        hasEndDate && endDate ? endDate : null,
-      ),
-    [startDate, cadence.unit, cadence.count, hasEndDate, endDate],
+    () => previewUpcoming(startDate, cadence.unit, cadence.count, 3, endDate || null),
+    [startDate, cadence.unit, cadence.count, endDate],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -233,7 +223,7 @@ export default function RecurringFormModal({
       day_of_month: null,
       day_of_week: null,
       start_date: startDate,
-      end_date: hasEndDate && endDate ? endDate : null,
+      end_date: endDate || null,
     };
 
     await onSubmit(data);
@@ -305,12 +295,12 @@ export default function RecurringFormModal({
           </div>
 
           <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-            <div className="overflow-y-auto overflow-x-hidden overscroll-contain touch-auto flex-1 min-h-0 space-y-2 sm:space-y-4 px-0.5">
+            <div className="overflow-y-auto overflow-x-hidden overscroll-contain touch-auto flex-1 min-h-0 space-y-3 sm:space-y-4 pl-0.5 pr-2">
               {/* Name */}
               <div>
                 <label
                   htmlFor="rec-name"
-                  className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                  className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5"
                 >
                   Name <span className="text-negative-text">*</span>
                 </label>
@@ -327,11 +317,11 @@ export default function RecurringFormModal({
               </div>
 
               {/* Amount + Currency */}
-              <div className="flex gap-2 items-end">
+              <div className="flex gap-2 items-start">
                 <div className="flex-1">
                   <label
                     htmlFor="rec-amount"
-                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5"
                   >
                     Amount <span className="text-negative-text">*</span>
                   </label>
@@ -349,7 +339,7 @@ export default function RecurringFormModal({
                 <div className="w-24 sm:w-28">
                   <label
                     htmlFor="rec-currency"
-                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5"
                   >
                     Currency <span className="text-negative-text">*</span>
                   </label>
@@ -375,7 +365,7 @@ export default function RecurringFormModal({
                   <div className="flex-1 min-w-0">
                     <label
                       htmlFor="rec-account"
-                      className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                      className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5"
                     >
                       {type === "transfer"
                         ? "From Account"
@@ -402,7 +392,7 @@ export default function RecurringFormModal({
                     <div className="flex-1 min-w-0">
                       <label
                         htmlFor="rec-to-account"
-                        className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                        className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5"
                       >
                         To Account <span className="text-negative-text">*</span>
                       </label>
@@ -432,7 +422,7 @@ export default function RecurringFormModal({
                 <div>
                   <label
                     htmlFor="rec-category"
-                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5"
                   >
                     Category <span className="text-negative-text">*</span>
                   </label>
@@ -458,7 +448,7 @@ export default function RecurringFormModal({
                   <div className="sm:w-[42%]">
                     <label
                       htmlFor="rec-merchant"
-                      className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                      className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5"
                     >
                       Merchant
                     </label>
@@ -477,7 +467,7 @@ export default function RecurringFormModal({
                 <div className="flex-1 min-w-0">
                   <label
                     htmlFor="rec-description"
-                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5"
                   >
                     Description
                   </label>
@@ -495,8 +485,8 @@ export default function RecurringFormModal({
 
               {/* Cadence */}
               <div>
-                <span className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1">
-                  Repeats <span className="text-negative-text">*</span>
+                <span className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5">
+                  Repeats every <span className="text-negative-text">*</span>
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {PRESETS.map((p) => (
@@ -554,7 +544,7 @@ export default function RecurringFormModal({
                 <div className="flex-1">
                   <label
                     htmlFor="rec-start"
-                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1"
+                    className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5"
                   >
                     Starts <span className="text-negative-text">*</span>
                   </label>
@@ -568,28 +558,20 @@ export default function RecurringFormModal({
                   />
                 </div>
                 <div className="flex-1">
-                  <span className="block text-xs sm:text-sm font-medium text-content-secondary mb-0.5 sm:mb-1">
+                  <span className="block text-xs sm:text-sm font-medium text-content-secondary mb-1 sm:mb-1.5">
                     Ends
                   </span>
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-1.5 text-xs text-content-secondary cursor-pointer shrink-0">
-                      <input
-                        type="checkbox"
-                        checked={hasEndDate}
-                        onChange={(e) => setHasEndDate(e.target.checked)}
-                        className="w-4 h-4 rounded border-edge-strong text-emerald focus:ring-emerald accent-emerald"
-                      />
-                      On
-                    </label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      disabled={!hasEndDate}
-                      min={startDate}
-                      className="flex-1 min-w-0 px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald disabled:opacity-50"
-                    />
-                  </div>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate}
+                    placeholder="No end date"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  />
+                  <p className="mt-1 text-[10px] text-content-muted">
+                    Leave blank to repeat indefinitely.
+                  </p>
                 </div>
               </div>
 

@@ -91,6 +91,11 @@ export default function CategoryColorPicker({
           );
         })}
       </div>
+      {usedColors.length > 0 && (
+        <p className="mt-2 text-[10px] text-content-muted">
+          A dot on a swatch means it is already used by another category.
+        </p>
+      )}
     </div>
   );
 }

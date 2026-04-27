@@ -374,6 +374,66 @@ export const RecurringRuleDeleteResponseSchema = z.object({
 });
 
 // ============================================================================
+// Budget Schemas
+// ============================================================================
+
+export const BudgetSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  period_type: z.enum(["weekly", "monthly", "custom"]),
+  amount: z.number().positive(),
+  currency: z.string().length(3),
+  budget_type: z.enum(["expense", "income"]),
+  start_date: z.coerce.date().nullable().optional(),
+  end_date: z.coerce.date().nullable().optional(),
+  is_active: z.boolean(),
+  category_ids: z.array(z.string()),
+  spent: z.number(),
+  remaining: z.number(),
+  period_start: z.coerce.date(),
+  period_end: z.coerce.date(),
+});
+
+export const BudgetCreateSchema = z.object({
+  name: z.string().min(1).max(80),
+  period_type: z.enum(["weekly", "monthly", "custom"]),
+  amount: z.number().positive(),
+  currency: z.string().length(3),
+  budget_type: z.enum(["expense", "income"]).default("expense"),
+  start_date: z.coerce.date().nullable().optional(),
+  end_date: z.coerce.date().nullable().optional(),
+  category_ids: z.array(z.string()).default([]),
+});
+
+export const BudgetUpdateSchema = z.object({
+  name: z.string().min(1).max(80).optional(),
+  period_type: z.enum(["weekly", "monthly", "custom"]).optional(),
+  amount: z.number().positive().optional(),
+  currency: z.string().length(3).optional(),
+  budget_type: z.enum(["expense", "income"]).optional(),
+  start_date: z.coerce.date().nullable().optional(),
+  end_date: z.coerce.date().nullable().optional(),
+  category_ids: z.array(z.string()).optional(),
+  is_active: z.boolean().optional(),
+});
+
+export const BudgetHistoryPeriodSchema = z.object({
+  period_label: z.string(),
+  period_start: z.coerce.date(),
+  period_end: z.coerce.date(),
+  budgeted: z.number(),
+  spent: z.number(),
+});
+
+export const BudgetHistoryResponseSchema = z.object({
+  budget_id: z.string(),
+  budget_name: z.string(),
+  currency: z.string(),
+  budget_type: z.string(),
+  periods: z.array(BudgetHistoryPeriodSchema),
+});
+
+// ============================================================================
 // Dashboard Layout Schemas
 // ============================================================================
 
@@ -477,3 +537,8 @@ export type DashboardLayoutResponse = z.infer<typeof DashboardLayoutResponseSche
 export type DashboardWidgetInput = z.infer<typeof DashboardWidgetInputSchema>;
 export type DashboardSpaceInput = z.infer<typeof DashboardSpaceInputSchema>;
 export type DashboardLayoutUpdate = z.infer<typeof DashboardLayoutUpdateSchema>;
+export type Budget = z.infer<typeof BudgetSchema>;
+export type BudgetCreate = z.infer<typeof BudgetCreateSchema>;
+export type BudgetUpdate = z.infer<typeof BudgetUpdateSchema>;
+export type BudgetHistoryPeriod = z.infer<typeof BudgetHistoryPeriodSchema>;
+export type BudgetHistoryResponse = z.infer<typeof BudgetHistoryResponseSchema>;

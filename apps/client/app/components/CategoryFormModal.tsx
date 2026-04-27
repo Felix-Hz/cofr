@@ -156,21 +156,31 @@ export default function CategoryFormModal({
 
             {/* Type */}
             <div>
-              <label
-                htmlFor="cat-type"
-                className="block text-sm font-medium text-content-secondary mb-1"
-              >
-                Type
-              </label>
-              <select
-                id="cat-type"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-              >
-                <option value="expense">Expense</option>
-                <option value="income">Income</option>
-              </select>
+              <label className="block text-sm font-medium text-content-secondary mb-1">Type</label>
+              <div className="flex rounded-lg bg-surface-elevated p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setType("expense")}
+                  className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    type === "expense"
+                      ? "bg-emerald text-white shadow-sm"
+                      : "text-content-tertiary hover:text-content-secondary"
+                  }`}
+                >
+                  Expense
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType("income")}
+                  className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    type === "income"
+                      ? "bg-positive-bg text-positive-text-strong shadow-sm"
+                      : "text-content-tertiary hover:text-content-secondary"
+                  }`}
+                >
+                  Income
+                </button>
+              </div>
             </div>
 
             {/* Alias */}
