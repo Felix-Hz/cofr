@@ -418,7 +418,6 @@ export default function Settings() {
   // Update active tab based on scroll position
   const intersectingSections = useRef<Record<string, boolean>>({});
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: stable observer logic
   useEffect(() => {
     if (loading) return;
 

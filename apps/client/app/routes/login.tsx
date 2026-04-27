@@ -30,7 +30,7 @@ function readLockout(mode: "signin" | "signup"): number | null {
     const raw = localStorage.getItem(lockoutKey(mode));
     if (!raw) return null;
     const until = parseInt(raw, 10);
-    if (isNaN(until) || until <= Date.now()) {
+    if (Number.isNaN(until) || until <= Date.now()) {
       localStorage.removeItem(lockoutKey(mode));
       return null;
     }
@@ -265,7 +265,22 @@ export default function Login() {
             </>
           )}
 
-          <a href={`${API_BASE_URL}/auth/oauth/google/login`} className="auth-provider-button">
+          <a
+            href={`${API_BASE_URL}/auth/oauth/google/login`}
+            className="auth-provider-button"
+            onClick={(e) => {
+              const isCaptive =
+                /FBAN|FBAV|Instagram|LinkedInApp|Snapchat|Line|Reddit|Twitter/i.test(
+                  navigator.userAgent || "",
+                );
+              if (isCaptive) {
+                e.preventDefault();
+                setError(
+                  "Google Login is blocked in this app's browser. Please tap the '...' or share icon and select 'Open in System Browser' (Safari/Chrome) to continue.",
+                );
+              }
+            }}
+          >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"

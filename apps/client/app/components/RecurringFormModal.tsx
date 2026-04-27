@@ -159,7 +159,15 @@ export default function RecurringFormModal({
     setStartDate(prefill?.start_date ?? todayIso());
     setEndDate(prefill?.end_date ?? "");
     setShowDeleteConfirm(false);
-  }, [isOpen, rule, prefill, defaultAccountId, defaultExpenseCategoryId, defaultIncomeCategoryId]);
+  }, [
+    isOpen,
+    rule,
+    prefill,
+    defaultAccountId,
+    defaultExpenseCategoryId,
+    defaultIncomeCategoryId,
+    defaultCurrency,
+  ]);
 
   const handleTypeSwitch = (next: RecurringRuleType) => {
     if (next === type) return;
