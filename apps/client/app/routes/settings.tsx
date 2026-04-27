@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, redirect } from "react-router";
 import AccountDeleteModal from "~/components/AccountDeleteModal";
+import BudgetFormModal from "~/components/BudgetFormModal";
 import CategoryFormModal from "~/components/CategoryFormModal";
 import DeleteAccountModal from "~/components/DeleteAccountModal";
 import DeleteConfirmModal from "~/components/DeleteConfirmModal";
@@ -14,12 +15,15 @@ import { useAccounts } from "~/lib/accounts";
 import {
   changePassword,
   createAccount,
+  createBudget,
   createCategory,
   createExpense,
   createRecurringRule,
   deleteAccount,
+  deleteBudget,
   deleteCategory,
   deleteRecurringRule,
+  getAccountBalances,
   getLinkedProviders,
   getPreferences,
   moveTransactions,
@@ -27,17 +31,21 @@ import {
   toggleRecurringRule,
   unlinkProvider,
   updateAccount,
+  updateBudget,
   updateCategory,
   updatePreferences,
   updateRecurringRule,
 } from "~/lib/api";
 import { isAuthenticated } from "~/lib/auth";
+import { useBudgets } from "~/lib/budgets";
 import { useCategories } from "~/lib/categories";
 import { SUPPORTED_CURRENCIES } from "~/lib/constants";
 import { isPasswordValid } from "~/lib/password";
 import { useRecurring } from "~/lib/recurring";
 import type {
   Account,
+  Budget,
+  BudgetCreate,
   Category,
   CategoryCreate,
   CategoryUpdate,
@@ -48,6 +56,32 @@ import type {
 import { useTheme } from "~/lib/theme";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5784";
+
+function formatBudgetCategoryLabel(
+  categoryIds: string[],
+  allCategories: { id: string; name: string; alias?: string | null }[],
+  budgetType: string,
+): string {
+  if (categoryIds.length === 0) return `All ${budgetType}s`;
+
+  const cats = categoryIds.map((id) => allCategories.find((c) => c.id === id)).filter(Boolean) as {
+    id: string;
+    name: string;
+    alias?: string | null;
+  }[];
+
+  if (cats.length === 0) return `All ${budgetType}s`;
+  if (cats.length <= 3) return cats.map((c) => c.name).join(", ");
+
+  // 4-6: use aliases (fall back to first 5 chars of name)
+  if (cats.length <= 6) {
+    return cats.map((c) => c.alias || c.name.slice(0, 5)).join(" · ");
+  }
+
+  // 7+: first 4 aliases + "+N more"
+  const shown = cats.slice(0, 4).map((c) => c.alias || c.name.slice(0, 5));
+  return `${shown.join(" · ")} +${cats.length - 4} more`;
+}
 
 interface LinkedProvider {
   id: string;
@@ -73,6 +107,7 @@ const SECTIONS = [
   { id: "accounts", label: "Accounts" },
   { id: "categories", label: "Categories" },
   { id: "recurring", label: "Recurring" },
+  { id: "budgets", label: "Budgets" },
   { id: "linked-accounts", label: "Linked Accounts" },
   { id: "security", label: "Security" },
   { id: "export", label: "Export" },
@@ -343,10 +378,20 @@ export default function Settings() {
   const [balanceAccountId, setBalanceAccountId] = useState<string | null>(null);
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceCurrency, setBalanceCurrency] = useState("USD");
+  const [balanceCurrentAmount, setBalanceCurrentAmount] = useState<number | null>(null);
+  const [balanceConfirming, setBalanceConfirming] = useState(false);
   const [acctMenuOpen, setAcctMenuOpen] = useState<string | null>(null);
   const acctMenuRef = useRef<HTMLDivElement>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportHistoryRefreshToken, setExportHistoryRefreshToken] = useState(0);
+
+  // Budgets
+  const { budgets, refresh: refreshBudgets } = useBudgets();
+  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
+  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
+  const [budgetLoading, setBudgetLoading] = useState(false);
+  const [budgetMenuOpen, setBudgetMenuOpen] = useState<string | null>(null);
+  const budgetMenuRef = useRef<HTMLDivElement>(null);
 
   const systemAccounts = accounts.filter((a) => a.is_system);
   const customAccounts = accounts.filter((a) => !a.is_system);
@@ -387,6 +432,21 @@ export default function Settings() {
       document.removeEventListener("touchstart", handleClickOutside as EventListener);
     };
   }, [acctMenuOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent | TouchEvent) {
+      if (budgetMenuRef.current && !budgetMenuRef.current.contains(e.target as Node)) {
+        setBudgetMenuOpen(null);
+      }
+    }
+    if (!budgetMenuOpen) return;
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside as EventListener);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside as EventListener);
+    };
+  }, [budgetMenuOpen]);
 
   const scrollToSection = useCallback((id: string) => {
     setActiveTab(id);
@@ -546,25 +606,58 @@ export default function Settings() {
 
   const handleSetBalance = async () => {
     if (!balanceAccountId) return;
-    const amt = parseFloat(balanceAmount);
-    if (Number.isNaN(amt) || amt <= 0) return;
+    const target = parseFloat(balanceAmount);
+    if (Number.isNaN(target)) return;
+
+    const current = balanceCurrentAmount ?? 0;
+    const delta = target - current;
+
+    if (delta === 0) {
+      setBalanceAccountId(null);
+      setBalanceAmount("");
+      setBalanceConfirming(false);
+      return;
+    }
+
+    if (!balanceConfirming && current !== 0) {
+      setBalanceConfirming(true);
+      return;
+    }
+
     setAcctLoading(true);
     try {
-      const incomeCategory = categories.find((c) => c.type === "income");
-      if (incomeCategory) {
-        await createExpense({
-          amount: amt,
-          category_id: incomeCategory.id,
-          description: "",
-          currency: balanceCurrency,
-          is_opening_balance: true,
-          account_id: balanceAccountId,
-        });
+      const absAmount = Math.abs(delta);
+      if (delta > 0) {
+        const incomeCategory = categories.find((c) => c.type === "income");
+        if (incomeCategory) {
+          await createExpense({
+            amount: absAmount,
+            category_id: incomeCategory.id,
+            description: "",
+            currency: balanceCurrency,
+            is_opening_balance: true,
+            account_id: balanceAccountId,
+          });
+        }
+      } else {
+        const expenseCategory = categories.find((c) => c.type === "expense");
+        if (expenseCategory) {
+          await createExpense({
+            amount: absAmount,
+            category_id: expenseCategory.id,
+            description: "",
+            currency: balanceCurrency,
+            is_opening_balance: true,
+            account_id: balanceAccountId,
+          });
+        }
       }
       await refreshAccounts();
       setBalanceAccountId(null);
       setBalanceAmount("");
       setBalanceCurrency(preferredCurrency);
+      setBalanceCurrentAmount(null);
+      setBalanceConfirming(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to set balance");
     } finally {
@@ -687,7 +780,7 @@ export default function Settings() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-4">
-        <h2 ref={titleRef} className="text-2xl font-bold text-content-primary">
+        <h2 ref={titleRef} className="text-2xl font-bold text-content-primary leading-none">
           Settings
         </h2>
         <Link
@@ -776,14 +869,14 @@ export default function Settings() {
         </div>
 
         <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start sm:items-center justify-between gap-4">
             <div>
               <p className="font-medium text-content-primary">Default Currency</p>
               <p className="text-sm text-content-tertiary">
                 Used as the default filter on the dashboard
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <select
                 value={preferredCurrency}
                 onChange={(e) => handleCurrencyChange(e.target.value)}
@@ -827,7 +920,7 @@ export default function Settings() {
           {accounts.length > 0 && (
             <>
               <div className="border-t border-edge-default mt-4 pt-4" />
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center justify-between gap-4">
                 <div>
                   <p className="font-medium text-content-primary">Default Payment Account</p>
                   <p className="text-sm text-content-tertiary">
@@ -857,14 +950,14 @@ export default function Settings() {
 
           <div className="border-t border-edge-default mt-4 pt-4" />
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-start sm:items-center justify-between gap-4">
             <div>
               <p className="font-medium text-content-primary">Session Timeout</p>
               <p className="text-sm text-content-tertiary">
                 Automatically log out after inactivity
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <select
                 value={
                   sessionTimeout === null || sessionTimeout === 15 ? "" : String(sessionTimeout)
@@ -978,32 +1071,7 @@ export default function Settings() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  {editingAccount?.id === acct.id ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={editAccountName}
-                        onChange={(e) => setEditAccountName(e.target.value)}
-                        maxLength={60}
-                        className="px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateAccount(acct.id)}
-                        disabled={acctLoading}
-                        className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingAccount(null)}
-                        className="text-xs font-medium text-content-tertiary px-2 py-1.5"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
+                  {editingAccount?.id !== acct.id && (
                     <div
                       className="relative"
                       ref={acctMenuOpen === acct.id ? acctMenuRef : undefined}
@@ -1028,15 +1096,23 @@ export default function Settings() {
                             }}
                             className="w-full px-3 py-2 text-left text-xs font-medium text-content-secondary hover:bg-surface-hover"
                           >
-                            Edit
+                            Rename
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               setBalanceAccountId(acct.id);
                               setBalanceAmount("");
                               setBalanceCurrency(preferredCurrency);
+                              setBalanceConfirming(false);
                               setAcctMenuOpen(null);
+                              try {
+                                const balances = await getAccountBalances(preferredCurrency);
+                                const match = balances.find((b) => b.account_id === acct.id);
+                                setBalanceCurrentAmount(match?.balance ?? 0);
+                              } catch {
+                                setBalanceCurrentAmount(null);
+                              }
                             }}
                             className="w-full px-3 py-2 text-left text-xs font-medium text-emerald hover:bg-surface-hover"
                           >
@@ -1048,43 +1124,117 @@ export default function Settings() {
                   )}
                 </div>
               </div>
-              {balanceAccountId === acct.id && (
+              {editingAccount?.id === acct.id && (
                 <div className="px-6 pb-3 flex items-center gap-2">
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={balanceAmount}
-                    onChange={(e) => setBalanceAmount(e.target.value)}
-                    placeholder="Amount"
-                    className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                    type="text"
+                    value={editAccountName}
+                    onChange={(e) => setEditAccountName(e.target.value)}
+                    maxLength={60}
+                    ref={(el) => {
+                      if (el) el.focus();
+                    }}
+                    className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                   />
-                  <select
-                    value={balanceCurrency}
-                    onChange={(e) => setBalanceCurrency(e.target.value)}
-                    className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                  >
-                    {SUPPORTED_CURRENCIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
                   <button
                     type="button"
-                    onClick={handleSetBalance}
-                    disabled={acctLoading || !balanceAmount || parseFloat(balanceAmount) <= 0}
-                    className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                    onClick={() => handleUpdateAccount(acct.id)}
+                    disabled={acctLoading}
+                    className="shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-emerald rounded-md disabled:opacity-50"
                   >
                     {acctLoading ? "..." : "Save"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setBalanceAccountId(null)}
-                    className="shrink-0 text-xs font-medium text-content-tertiary px-2 py-1.5"
+                    onClick={() => setEditingAccount(null)}
+                    className="shrink-0 px-2 py-1.5 text-xs font-medium text-content-tertiary"
                   >
                     Cancel
                   </button>
+                </div>
+              )}
+              {balanceAccountId === acct.id && (
+                <div className="px-6 pb-3 space-y-2">
+                  {balanceCurrentAmount !== null && (
+                    <p className="text-xs text-content-muted">
+                      Current balance:{" "}
+                      <span className="font-medium text-content-secondary">
+                        {balanceCurrency}{" "}
+                        {balanceCurrentAmount.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </p>
+                  )}
+                  {balanceConfirming ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-xs text-content-secondary flex-1 min-w-0">
+                        Change to {balanceCurrency}{" "}
+                        {parseFloat(balanceAmount).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                        ?
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleSetBalance}
+                        disabled={acctLoading}
+                        className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                      >
+                        {acctLoading ? "..." : "Confirm"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBalanceConfirming(false)}
+                        className="shrink-0 text-xs font-medium text-content-tertiary px-2 py-1.5"
+                      >
+                        Back
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={balanceAmount}
+                        onChange={(e) => setBalanceAmount(e.target.value)}
+                        placeholder="New balance"
+                        className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                      />
+                      <select
+                        value={balanceCurrency}
+                        onChange={(e) => setBalanceCurrency(e.target.value)}
+                        className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                      >
+                        {SUPPORTED_CURRENCIES.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleSetBalance}
+                        disabled={acctLoading || !balanceAmount}
+                        className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                      >
+                        {acctLoading ? "..." : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBalanceAccountId(null);
+                          setBalanceConfirming(false);
+                        }}
+                        className="shrink-0 text-xs font-medium text-content-tertiary px-2 py-1.5"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1158,32 +1308,7 @@ export default function Settings() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {editingAccount?.id === acct.id ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editAccountName}
-                          onChange={(e) => setEditAccountName(e.target.value)}
-                          maxLength={60}
-                          className="px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateAccount(acct.id)}
-                          disabled={acctLoading}
-                          className="text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingAccount(null)}
-                          className="text-xs font-medium text-content-tertiary px-2 py-1.5"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    ) : (
+                    {editingAccount?.id !== acct.id && (
                       <div
                         className="relative"
                         ref={acctMenuOpen === acct.id ? acctMenuRef : undefined}
@@ -1208,15 +1333,23 @@ export default function Settings() {
                               }}
                               className="w-full px-3 py-2 text-left text-xs font-medium text-content-secondary hover:bg-surface-hover"
                             >
-                              Edit
+                              Rename
                             </button>
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 setBalanceAccountId(acct.id);
                                 setBalanceAmount("");
                                 setBalanceCurrency(preferredCurrency);
+                                setBalanceConfirming(false);
                                 setAcctMenuOpen(null);
+                                try {
+                                  const balances = await getAccountBalances(preferredCurrency);
+                                  const match = balances.find((b) => b.account_id === acct.id);
+                                  setBalanceCurrentAmount(match?.balance ?? 0);
+                                } catch {
+                                  setBalanceCurrentAmount(null);
+                                }
                               }}
                               className="w-full px-3 py-2 text-left text-xs font-medium text-emerald hover:bg-surface-hover"
                             >
@@ -1238,43 +1371,117 @@ export default function Settings() {
                     )}
                   </div>
                 </div>
-                {balanceAccountId === acct.id && (
+                {editingAccount?.id === acct.id && (
                   <div className="px-6 pb-3 flex items-center gap-2">
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={balanceAmount}
-                      onChange={(e) => setBalanceAmount(e.target.value)}
-                      placeholder="Amount"
-                      className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                      type="text"
+                      value={editAccountName}
+                      onChange={(e) => setEditAccountName(e.target.value)}
+                      maxLength={60}
+                      ref={(el) => {
+                        if (el) el.focus();
+                      }}
+                      className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
                     />
-                    <select
-                      value={balanceCurrency}
-                      onChange={(e) => setBalanceCurrency(e.target.value)}
-                      className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
-                    >
-                      {SUPPORTED_CURRENCIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
                     <button
                       type="button"
-                      onClick={handleSetBalance}
-                      disabled={acctLoading || !balanceAmount || parseFloat(balanceAmount) <= 0}
-                      className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                      onClick={() => handleUpdateAccount(acct.id)}
+                      disabled={acctLoading}
+                      className="shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-emerald rounded-md disabled:opacity-50"
                     >
                       {acctLoading ? "..." : "Save"}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setBalanceAccountId(null)}
-                      className="shrink-0 text-xs font-medium text-content-tertiary px-2 py-1.5"
+                      onClick={() => setEditingAccount(null)}
+                      className="shrink-0 px-2 py-1.5 text-xs font-medium text-content-tertiary"
                     >
                       Cancel
                     </button>
+                  </div>
+                )}
+                {balanceAccountId === acct.id && (
+                  <div className="px-6 pb-3 space-y-2">
+                    {balanceCurrentAmount !== null && (
+                      <p className="text-xs text-content-muted">
+                        Current balance:{" "}
+                        <span className="font-medium text-content-secondary">
+                          {balanceCurrency}{" "}
+                          {balanceCurrentAmount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </p>
+                    )}
+                    {balanceConfirming ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-xs text-content-secondary flex-1 min-w-0">
+                          Change to {balanceCurrency}{" "}
+                          {parseFloat(balanceAmount).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                          ?
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleSetBalance}
+                          disabled={acctLoading}
+                          className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                        >
+                          {acctLoading ? "..." : "Confirm"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBalanceConfirming(false)}
+                          className="shrink-0 text-xs font-medium text-content-tertiary px-2 py-1.5"
+                        >
+                          Back
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={balanceAmount}
+                          onChange={(e) => setBalanceAmount(e.target.value)}
+                          placeholder="New balance"
+                          className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                        />
+                        <select
+                          value={balanceCurrency}
+                          onChange={(e) => setBalanceCurrency(e.target.value)}
+                          className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                        >
+                          {SUPPORTED_CURRENCIES.map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={handleSetBalance}
+                          disabled={acctLoading || !balanceAmount}
+                          className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                        >
+                          {acctLoading ? "..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBalanceAccountId(null);
+                            setBalanceConfirming(false);
+                          }}
+                          className="shrink-0 text-xs font-medium text-content-tertiary px-2 py-1.5"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1649,6 +1856,223 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* ── Budgets ── */}
+      <div
+        id="budgets"
+        ref={(el) => {
+          sectionRefs.current.budgets = el;
+        }}
+        style={{ scrollMarginTop: "4rem" }}
+        className="bg-surface-primary rounded-xl border border-edge-default mb-6 shadow-sm"
+      >
+        <div className="px-6 py-4 border-b border-edge-default flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <svg
+              className="w-5 h-5 text-content-tertiary"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="5.5" />
+              <circle cx="12" cy="12" r="2" />
+            </svg>
+            <div>
+              <h3 className="text-lg font-medium text-content-primary">Budgets</h3>
+              <p className="text-sm text-content-tertiary">
+                Spending limits and income targets, tracked by period.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="divide-y divide-edge-default">
+          {budgets.length === 0 ? (
+            <div className="px-6 py-8 text-center">
+              <p className="text-sm text-content-muted">No budgets yet.</p>
+              <p className="text-xs text-content-muted/70 mt-1">
+                Create your first budget to start tracking spending or income targets.
+              </p>
+            </div>
+          ) : (
+            budgets.map((budget) => {
+              const pct = budget.amount > 0 ? Math.round((budget.spent / budget.amount) * 100) : 0;
+              const over = budget.spent > budget.amount;
+              return (
+                <div
+                  key={budget.id}
+                  className="px-6 py-4 flex items-center gap-4 hover:bg-surface-hover/50 transition-colors"
+                >
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-sm font-medium text-content-primary truncate">
+                        {budget.name}
+                      </span>
+                      {!budget.is_active && (
+                        <span className="text-[10px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-surface-elevated text-content-muted">
+                          inactive
+                        </span>
+                      )}
+                      <span
+                        className={`text-[10px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded-sm ${
+                          budget.budget_type === "income"
+                            ? "bg-emerald/15 text-emerald"
+                            : "bg-surface-elevated text-content-tertiary"
+                        }`}
+                      >
+                        {budget.budget_type === "income" ? "target" : "limit"}
+                      </span>
+                      <span className="text-[10px] text-content-muted capitalize shrink-0">
+                        {budget.period_type}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-1.5 rounded-full bg-surface-elevated overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            pct >= 100
+                              ? "bg-negative-btn"
+                              : pct >= 85
+                                ? "bg-warning-text"
+                                : "bg-emerald"
+                          }`}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                      <span
+                        className={`tabular-nums text-xs shrink-0 ${over ? "text-negative-text" : "text-content-muted"}`}
+                      >
+                        {pct}%
+                      </span>
+                    </div>
+                    <p className="text-xs text-content-muted">
+                      {formatBudgetCategoryLabel(
+                        budget.category_ids,
+                        categories,
+                        budget.budget_type,
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="tabular-nums text-sm font-semibold text-content-primary">
+                      {budget.currency}{" "}
+                      {budget.amount.toLocaleString(undefined, {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      })}
+                    </p>
+                    <p className="tabular-nums text-xs text-content-muted">
+                      spent{" "}
+                      {budget.spent.toLocaleString(undefined, {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      })}
+                    </p>
+                  </div>
+                  <div
+                    className="relative"
+                    ref={budgetMenuOpen === budget.id ? budgetMenuRef : undefined}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBudgetMenuOpen(budgetMenuOpen === budget.id ? null : budget.id)
+                      }
+                      className="h-7 w-7 rounded-full flex items-center justify-center text-content-tertiary hover:bg-surface-hover hover:text-content-primary transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4zm0 6a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+                    {budgetMenuOpen === budget.id && (
+                      <div className="absolute right-0 mt-1 w-36 bg-surface-primary rounded-lg border border-edge-default shadow-lg z-50 py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingBudget(budget);
+                            setBudgetModalOpen(true);
+                            setBudgetMenuOpen(null);
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-medium text-content-secondary hover:bg-surface-hover"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setBudgetMenuOpen(null);
+                            setBudgetLoading(true);
+                            try {
+                              await deleteBudget(budget.id);
+                              await refreshBudgets();
+                            } finally {
+                              setBudgetLoading(false);
+                            }
+                          }}
+                          className="w-full px-3 py-2 text-left text-xs font-medium text-negative-text hover:bg-surface-hover"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <div className="px-6 pb-4 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setEditingBudget(null);
+                setBudgetModalOpen(true);
+              }}
+              className="w-full py-2.5 text-sm font-medium text-emerald border-2 border-dashed border-emerald/40 hover:border-emerald hover:bg-emerald/5 rounded-lg transition-colors"
+            >
+              + Add Budget
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <BudgetFormModal
+        isOpen={budgetModalOpen}
+        onClose={() => setBudgetModalOpen(false)}
+        budget={editingBudget}
+        categories={categories}
+        isLoading={budgetLoading}
+        defaultCurrency={preferredCurrency}
+        onSubmit={async (data) => {
+          setBudgetLoading(true);
+          try {
+            if (editingBudget) {
+              await updateBudget(editingBudget.id, data);
+            } else {
+              await createBudget(data as BudgetCreate);
+            }
+            await refreshBudgets();
+            setBudgetModalOpen(false);
+          } finally {
+            setBudgetLoading(false);
+          }
+        }}
+        onDelete={
+          editingBudget
+            ? async () => {
+                setBudgetLoading(true);
+                try {
+                  await deleteBudget(editingBudget.id);
+                  await refreshBudgets();
+                  setBudgetModalOpen(false);
+                } finally {
+                  setBudgetLoading(false);
+                }
+              }
+            : undefined
+        }
+      />
+
       {/* ── Linked Accounts ── */}
       <div
         id="linked-accounts"
@@ -1911,7 +2335,7 @@ export default function Settings() {
         }}
         onConfirm={handleDeleteCategory}
         title={`Delete ${catDeleteTarget?.name ?? "category"}?`}
-        message="Transactions using this category will be reassigned to Miscellaneous. This action cannot be undone."
+        message="Past transactions will keep their category. Any recurring rules using this category will be paused. You can restore the category by adding one with the same name."
         isLoading={deletingCatId === catDeleteTarget?.id}
         error={catDeleteError}
       />

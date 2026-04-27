@@ -7,6 +7,12 @@ import {
   AccountSchema,
   type AccountTrendResponse,
   AccountTrendResponseSchema,
+  type Budget,
+  type BudgetCreate,
+  type BudgetHistoryResponse,
+  BudgetHistoryResponseSchema,
+  BudgetSchema,
+  type BudgetUpdate,
   type Category,
   type CategoryCreate,
   CategorySchema,
@@ -738,6 +744,40 @@ export async function getRecurring(
   if (currency) params.set("currency", currency);
   const response = await fetchWithAuth(`/dashboard/recurring?${params}`);
   return RecurringResponseSchema.parse(await response.json());
+}
+
+// ── Budgets ──
+
+export async function getBudgets(): Promise<Budget[]> {
+  const response = await fetchWithAuth("/budgets");
+  return BudgetSchema.array().parse(await response.json());
+}
+
+export async function createBudget(data: BudgetCreate): Promise<Budget> {
+  const response = await fetchWithAuth("/budgets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return BudgetSchema.parse(await response.json());
+}
+
+export async function updateBudget(id: string, data: BudgetUpdate): Promise<Budget> {
+  const response = await fetchWithAuth(`/budgets/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  return BudgetSchema.parse(await response.json());
+}
+
+export async function deleteBudget(id: string): Promise<void> {
+  await fetchWithAuth(`/budgets/${id}`, { method: "DELETE" });
+}
+
+export async function getBudgetHistory(id: string, periods = 6): Promise<BudgetHistoryResponse> {
+  const response = await fetchWithAuth(`/budgets/${id}/history?periods=${periods}`);
+  return BudgetHistoryResponseSchema.parse(await response.json());
 }
 
 // ── Health check (no auth required) ──

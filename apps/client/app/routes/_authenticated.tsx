@@ -9,6 +9,7 @@ import { AccountsProvider } from "~/lib/accounts";
 import { updatePreferences } from "~/lib/api";
 import { getTokenPayload, isAuthenticated } from "~/lib/auth";
 import { hasNativePullToRefresh } from "~/lib/browser";
+import { BudgetsProvider } from "~/lib/budgets";
 import { CategoriesProvider } from "~/lib/categories";
 import { detectCurrencyFromLocale } from "~/lib/constants";
 import { RecurringProvider } from "~/lib/recurring";
@@ -176,9 +177,11 @@ export default function AuthenticatedLayout() {
       <CategoriesProvider>
         <AccountsProvider>
           <RecurringProvider>
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              <Outlet />
-            </main>
+            <BudgetsProvider>
+              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <Outlet />
+              </main>
+            </BudgetsProvider>
           </RecurringProvider>
         </AccountsProvider>
       </CategoriesProvider>

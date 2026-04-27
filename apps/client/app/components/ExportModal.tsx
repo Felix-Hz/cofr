@@ -258,7 +258,7 @@ export default function ExportModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 touch-none">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
@@ -297,7 +297,7 @@ export default function ExportModal({
         )}
 
         {/* Body */}
-        <div className="px-5 py-4 space-y-5 overflow-y-auto">
+        <div className="px-5 py-4 space-y-5 overflow-y-auto overscroll-contain touch-auto">
           {/* Name input */}
           <div>
             <label className="block text-sm font-medium text-content-secondary mb-1.5">
@@ -325,6 +325,55 @@ export default function ExportModal({
             >
               {filenamePreview}
             </p>
+          </div>
+
+          {/* Scope selector */}
+          <div>
+            <label className="block text-sm font-medium text-content-secondary mb-2">
+              Data to export
+            </label>
+            <div className="space-y-1.5">
+              {SCOPE_OPTIONS.map((opt) => {
+                const disabledForFormat = opt.value === "full_dump" && format === "pdf";
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={isExporting || disabledForFormat}
+                    onClick={() => setScope(opt.value)}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm transition-colors ${
+                      scope === opt.value
+                        ? "border-emerald bg-accent-soft-bg"
+                        : disabledForFormat
+                          ? "border-edge-default opacity-40 cursor-not-allowed"
+                          : "border-edge-default hover:bg-surface-hover"
+                    } disabled:opacity-100`}
+                  >
+                    <div className="text-left">
+                      <span
+                        className={`font-medium ${scope === opt.value ? "text-accent-soft-text" : "text-content-primary"}`}
+                      >
+                        {opt.label}
+                      </span>
+                      <span className="block text-xs text-content-tertiary">{opt.description}</span>
+                    </div>
+                    {scope === opt.value && (
+                      <svg
+                        className="w-4 h-4 text-emerald shrink-0"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Format selector */}
@@ -373,51 +422,11 @@ export default function ExportModal({
               <p className="mt-1.5 text-xs text-content-tertiary">
                 PDF is unavailable for full backups.
               </p>
+            ) : format === "pdf" ? (
+              <p className="mt-1.5 text-xs text-content-tertiary">
+                Full Backup is unavailable with PDF format.
+              </p>
             ) : null}
-          </div>
-
-          {/* Scope selector */}
-          <div>
-            <label className="block text-sm font-medium text-content-secondary mb-2">
-              Data to export
-            </label>
-            <div className="space-y-1.5">
-              {SCOPE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  disabled={isExporting}
-                  onClick={() => setScope(opt.value)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm transition-colors ${
-                    scope === opt.value
-                      ? "border-emerald bg-accent-soft-bg"
-                      : "border-edge-default hover:bg-surface-hover"
-                  } disabled:opacity-50`}
-                >
-                  <div className="text-left">
-                    <span
-                      className={`font-medium ${scope === opt.value ? "text-accent-soft-text" : "text-content-primary"}`}
-                    >
-                      {opt.label}
-                    </span>
-                    <span className="block text-xs text-content-tertiary">{opt.description}</span>
-                  </div>
-                  {scope === opt.value && (
-                    <svg
-                      className="w-4 h-4 text-emerald shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Filter summary (when filters are pre-filled) */}

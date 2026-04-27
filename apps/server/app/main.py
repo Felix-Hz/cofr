@@ -14,6 +14,7 @@ from app.middleware import log_requests
 from app.routers import (
     account,
     accounts,
+    budgets,
     categories,
     dashboard,
     dev_email,
@@ -156,5 +157,6 @@ app.include_router(local_auth.router)
 app.include_router(webhooks.router)
 app.include_router(exports.router)
 app.include_router(dashboard.router)
+app.include_router(budgets.router)
 if settings.ENV.lower() in _DEV_EMAIL_ENVS:
     app.include_router(dev_email.router)
