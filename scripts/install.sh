@@ -65,30 +65,6 @@ if [ "$UPGRADING" = "false" ]; then
   done
 fi
 
-# --- upgrade detection ---
-UPGRADING=false
-if docker compose -p cofr ps -q 2>/dev/null | grep -q .; then
-  UPGRADING=true
-  dim "  existing installation detected — upgrading to $COFR_VERSION"
-else
-  dim "  fresh install"
-fi
-echo ""
-
-# --- port conflict check (skip if already running, those are ours) ---
-port_in_use() {
-  (ss -tlnH 2>/dev/null | grep -q ":$1 ") || \
-  (command -v lsof &>/dev/null && lsof -iTCP:"$1" -sTCP:LISTEN -P -n 2>/dev/null | grep -q .)
-}
-
-if [ "$UPGRADING" = "false" ]; then
-  for port in 80 443; do
-    if port_in_use "$port"; then
-      die "Port $port is already in use. Stop the conflicting service and re-run."
-    fi
-  done
-fi
-
 # --- dirs ---
 mkdir -p "$INSTALL_DIR/infra" "$INSTALL_DIR/apps/server"
 cd "$INSTALL_DIR"
@@ -146,6 +122,7 @@ dim "  downloading compose files..."
 curl -fsSL "$GITHUB_RAW/infra/docker-compose.yml"          -o infra/docker-compose.yml
 curl -fsSL "$GITHUB_RAW/infra/docker-compose.selfhost.yml" -o infra/docker-compose.selfhost.yml
 curl -fsSL "$GITHUB_RAW/infra/Caddyfile.selfhost"          -o infra/Caddyfile.selfhost
+curl -fsSL "$GITHUB_RAW/infra/pg_hba.selfhost.conf"        -o infra/pg_hba.selfhost.conf
 
 # --- start ---
 dim "  pulling images and starting services..."
