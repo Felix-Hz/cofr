@@ -47,6 +47,12 @@ if docker compose -p cofr ps -q 2>/dev/null | grep -q .; then
   UPGRADING=true
   dim "  existing installation detected — upgrading to $COFR_VERSION"
 else
+  # Check for orphaned volumes from a previous failed install and purge them so
+  # postgres re-initialises cleanly with the current credentials.
+  if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -qE '^cofr_(postgres|caddy)'; then
+    dim "  cleaning up previous failed installation..."
+    docker compose -p cofr down -v --remove-orphans 2>/dev/null || true
+  fi
   dim "  fresh install"
 fi
 echo ""
@@ -126,12 +132,15 @@ curl -fsSL "$GITHUB_RAW/infra/pg_hba.selfhost.conf"        -o infra/pg_hba.selfh
 
 # --- start ---
 dim "  pulling images and starting services..."
-COFR_DOMAIN="${COFR_DOMAIN:-localhost}" \
-COFR_VERSION="$COFR_VERSION" \
-docker compose -p cofr \
-  -f infra/docker-compose.yml \
-  -f infra/docker-compose.selfhost.yml \
-  up -d
+(
+  cd "$INSTALL_DIR/infra"
+  COFR_DOMAIN="${COFR_DOMAIN:-localhost}" \
+  COFR_VERSION="$COFR_VERSION" \
+  docker compose -p cofr \
+    -f docker-compose.yml \
+    -f docker-compose.selfhost.yml \
+    up -d
+)
 
 # --- health check ---
 dim "  waiting for cofr to be ready..."
