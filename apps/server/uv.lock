@@ -4,16 +4,16 @@ requires-python = ">=3.12"
 
 [[package]]
 name = "alembic"
-version = "1.18.5"
+version = "1.19.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mako" },
     { name = "sqlalchemy" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1a/cc/ac0bed8e562e7407fe55c3ba85a4dce86e6dbd8730887bd1e406a6c5c18a/alembic-1.18.5.tar.gz", hash = "sha256:1554982221dd17e9a749b53902407578eb305e453f71999e8c7f0a48389fff8e", size = 2060480, upload-time = "2026-06-25T15:20:54.888Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/01/a48dab7827ac4421272399f7ed9a2ec17edd12c8bcde4417bd7b6821b71a/alembic-1.19.0.tar.gz", hash = "sha256:6487c612fc719dcfa22b17d2dd5b2b458929641e6aa2f0b65b135727f5e6d501", size = 2069906, upload-time = "2026-08-04T18:57:04.599Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/78/5fe6dc3a3a5b2f5a2a4faef8bfe336d5fa049a38884ab3172e0098160c01/alembic-1.18.5-py3-none-any.whl", hash = "sha256:06d8ba9d04558022f5395e9317de03d270f3dced49cee01f89fe7a13c26f14bc", size = 264664, upload-time = "2026-06-25T15:20:56.673Z" },
+    { url = "https://files.pythonhosted.org/packages/34/79/59ab6f1fe72eee229de91aa393225389a85df12a0fbbbfa264efcf6d7872/alembic-1.19.0-py3-none-any.whl", hash = "sha256:cf839d3849116aab3cc047e09c6968b9bd6b2fde61b6bb7c1e97352fe5503580", size = 265738, upload-time = "2026-08-04T18:57:06.219Z" },
 ]
 
 [[package]]
@@ -137,30 +137,30 @@ wheels = [
 
 [[package]]
 name = "boto3"
-version = "1.43.62"
+version = "1.43.64"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore" },
     { name = "jmespath" },
     { name = "s3transfer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/c7/f7732c5e1abf7270a6bbbce47338d25ea66a30df658cffd1d17bb5f735fb/boto3-1.43.62.tar.gz", hash = "sha256:0bf920e0739346e81c7310b685a3f783bf1fcc62ce7d5c7016508fa25c0d261f", size = 112668, upload-time = "2026-07-31T19:35:17.257Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/51/da/d5ca15f34a567f2d027df23395315983bd7ee35011e93c1cca12b7f89823/boto3-1.43.64.tar.gz", hash = "sha256:fc7522c3ed97d38176e0b1366406bca0fc8c888ae8d416bf953477b3f015a7b2", size = 112655, upload-time = "2026-08-04T20:12:42.45Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/f0/5e1a392c817e395b140c18c12a00c0c65c69f8d63da26ad4387aebf2172b/boto3-1.43.62-py3-none-any.whl", hash = "sha256:0bb298e7ffd72b91615df44bf71c417df80a29d844971e5d665b8bd743a4bb35", size = 140025, upload-time = "2026-07-31T19:35:15.347Z" },
+    { url = "https://files.pythonhosted.org/packages/15/94/14cf3ec553edf78e5196289087ac52862c87ac179fa1cfdf1022ec366b79/boto3-1.43.64-py3-none-any.whl", hash = "sha256:2b555e63ece57cffb1ab1666fa6c23a0957e61f9d19ea8424d6c884124c3fd98", size = 140024, upload-time = "2026-08-04T20:12:41.147Z" },
 ]
 
 [[package]]
 name = "botocore"
-version = "1.43.62"
+version = "1.43.67"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jmespath" },
     { name = "python-dateutil" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4e/8d/36af6d99269a701f83809b87a01f4728699eb825ebdedee3a3d515b18f61/botocore-1.43.62.tar.gz", hash = "sha256:94efc419c9f0f41dc2415e4b6b62f04ae21b3ce3930fac47214c4d3f361ea8b8", size = 15818261, upload-time = "2026-07-31T19:35:06.235Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/1c/3a75deae60e36bd0ee5c27d040384756b2ea1c90bd7c8c9658335a18b4f5/botocore-1.43.67.tar.gz", hash = "sha256:6fe5cfa0c8676ba809efe505b618ec00f30d1af2d014bf316a7aa4ee86accb20", size = 15889514, upload-time = "2026-08-07T19:30:15.638Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/65/d5dae96de68ffc55acf87c3bae76e9dabeeca92aadf1223f20e9a7860aef/botocore-1.43.62-py3-none-any.whl", hash = "sha256:76de153de1ba3e242b2e6df6a13ab8a3fb35d17db562462969e661457b63166e", size = 15502622, upload-time = "2026-07-31T19:35:02.697Z" },
+    { url = "https://files.pythonhosted.org/packages/21/be/38af8e96f3d200c9d34eab8e9f69a4468388ed6030ea04ff012974e5af5a/botocore-1.43.67-py3-none-any.whl", hash = "sha256:48ab8e9fac26fbc2a700d57010251003e6a5f731cf74d8540fb796bc8f3fc0ef", size = 15575924, upload-time = "2026-08-07T19:30:12.116Z" },
 ]
 
 [[package]]
@@ -360,10 +360,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "alembic", specifier = ">=1.18.5" },
+    { name = "alembic", specifier = ">=1.19.0" },
     { name = "authlib", specifier = ">=1.7.2" },
     { name = "bcrypt", specifier = ">=4.3.0" },
-    { name = "boto3", specifier = ">=1.43.36" },
+    { name = "boto3", specifier = ">=1.43.64" },
     { name = "cryptography", specifier = ">=48.0.1" },
     { name = "email-validator", specifier = ">=2.3.0" },
     { name = "fastapi", specifier = ">=0.138.1" },
@@ -380,10 +380,10 @@ requires-dist = [
     { name = "python-multipart", specifier = ">=0.0.32" },
     { name = "resend", specifier = ">=2.32.2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.20" },
-    { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=2.63.0" },
+    { name = "sentry-sdk", extras = ["fastapi"], specifier = ">=2.66.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.51" },
     { name = "svix", specifier = ">=1.96.1" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.49.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.52.1" },
 ]
 provides-extras = ["dev"]
 
