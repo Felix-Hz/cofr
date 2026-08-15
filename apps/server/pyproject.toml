@@ -5,12 +5,12 @@ description = "Expense Dashboard API"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.138.1",
-    "uvicorn[standard]>=0.49.0",
-    "sqlalchemy[asyncio]>=2.0.51",
+    "uvicorn[standard]>=0.52.1",
+    "sqlalchemy[asyncio]>=2.0.52",
     "psycopg2-binary>=2.9.12",
-    "alembic>=1.18.5",
+    "alembic>=1.19.1",
     "pydantic>=2.13.4",
-    "pydantic-settings>=2.14.2",
+    "pydantic-settings>=2.15.0",
     "PyJWT>=2.12.1",
     "cryptography>=48.0.1",
     "python-multipart>=0.0.32",
@@ -19,16 +19,16 @@ dependencies = [
     "itsdangerous>=2.2.0",
     "bcrypt>=4.3.0",
     "email-validator>=2.3.0",
-    "resend>=2.32.2",
+    "resend>=2.36.0",
     "svix>=1.96.1",
     "jinja2>=3.1.6",
-    "sentry-sdk[fastapi]>=2.63.0",
-    "boto3>=1.43.36",
+    "sentry-sdk[fastapi]>=2.67.1",
+    "boto3>=1.43.69",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.15.20",
+    "ruff>=0.16.2",
     "pytest>=9.1.1",
     "pytest-asyncio>=0.24.0",
     "httpx>=0.27.0",
@@ -66,5 +66,5 @@ dev = [
     "httpx>=0.28.1",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
-    "ruff>=0.15.20",
+    "ruff>=0.16.2",
 ]
