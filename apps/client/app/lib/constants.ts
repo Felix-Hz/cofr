@@ -1,3 +1,6 @@
+/** Static marketing build for cofr.cash: no accounts, only the public pages. */
+export const IS_LANDING = import.meta.env.VITE_LANDING === "1";
+
 export const SUPPORTED_CURRENCIES = [
   "NZD",
   "EUR",

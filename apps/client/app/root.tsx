@@ -11,6 +11,7 @@ import {
 } from "react-router";
 import AppleSplashLinks from "~/components/AppleSplashLinks";
 import UpdateBanner from "~/components/UpdateBanner";
+import { IS_LANDING } from "~/lib/constants";
 import type { Route } from "./+types/root";
 import "./globals.css";
 
@@ -155,14 +156,14 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
             </button>
           )}
           <Link
-            to={isLoggedIn ? "/dashboard" : "/login"}
+            to={IS_LANDING ? "/" : isLoggedIn ? "/dashboard" : "/login"}
             className={`h-9 px-4 inline-flex items-center text-[13px] font-medium rounded-lg ${
               is404
                 ? "bg-emerald text-white hover:bg-emerald-hover transition-colors"
                 : "border border-edge-strong text-content-primary hover:bg-surface-elevated transition-colors"
             }`}
           >
-            {isLoggedIn ? "Dashboard" : "Log in"}
+            {IS_LANDING ? "Home" : isLoggedIn ? "Dashboard" : "Log in"}
           </Link>
           <button
             type="button"
