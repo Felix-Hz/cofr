@@ -16,7 +16,7 @@ jobs:
       postgres: ${{ steps.filter.outputs.postgres }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           # Any workflow change runs everything, so GitHub Actions bumps are exercised too.
