@@ -1,5 +1,6 @@
 import { reactRouter } from "@react-router/dev/vite";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
@@ -11,10 +12,13 @@ export default defineConfig({
     sourcemap: true,
   },
   plugins: [
+    tailwindcss(),
     reactRouter(),
     !isLanding &&
       VitePWA({
         strategies: "injectManifest",
+        // React Router writes the client build to build/client; v2 would otherwise scan dist/.
+        outDir: "build/client",
         srcDir: "app",
         filename: "sw.ts",
         registerType: "prompt",
