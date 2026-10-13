@@ -152,8 +152,7 @@ fn export_pdf(rows: Vec<Bound<'_, PyDict>>, meta: Bound<'_, PyDict>) -> PyResult
             "PDF export is not supported for full data dump. Use CSV or XLSX instead.",
         )),
         _ => Err(pyo3::exceptions::PyValueError::new_err(format!(
-            "Unknown scope: {}",
-            scope
+            "Unknown scope: {scope}"
         ))),
     }
 }

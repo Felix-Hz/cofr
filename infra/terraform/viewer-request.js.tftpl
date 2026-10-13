@@ -1,0 +1,31 @@
+function handler(event) {
+  var request = event.request;
+  var host = request.headers.host ? request.headers.host.value : "";
+
+  if (host === "www.${domain}") {
+    var query = Object.keys(request.querystring)
+      .map(function (key) {
+        var param = request.querystring[key];
+        return param.value === "" ? key : key + "=" + param.value;
+      })
+      .join("&");
+
+    return {
+      statusCode: 301,
+      statusDescription: "Moved Permanently",
+      headers: {
+        location: { value: "https://${domain}" + request.uri + (query ? "?" + query : "") },
+      },
+    };
+  }
+
+  // Prerendered routes live at <route>/index.html.
+  var uri = request.uri;
+  if (uri.endsWith("/")) {
+    request.uri = uri + "index.html";
+  } else if (uri.split("/").pop().indexOf(".") === -1) {
+    request.uri = uri + "/index.html";
+  }
+
+  return request;
+}
