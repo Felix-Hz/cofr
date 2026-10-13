@@ -15,24 +15,24 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.8",
+    "@biomejs/biome": "^2.5.15",
     "@react-router/dev": "^7.13.1",
-    "@sentry/vite-plugin": "^5.1.1",
-    "@tailwindcss/postcss": "^4.1.17",
+    "@sentry/vite-plugin": "^5.4.1",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/bun": "latest",
-    "@types/react": "^19.2.7",
-    "@types/react-dom": "^19.2.3",
-    "autoprefixer": "^10.4.22",
-    "happy-dom": "^20.8.4",
-    "postcss": "^8.5.6",
-    "sharp": "^0.35.1",
-    "tailwindcss": "^4.1.17",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.6.1",
+    "happy-dom": "^20.14.6",
+    "postcss": "^8.5.29",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.3",
     "vite": "^7.2.6",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.1.0",
-    "workbox-precaching": "^7.4.0",
-    "workbox-routing": "^7.4.0",
-    "workbox-strategies": "^7.4.0"
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1",
+    "workbox-strategies": "^7.4.1"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
@@ -45,11 +45,11 @@
     "@sentry/react": "^10.45.0",
     "clsx": "^2.1.1",
     "motion": "^12.38.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "react-router": "^7.13.1",
-    "recharts": "^3.7.0",
-    "tailwind-merge": "^3.4.0",
-    "zod": "^4.1.13"
+    "recharts": "^3.10.1",
+    "tailwind-merge": "^3.7.0",
+    "zod": "^4.6.6"
   }
 }
