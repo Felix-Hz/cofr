@@ -4,6 +4,9 @@
 #     in lockstep (react + react-dom + types, @sentry/*, ...) which share a single major PR
 # Groups match in order, so the *-major family groups sit above the minor-patch catch-all.
 #
+# docker, docker-compose, github-actions and terraform only support a flat cooldown
+# (no semver-*-days), so they wait 2 days for every update to keep the 48h rule for majors.
+#
 # Branches: dependabot/<ecosystem>/<directory>/<dependency>-<version> (Dependabot default)
 # Titles:   chore(deps): bump the client-minor-patch group in /apps/client with 5 updates
 #           chore(deps): bump react-router from 7.13.1 to 8.0.0 in /apps/client
@@ -178,10 +181,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 1
-      semver-major-days: 2
-      semver-minor-days: 1
-      semver-patch-days: 1
+      default-days: 2
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -206,10 +206,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 1
-      semver-major-days: 2
-      semver-minor-days: 1
-      semver-patch-days: 1
+      default-days: 2
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -235,10 +232,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 1
-      semver-major-days: 2
-      semver-minor-days: 1
-      semver-patch-days: 1
+      default-days: 2
     commit-message:
       prefix: "ci"
       include: "scope"
@@ -262,10 +256,7 @@ updates:
       interval: "weekly"
       day: "monday"
     cooldown:
-      default-days: 1
-      semver-major-days: 2
-      semver-minor-days: 1
-      semver-patch-days: 1
+      default-days: 2
     commit-message:
       prefix: "chore"
       include: "scope"
