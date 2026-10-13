@@ -2,7 +2,7 @@
 // https://github.com/remix-run/react-router/issues/12568
 
 import { renderToReadableStream } from "react-dom/server";
-import type { AppLoadContext, EntryContext } from "react-router";
+import type { EntryContext, RouterContextProvider } from "react-router";
 import { ServerRouter } from "react-router";
 
 export default async function handleRequest(
@@ -10,7 +10,7 @@ export default async function handleRequest(
   responseStatusCode: number,
   responseHeaders: Headers,
   routerContext: EntryContext,
-  _loadContext: AppLoadContext,
+  _loadContext: RouterContextProvider,
 ) {
   const stream = await renderToReadableStream(
     <ServerRouter context={routerContext} url={request.url} />,

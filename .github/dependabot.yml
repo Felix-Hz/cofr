@@ -7,6 +7,7 @@
 # docker, docker-compose, github-actions and terraform only support a flat cooldown
 # (no semver-*-days), so they wait 2 days for every update to keep the 48h rule for majors.
 #
+# Auto-merge: every update except terraform, once ci-ok passes (dependabot-automerge.yml).
 # Labels:   release:patch only, on every entry (setting labels replaces Dependabot's defaults).
 # Branches: dependabot/<ecosystem>/<directory>/<dependency>-<version> (Dependabot default)
 # Titles:   chore(deps): bump the client-minor-patch group in /apps/client with 5 updates

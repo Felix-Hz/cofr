@@ -1,7 +1,5 @@
 mod utils;
 
-use printpdf::*;
-
 use crate::models::{AccountRow, CategoryRow, TransactionRow, ACCOUNT_HEADERS, CATEGORY_HEADERS};
 use utils::*;
 
@@ -62,7 +60,7 @@ fn amount_color(row: &TransactionRow) -> Rgb3 {
     }
 }
 
-fn draw_tx_column_headers(layer: &PdfLayerReference, fonts: &Fonts, y: f32) {
+fn draw_tx_column_headers(layer: &mut PageOps, fonts: &Fonts, y: f32) {
     colored_text(
         layer,
         &fonts.bold,
@@ -104,12 +102,12 @@ pub fn build_transactions_pdf(
     let pages = total_pages(rows.len(), rpp);
     let subtitle = format!("{} transactions | {}", rows.len(), currency);
 
-    let (doc, page1, layer1) = PdfDocument::new(title, Mm(PAGE_W), Mm(PAGE_H), "Layer 1");
-    let fonts = Fonts::load(&doc)?;
+    let fonts = Fonts::builtin();
+    let mut finished = Vec::new();
 
-    let mut current_layer = doc.get_page(page1).get_layer(layer1);
-    let mut y = draw_page_header(&current_layer, &fonts, title, &subtitle, 1, pages);
-    draw_tx_column_headers(&current_layer, &fonts, y);
+    let mut current_layer = PageOps::new();
+    let mut y = draw_page_header(&mut current_layer, &fonts, title, &subtitle, 1, pages);
+    draw_tx_column_headers(&mut current_layer, &fonts, y);
     y -= 5.0;
 
     let mut rows_on_page = 0;
@@ -117,12 +115,18 @@ pub fn build_transactions_pdf(
 
     for row in rows {
         if rows_on_page >= rpp {
-            draw_page_footer(&current_layer, &fonts);
+            draw_page_footer(&mut current_layer, &fonts);
             page_num += 1;
-            let (new_page, new_layer) = doc.add_page(Mm(PAGE_W), Mm(PAGE_H), "Layer 1");
-            current_layer = doc.get_page(new_page).get_layer(new_layer);
-            y = draw_page_header(&current_layer, &fonts, title, &subtitle, page_num, pages);
-            draw_tx_column_headers(&current_layer, &fonts, y);
+            finished.push(finish_page(&mut current_layer));
+            y = draw_page_header(
+                &mut current_layer,
+                &fonts,
+                title,
+                &subtitle,
+                page_num,
+                pages,
+            );
+            draw_tx_column_headers(&mut current_layer, &fonts, y);
             y -= 5.0;
             rows_on_page = 0;
         }
@@ -138,7 +142,7 @@ pub fn build_transactions_pdf(
         let meta = truncate(&transaction_metadata(row), 95);
 
         colored_text(
-            &current_layer,
+            &mut current_layer,
             &fonts.regular,
             TX_DATE_X,
             y,
@@ -147,7 +151,7 @@ pub fn build_transactions_pdf(
             C_SECONDARY,
         );
         colored_text(
-            &current_layer,
+            &mut current_layer,
             &fonts.bold,
             TX_DESC_X,
             y,
@@ -156,7 +160,7 @@ pub fn build_transactions_pdf(
             C_TEXT,
         );
         colored_text(
-            &current_layer,
+            &mut current_layer,
             &fonts.bold,
             TX_AMOUNT_X,
             y,
@@ -165,7 +169,7 @@ pub fn build_transactions_pdf(
             amount_color(row),
         );
         colored_text(
-            &current_layer,
+            &mut current_layer,
             &fonts.regular,
             TX_DESC_X,
             y - 4.2,
@@ -178,15 +182,16 @@ pub fn build_transactions_pdf(
         rows_on_page += 1;
     }
 
-    draw_page_footer(&current_layer, &fonts);
+    draw_page_footer(&mut current_layer, &fonts);
+    finished.push(finish_page(&mut current_layer));
 
-    Ok(doc.save_to_bytes()?)
+    Ok(save(title, finished))
 }
 
 // --- Generic Table PDF (Accounts / Categories) ---
 
 fn draw_table_column_headers(
-    layer: &PdfLayerReference,
+    layer: &mut PageOps,
     fonts: &Fonts,
     headers: &[&str],
     col_widths: &[f32],
@@ -210,12 +215,12 @@ fn build_table_pdf(
     let rpp = rows_per_page(TABLE_ROW_HEIGHT);
     let pages = total_pages(rows.len(), rpp);
 
-    let (doc, page1, layer1) = PdfDocument::new(title, Mm(PAGE_W), Mm(PAGE_H), "Layer 1");
-    let fonts = Fonts::load(&doc)?;
+    let fonts = Fonts::builtin();
+    let mut finished = Vec::new();
 
-    let mut current_layer = doc.get_page(page1).get_layer(layer1);
-    let mut y = draw_page_header(&current_layer, &fonts, title, subtitle, 1, pages);
-    draw_table_column_headers(&current_layer, &fonts, headers, col_widths, y);
+    let mut current_layer = PageOps::new();
+    let mut y = draw_page_header(&mut current_layer, &fonts, title, subtitle, 1, pages);
+    draw_table_column_headers(&mut current_layer, &fonts, headers, col_widths, y);
     y -= TABLE_HEADER_GAP + TABLE_ROW_HEIGHT;
 
     let mut rows_on_page = 0;
@@ -223,12 +228,11 @@ fn build_table_pdf(
 
     for row_data in rows {
         if rows_on_page >= rpp {
-            draw_page_footer(&current_layer, &fonts);
+            draw_page_footer(&mut current_layer, &fonts);
             page_num += 1;
-            let (new_page, new_layer) = doc.add_page(Mm(PAGE_W), Mm(PAGE_H), "Layer 1");
-            current_layer = doc.get_page(new_page).get_layer(new_layer);
-            y = draw_page_header(&current_layer, &fonts, title, subtitle, page_num, pages);
-            draw_table_column_headers(&current_layer, &fonts, headers, col_widths, y);
+            finished.push(finish_page(&mut current_layer));
+            y = draw_page_header(&mut current_layer, &fonts, title, subtitle, page_num, pages);
+            draw_table_column_headers(&mut current_layer, &fonts, headers, col_widths, y);
             y -= TABLE_HEADER_GAP + TABLE_ROW_HEIGHT;
             rows_on_page = 0;
         }
@@ -236,7 +240,7 @@ fn build_table_pdf(
         let mut x = MARGIN;
         for (i, field) in row_data.iter().enumerate() {
             colored_text(
-                &current_layer,
+                &mut current_layer,
                 &fonts.regular,
                 x,
                 y,
@@ -251,9 +255,10 @@ fn build_table_pdf(
         rows_on_page += 1;
     }
 
-    draw_page_footer(&current_layer, &fonts);
+    draw_page_footer(&mut current_layer, &fonts);
+    finished.push(finish_page(&mut current_layer));
 
-    Ok(doc.save_to_bytes()?)
+    Ok(save(title, finished))
 }
 
 // --- Accounts PDF ---

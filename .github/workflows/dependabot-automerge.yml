@@ -9,25 +9,18 @@ permissions:
 jobs:
   automerge:
     name: dependabot-automerge
-    # actor check: stop if someone else pushed to the Dependabot branch.
-    if: >-
-      github.event.pull_request.user.login == 'dependabot[bot]' &&
-      github.actor == 'dependabot[bot]'
+    # Not github.actor: a "@dependabot rebase" comment makes the commenter the actor.
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - id: meta
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@v3
 
-      # Minor/patch only; majors wait for review. fetch-metadata calls 0.x bumps like
-      # 0.7 -> 0.10 "minor" although they break, while Dependabot itself treats them as major
-      # and keeps them out of the *-minor-patch groups, so trust the group, not update-type.
+      # Every update type, majors included: --auto only merges once the ruleset's required
+      # check (ci-ok) passes, so a breaking bump stays open with red CI.
       # Terraform is excluded because merging to main auto-applies infrastructure.
-      # --auto waits for the ruleset's required check (ci-ok).
       - name: Enable auto-merge
-        if: >-
-          steps.meta.outputs.package-ecosystem != 'terraform' &&
-          (endsWith(steps.meta.outputs.dependency-group, '-minor-patch') ||
-          steps.meta.outputs.update-type == 'version-update:semver-patch')
+        if: steps.meta.outputs.package-ecosystem != 'terraform'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}

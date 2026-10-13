@@ -39,18 +39,22 @@ pub fn content_bottom() -> f32 {
     MARGIN + FOOTER_ZONE
 }
 
+// --- Page Content ---
+// printpdf 0.10 builds each page from a list of drawing operations.
+pub type PageOps = Vec<Op>;
+
 // --- Font Bundle ---
 pub struct Fonts {
-    pub regular: IndirectFontRef,
-    pub bold: IndirectFontRef,
+    pub regular: PdfFontHandle,
+    pub bold: PdfFontHandle,
 }
 
 impl Fonts {
-    pub fn load(doc: &PdfDocumentReference) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self {
-            regular: doc.add_builtin_font(BuiltinFont::Helvetica)?,
-            bold: doc.add_builtin_font(BuiltinFont::HelveticaBold)?,
-        })
+    pub fn builtin() -> Self {
+        Self {
+            regular: PdfFontHandle::Builtin(BuiltinFont::Helvetica),
+            bold: PdfFontHandle::Builtin(BuiltinFont::HelveticaBold),
+        }
     }
 }
 
@@ -66,17 +70,34 @@ pub fn truncate(text: &str, max: usize) -> String {
     format!("{t}...")
 }
 
-pub fn text(layer: &PdfLayerReference, font: &IndirectFontRef, x: f32, y: f32, size: f32, s: &str) {
-    layer.use_text(s, size, Mm(x), Mm(y), font);
+pub fn text(layer: &mut PageOps, font: &PdfFontHandle, x: f32, y: f32, size: f32, s: &str) {
+    layer.extend([
+        Op::StartTextSection,
+        Op::SetTextCursor {
+            pos: Point::new(Mm(x), Mm(y)),
+        },
+        Op::SetFont {
+            font: font.clone(),
+            size: Pt(size),
+        },
+        Op::ShowText {
+            items: vec![TextItem::Text(s.to_string())],
+        },
+        Op::EndTextSection,
+    ]);
 }
 
-pub fn set_color(layer: &PdfLayerReference, c: Rgb3) {
-    layer.set_fill_color(Color::Rgb(Rgb::new(c.0, c.1, c.2, None)));
+fn rgb(c: Rgb3) -> Color {
+    Color::Rgb(Rgb::new(c.0, c.1, c.2, None))
+}
+
+pub fn set_color(layer: &mut PageOps, c: Rgb3) {
+    layer.push(Op::SetFillColor { col: rgb(c) });
 }
 
 pub fn colored_text(
-    layer: &PdfLayerReference,
-    font: &IndirectFontRef,
+    layer: &mut PageOps,
+    font: &PdfFontHandle,
     x: f32,
     y: f32,
     size: f32,
@@ -92,8 +113,8 @@ fn approx_text_width(s: &str, size: f32) -> f32 {
 }
 
 pub fn right_text(
-    layer: &PdfLayerReference,
-    font: &IndirectFontRef,
+    layer: &mut PageOps,
+    font: &PdfFontHandle,
     right_x: f32,
     y: f32,
     size: f32,
@@ -105,21 +126,26 @@ pub fn right_text(
 }
 
 // --- Line Drawing ---
-pub fn rule(layer: &PdfLayerReference, y: f32, color: Rgb3, thickness: f32) {
-    layer.set_outline_color(Color::Rgb(Rgb::new(color.0, color.1, color.2, None)));
-    layer.set_outline_thickness(thickness);
-    layer.add_line(Line {
-        points: vec![
-            (Point::new(Mm(MARGIN), Mm(y)), false),
-            (Point::new(Mm(PAGE_W - MARGIN), Mm(y)), false),
-        ],
-        is_closed: false,
-    });
+pub fn rule(layer: &mut PageOps, y: f32, color: Rgb3, thickness: f32) {
+    let point = |x: f32| LinePoint {
+        p: Point::new(Mm(x), Mm(y)),
+        bezier: false,
+    };
+    layer.extend([
+        Op::SetOutlineColor { col: rgb(color) },
+        Op::SetOutlineThickness { pt: Pt(thickness) },
+        Op::DrawLine {
+            line: Line {
+                points: vec![point(MARGIN), point(PAGE_W - MARGIN)],
+                is_closed: false,
+            },
+        },
+    ]);
 }
 
 // --- Page Header ---
 pub fn draw_page_header(
-    layer: &PdfLayerReference,
+    layer: &mut PageOps,
     fonts: &Fonts,
     title: &str,
     subtitle: &str,
@@ -172,7 +198,7 @@ pub fn draw_page_header(
 }
 
 // --- Page Footer ---
-pub fn draw_page_footer(layer: &PdfLayerReference, fonts: &Fonts) {
+pub fn draw_page_footer(layer: &mut PageOps, fonts: &Fonts) {
     let y = MARGIN + 2.0;
 
     rule(layer, y + 4.0, C_RULE, 0.3);
@@ -197,6 +223,18 @@ pub fn draw_page_footer(layer: &PdfLayerReference, fonts: &Fonts) {
         &label,
         C_MUTED,
     );
+}
+
+// --- Document Assembly ---
+pub fn finish_page(layer: &mut PageOps) -> PdfPage {
+    PdfPage::new(Mm(PAGE_W), Mm(PAGE_H), std::mem::take(layer))
+}
+
+pub fn save(title: &str, pages: Vec<PdfPage>) -> Vec<u8> {
+    let mut warnings = Vec::new();
+    PdfDocument::new(title)
+        .with_pages(pages)
+        .save(&PdfSaveOptions::default(), &mut warnings)
 }
 
 // --- Pagination ---
