@@ -3,29 +3,46 @@ terraform {
 
   backend "s3" {
     bucket  = "cofr-terraform-state"
-    key     = "cofr/terraform.tfstate"
+    key     = "cofr/landing.tfstate"
     region  = "ap-southeast-2"
     encrypt = true
   }
 
   required_providers {
-    digitalocean = {
-      source  = "digitalocean/digitalocean"
-      version = "~> 2.50"
-    }
     aws = {
       source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
       version = "~> 5.0"
     }
   }
 }
 
-provider "digitalocean" {
-  token = var.do_token
+# Credentials come from the environment: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY and CLOUDFLARE_API_TOKEN.
+provider "aws" {
+  region = var.aws_region
+
+  default_tags {
+    tags = {
+      Project   = "cofr"
+      ManagedBy = "terraform"
+    }
+  }
 }
 
+# CloudFront only accepts ACM certificates issued in us-east-1.
 provider "aws" {
-  access_key = var.aws_access_key
-  secret_key = var.aws_secret_key
-  region     = var.aws_region
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project   = "cofr"
+      ManagedBy = "terraform"
+    }
+  }
 }
+
+provider "cloudflare" {}

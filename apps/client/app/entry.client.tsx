@@ -15,8 +15,15 @@ startTransition(() => {
   );
 });
 
+// The static landing site has no app shell to cache: drop any worker left over from the hosted app.
+if ("serviceWorker" in navigator && import.meta.env.VITE_LANDING === "1") {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (const registration of registrations) registration.unregister();
+  });
+}
+
 // Register service worker (production only)
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+if ("serviceWorker" in navigator && import.meta.env.PROD && import.meta.env.VITE_LANDING !== "1") {
   window.addEventListener("load", async () => {
     try {
       const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });

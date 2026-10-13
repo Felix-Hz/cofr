@@ -1,4 +1,4 @@
-name: Deploy Production
+name: Build & Release
 
 on:
   push:
@@ -21,7 +21,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: production-deploy
+  group: build-release
   cancel-in-progress: false
 
 jobs:
@@ -233,75 +233,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    name: deploy
-    needs: [changes, build-server, build-client, build-postgres]
-    if: >-
-      always() && !failure() && !cancelled() &&
-      (needs.changes.outputs.any-app == 'true')
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
-      - name: Add deploy key
-        run: |
-          if [ -z "${{ secrets.DEPLOY_HOST }}" ]; then
-            echo "DEPLOY_HOST is not set"
-            exit 1
-          fi
-          if [ -z "${{ secrets.DEPLOY_USER }}" ]; then
-            echo "DEPLOY_USER is not set"
-            exit 1
-          fi
-          if [ -z "${{ secrets.DEPLOY_SSH_KEY }}" ]; then
-            echo "DEPLOY_SSH_KEY is not set"
-            exit 1
-          fi
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          if ! ssh-keyscan -T 10 -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/tmp/ssh-keyscan.err; then
-            echo "Failed to reach DEPLOY_HOST='${{ secrets.DEPLOY_HOST }}' on port 22"
-            cat /tmp/ssh-keyscan.err
-            exit 1
-          fi
-          if ! ssh -o BatchMode=yes -o ConnectTimeout=10 "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" true; then
-            echo "SSH connection test failed for ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
-            echo "Check Reserved IP attachment, SSH firewall CIDRs, DEPLOY_USER, and DEPLOY_SSH_KEY"
-            exit 1
-          fi
-
-      - name: Sync deployment files
-        run: |
-          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" 'mkdir -p /opt/cofr'
-          scp -r infra scripts "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/opt/cofr/"
-
-      - name: Deploy on VPS
-        run: |
-          TAG="${{ needs.changes.outputs.image-tag }}"
-          if [ "${{ needs.changes.outputs.deploy-only }}" = "true" ]; then
-            SERVER_TAG="$TAG"
-            CLIENT_TAG="$TAG"
-          else
-            if [ "${{ needs.changes.outputs.server }}" = "true" ]; then SERVER_TAG="$TAG"; else SERVER_TAG="main"; fi
-            if [ "${{ needs.changes.outputs.client }}" = "true" ]; then CLIENT_TAG="$TAG"; else CLIENT_TAG="main"; fi
-          fi
-
-          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "cd /opt/cofr && \
-             export GHCR_USERNAME='${{ github.repository_owner }}' && \
-             export GHCR_TOKEN='${{ secrets.GITHUB_TOKEN }}' && \
-             export GHCR_NAMESPACE='${{ needs.changes.outputs.registry-namespace }}' && \
-             export SERVER_IMAGE_TAG='${SERVER_TAG}' && \
-             export CLIENT_IMAGE_TAG='${CLIENT_TAG}' && \
-             ./scripts/setup_prod.sh"
-
   release:
     name: release
-    needs: [changes, deploy]
+    needs: [changes, build-server, build-client, build-postgres]
     if: always() && !failure() && !cancelled() && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:

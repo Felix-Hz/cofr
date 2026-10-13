@@ -133,7 +133,7 @@ pub fn draw_page_header(
     colored_text(layer, &fonts.bold, MARGIN, y, SIZE_BRAND, "cofr", C_BRAND);
 
     // Page indicator
-    let page_label = format!("Page {} of {}", page_num, total_pages);
+    let page_label = format!("Page {page_num} of {total_pages}");
     right_text(
         layer,
         &fonts.regular,
