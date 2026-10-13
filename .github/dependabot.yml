@@ -7,13 +7,14 @@
 # docker, docker-compose, github-actions and terraform only support a flat cooldown
 # (no semver-*-days), so they wait 2 days for every update to keep the 48h rule for majors.
 #
+# Labels:   release:patch only, on every entry (setting labels replaces Dependabot's defaults).
 # Branches: dependabot/<ecosystem>/<directory>/<dependency>-<version> (Dependabot default)
 # Titles:   chore(deps): bump the client-minor-patch group in /apps/client with 5 updates
 #           chore(deps): bump react-router from 7.13.1 to 8.0.0 in /apps/client
 version: 2
 
 updates:
-  # ── Application dependencies (shipped in the images → release:patch) ──
+  # ── Application dependencies ──
 
   - package-ecosystem: "bun"
     directory: "/apps/client"
@@ -224,7 +225,7 @@ updates:
       - dependency-name: "postgres"
         update-types: ["version-update:semver-major"]
 
-  # ── CI and infrastructure (nothing shipped → no release label) ──
+  # ── CI and infrastructure ──
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -236,6 +237,8 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
+    labels:
+      - "release:patch"
     open-pull-requests-limit: 10
     groups:
       actions-docker-major:
@@ -260,6 +263,8 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    labels:
+      - "release:patch"
     open-pull-requests-limit: 10
     groups:
       terraform-minor-patch:

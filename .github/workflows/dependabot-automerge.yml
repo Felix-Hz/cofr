@@ -18,12 +18,16 @@ jobs:
       - id: meta
         uses: dependabot/fetch-metadata@v2
 
-      # Minor/patch only: majors wait for review. Terraform is excluded because merging to
-      # main auto-applies infrastructure. --auto waits for the ruleset's required checks.
+      # Minor/patch only; majors wait for review. fetch-metadata calls 0.x bumps like
+      # 0.7 -> 0.10 "minor" although they break, while Dependabot itself treats them as major
+      # and keeps them out of the *-minor-patch groups, so trust the group, not update-type.
+      # Terraform is excluded because merging to main auto-applies infrastructure.
+      # --auto waits for the ruleset's required check (ci-ok).
       - name: Enable auto-merge
         if: >-
-          contains(fromJSON('["version-update:semver-minor", "version-update:semver-patch"]'), steps.meta.outputs.update-type) &&
-          steps.meta.outputs.package-ecosystem != 'terraform'
+          steps.meta.outputs.package-ecosystem != 'terraform' &&
+          (endsWith(steps.meta.outputs.dependency-group, '-minor-patch') ||
+          steps.meta.outputs.update-type == 'version-update:semver-patch')
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
