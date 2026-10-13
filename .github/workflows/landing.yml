@@ -27,7 +27,7 @@ jobs:
     env:
       BUCKET: ${{ vars.LANDING_BUCKET }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -43,7 +43,7 @@ jobs:
           find build/client -name "*.map" -delete
           cp landing/sw.js build/client/sw.js
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.LANDING_DEPLOY_ROLE_ARN }}
           aws-region: ap-southeast-2
