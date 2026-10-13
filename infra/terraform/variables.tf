@@ -19,6 +19,11 @@ variable "bucket_name" {
 variable "cloudflare_zone_id" {
   description = "Cloudflare zone ID for the domain (DNS stays on Cloudflare)."
   type        = string
+
+  validation {
+    condition     = can(regex("^[0-9a-f]{32}$", var.cloudflare_zone_id))
+    error_message = "cloudflare_zone_id must be the 32-character zone ID from the Cloudflare dashboard."
+  }
 }
 
 variable "github_repository" {

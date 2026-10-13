@@ -53,3 +53,5 @@ CLAUDE.md
 .zed/
 *.swp
 *.swo
+
+.env
