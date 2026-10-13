@@ -1,0 +1,32 @@
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  automerge:
+    name: dependabot-automerge
+    # actor check: stop if someone else pushed to the Dependabot branch.
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@v2
+
+      # Minor/patch only: majors wait for review. Terraform is excluded because merging to
+      # main auto-applies infrastructure. --auto waits for the ruleset's required checks.
+      - name: Enable auto-merge
+        if: >-
+          contains(fromJSON('["version-update:semver-minor", "version-update:semver-patch"]'), steps.meta.outputs.update-type) &&
+          steps.meta.outputs.package-ecosystem != 'terraform'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          # Merges made with GITHUB_TOKEN don't trigger the push workflows (Build & Release,
+          # Deploy Landing). A PAT stored as the Dependabot secret AUTOMERGE_TOKEN fixes that.
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || secrets.GITHUB_TOKEN }}
