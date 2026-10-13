@@ -1,95 +1,52 @@
-# Terraform: DigitalOcean VPS
+# Terraform: landing page
 
-This Terraform config provisions the minimum-cost production infrastructure for Cofr:
+cofr is self-host only. The only thing we run is the static landing page at `cofr.cash`:
 
-- one DigitalOcean project
-- one VPC
-- one Ubuntu Droplet
-- one firewall that only exposes SSH inbound
-- cloud-init bootstrap for Docker, Compose, cron, UFW, fail2ban, unattended upgrades, and the `/opt/cofr` layout
+- private S3 bucket (`cofr-landing`), all public access blocked, TLS-only bucket policy
+- CloudFront in front of it, reading the bucket through Origin Access Control
+- ACM certificate (us-east-1) for `cofr.cash` and `www.cofr.cash`
+- CloudFront Function: `www` → apex 301, `/terms` → `/terms/index.html`
+- security headers (HSTS, nosniff, `X-Frame-Options: DENY`, referrer and permissions policies)
+- DNS stays on Cloudflare: DNS-only CNAMEs to CloudFront plus the ACM validation records
+- an IAM role GitHub Actions assumes over OIDC to deploy (no long-lived deploy keys)
 
-This is intentionally the split between infrastructure-as-code and secret/application operations:
+Cost is close to zero for a landing page: S3 storage is a few MB, CloudFront's free tier covers 1 TB and
+10M requests a month, `PriceClass_100` keeps edge pricing at the cheapest tier, and one `/*`
+invalidation per deploy stays inside the 1,000 free paths. No Route 53, WAF, or access logging.
 
-- Terraform owns host lifecycle and base security posture.
-- GitHub Actions owns image build and deploy orchestration.
-- The VPS owns runtime secrets in local files.
+## Setup
 
-## Files
+GitHub secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (Terraform only),
+`CLOUDFLARE_API_TOKEN` (Zone → DNS → Edit on `cofr.cash`).
 
-- `versions.tf`: Terraform and provider requirements
-- `variables.tf`: configurable inputs
-- `main.tf`: project, VPC, droplet, and firewall
-- `cloud-init.yaml.tftpl`: first-boot VPS bootstrap
-- `outputs.tf`: droplet ID and public IP
-- `terraform.tfvars.example`: example inputs
+GitHub variables: `CLOUDFLARE_ZONE_ID`, and `GITHUB_OIDC_PROVIDER_ARN` if the AWS account already
+has a GitHub Actions OIDC provider (only one is allowed per account).
 
-## Usage
+Before the first apply, delete the existing `cofr.cash` and `www.cofr.cash` records in Cloudflare
+(they point at the old tunnel), or Terraform cannot create its own.
 
-### Option A: GitHub Actions
-
-Store these in GitHub before running the `Infrastructure` workflow:
-
-- secret: `TF_DO_TOKEN`
-- variables:
-  - `TF_BOOTSTRAP_SSH_PUBLIC_KEY`
-  - `TF_ADMIN_SSH_PUBLIC_KEYS`
-  - `TF_ADMIN_CIDRS`
-
-Optional overrides can also be stored as GitHub variables:
-
-- `TF_PROJECT_NAME`
-- `TF_PROJECT_DESCRIPTION`
-- `TF_ENVIRONMENT`
-- `TF_REGION`
-- `TF_VPC_NAME`
-- `TF_DROPLET_SIZE`
-- `TF_IMAGE`
-- `TF_DROPLET_NAME`
-- `TF_ADMIN_USER`
-- `TF_BOOTSTRAP_SSH_PUBLIC_KEY`
-- `TF_SSH_KEY_FINGERPRINTS`
-
-The recommended path is `TF_BOOTSTRAP_SSH_PUBLIC_KEY` plus `TF_ADMIN_SSH_PUBLIC_KEYS`, both using the same keypair. `TF_SSH_KEY_FINGERPRINTS` is only needed if you already manage SSH keys separately in DigitalOcean. The list variables must be JSON array strings. `TF_BOOTSTRAP_SSH_PUBLIC_KEY` is a plain string.
-
-Run the workflow manually:
-
-- `apply=false` for plan only
-- `apply=true` to apply changes
-
-### Option B: Local Terraform
+Apply via the `Infrastructure` workflow, or locally:
 
 ```bash
 cd infra/terraform
-cp terraform.tfvars.example terraform.tfvars
+export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... CLOUDFLARE_API_TOKEN=...
 terraform init
-terraform plan
-terraform apply
+terraform apply -var cloudflare_zone_id=<zone id>
 ```
 
-After `apply`:
+Then copy the outputs into GitHub variables so the `Deploy Landing` workflow can publish:
 
-1. SSH to the droplet using the configured admin user.
-2. Copy `infra/` and `scripts/` into `/opt/cofr/`.
-3. Create the runtime secret files under `/opt/cofr/`.
-4. Add the Cloudflare tunnel token to `/opt/cofr/infra/.prod.env`.
-5. Configure GitHub repository secrets.
-6. Run the deploy workflow or `./scripts/setup_prod.sh` on the host.
+| Output            | GitHub variable           |
+| ----------------- | ------------------------- |
+| `bucket_name`     | `LANDING_BUCKET`          |
+| `distribution_id` | `LANDING_DISTRIBUTION_ID` |
+| `deploy_role_arn` | `LANDING_DEPLOY_ROLE_ARN` |
 
-## Inputs You Still Need To Provide
+## Deploys
 
-- DigitalOcean API token
-- one bootstrap public SSH key Terraform can register for you
-- SSH public key for the deploy user
-- preferred SSH CIDR allowlist
+`Deploy Landing` runs on every push to `main` that touches `apps/client`. It builds the client with
+`VITE_LANDING=1`, which prerenders `/`, `/terms` and `/privacy` to static HTML and drops the PWA,
+syncs the result to S3, and invalidates CloudFront.
 
-## Security Posture
-
-The Terraform path now assumes:
-
-- SSH key auth only
-- root SSH disabled
-- password auth disabled
-- UFW enabled
-- fail2ban enabled
-- unattended security upgrades enabled
-- Docker daemon log rotation enabled
+It also publishes `apps/client/landing/sw.js`, a self-destructing service worker that clears the
+hosted app's old worker and caches from browsers that installed it.

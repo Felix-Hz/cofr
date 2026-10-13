@@ -3,52 +3,56 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Landing build (static marketing site) ships no PWA; see landing/sw.js.
+const isLanding = process.env.VITE_LANDING === "1";
+
 export default defineConfig({
   build: {
     sourcemap: true,
   },
   plugins: [
     reactRouter(),
-    VitePWA({
-      strategies: "injectManifest",
-      srcDir: "app",
-      filename: "sw.ts",
-      registerType: "prompt",
-      injectRegister: false,
-      manifest: {
-        name: "cofr",
-        short_name: "cofr",
-        description: "Track spending and understand your money with clarity.",
-        theme_color: "#0B1220",
-        background_color: "#0B1220",
-        display: "standalone",
-        display_override: ["standalone"],
-        id: "/",
-        scope: "/",
-        start_url: "/",
-        orientation: "any",
-        categories: ["finance", "productivity"],
-        lang: "en",
-        dir: "ltr",
-        icons: [
-          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
-          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
-          {
-            src: "/pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
-      injectManifest: {
-        additionalManifestEntries: [{ url: "/index.html", revision: Date.now().toString() }],
-        globPatterns: ["**/*.{js,css,html,png,ico,svg,woff,woff2}"],
-      },
-      devOptions: {
-        enabled: false,
-      },
-    }),
+    !isLanding &&
+      VitePWA({
+        strategies: "injectManifest",
+        srcDir: "app",
+        filename: "sw.ts",
+        registerType: "prompt",
+        injectRegister: false,
+        manifest: {
+          name: "cofr",
+          short_name: "cofr",
+          description: "Track spending and understand your money with clarity.",
+          theme_color: "#0B1220",
+          background_color: "#0B1220",
+          display: "standalone",
+          display_override: ["standalone"],
+          id: "/",
+          scope: "/",
+          start_url: "/",
+          orientation: "any",
+          categories: ["finance", "productivity"],
+          lang: "en",
+          dir: "ltr",
+          icons: [
+            { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
+            { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
+            {
+              src: "/pwa-512x512.png",
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "maskable",
+            },
+          ],
+        },
+        injectManifest: {
+          additionalManifestEntries: [{ url: "/index.html", revision: Date.now().toString() }],
+          globPatterns: ["**/*.{js,css,html,png,ico,svg,woff,woff2}"],
+        },
+        devOptions: {
+          enabled: false,
+        },
+      }),
     process.env.SENTRY_AUTH_TOKEN
       ? sentryVitePlugin({
           org: process.env.SENTRY_ORG,
