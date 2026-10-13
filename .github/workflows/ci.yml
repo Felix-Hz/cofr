@@ -13,26 +13,32 @@ jobs:
       server: ${{ steps.filter.outputs.server }}
       client: ${{ steps.filter.outputs.client }}
       scribe: ${{ steps.filter.outputs.scribe }}
+      postgres: ${{ steps.filter.outputs.postgres }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          # Any workflow change runs everything, so GitHub Actions bumps are exercised too.
           filters: |
             server:
               - 'apps/server/**'
               - 'apps/scribe/**'
               - 'infra/*'
               - 'scripts/**'
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
             client:
               - 'apps/client/**'
               - 'infra/*'
               - 'scripts/**'
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
             scribe:
               - 'apps/scribe/**'
-              - '.github/workflows/ci.yml'
+              - '.github/workflows/**'
+            postgres:
+              - 'infra/docker/postgres/**'
+              - 'scripts/restore_db_from_s3.sh'
+              - '.github/workflows/**'
 
   server:
     name: lint-test-build / server
@@ -111,4 +117,31 @@ jobs:
         with:
           context: ./apps/client
           push: false
+
+  docker-build-postgres:
+    name: image-build / postgres
+    needs: changes
+    if: needs.changes.outputs.postgres == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./infra/docker/postgres/Dockerfile
+          push: false
+
+  # Single always-reporting check for the main ruleset to require. The jobs above are
+  # path-filtered, so any of them may be skipped; this fails only if one actually failed.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs:
+      [changes, server, client, scribe, docker-build-server, docker-build-client, docker-build-postgres]
+    runs-on: ubuntu-latest
+    steps:
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      - run: echo "All required CI jobs passed or were skipped."
 

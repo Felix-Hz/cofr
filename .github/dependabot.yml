@@ -1,61 +1,279 @@
+# Weekly scans. Each ecosystem gets:
+#   - one grouped PR for all minor + patch updates (24h cooldown)
+#   - one PR per dependency for major updates (48h cooldown), except packages that must move
+#     in lockstep (react + react-dom + types, @sentry/*, ...) which share a single major PR
+# Groups match in order, so the *-major family groups sit above the minor-patch catch-all.
+#
+# Branches: dependabot/<ecosystem>/<directory>/<dependency>-<version> (Dependabot default)
+# Titles:   chore(deps): bump the client-minor-patch group in /apps/client with 5 updates
+#           chore(deps): bump react-router from 7.13.1 to 8.0.0 in /apps/client
 version: 2
+
 updates:
+  # ── Application dependencies (shipped in the images → release:patch) ──
+
+  - package-ecosystem: "bun"
+    directory: "/apps/client"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+      semver-major-days: 2
+      semver-minor-days: 1
+      semver-patch-days: 1
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    labels:
+      - "release:patch"
+    open-pull-requests-limit: 10
+    groups:
+      client-react-major:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+        update-types:
+          - "major"
+      client-react-router-major:
+        patterns:
+          - "react-router"
+          - "@react-router/*"
+        update-types:
+          - "major"
+      client-sentry-major:
+        patterns:
+          - "@sentry/*"
+        update-types:
+          - "major"
+      client-tailwind-major:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+        update-types:
+          - "major"
+      client-vite-major:
+        patterns:
+          - "vite"
+          - "vitest"
+          - "@vitest/*"
+          - "vite-plugin-pwa"
+        update-types:
+          - "major"
+      client-workbox-major:
+        patterns:
+          - "workbox-*"
+        update-types:
+          - "major"
+      client-dnd-kit-major:
+        patterns:
+          - "@dnd-kit/*"
+        update-types:
+          - "major"
+      client-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
   - package-ecosystem: "uv"
     directory: "/apps/server"
     schedule:
       interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+      semver-major-days: 2
+      semver-minor-days: 1
+      semver-patch-days: 1
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
     labels:
       - "release:patch"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     groups:
-      server-deps:
+      server-pydantic-major:
+        patterns:
+          - "pydantic"
+          - "pydantic-settings"
+        update-types:
+          - "major"
+      server-pytest-major:
+        patterns:
+          - "pytest"
+          - "pytest-asyncio"
+        update-types:
+          - "major"
+      server-minor-patch:
         patterns:
           - "*"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: "npm"
-    directory: "/apps/client"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "release:patch"
-    open-pull-requests-limit: 5
-    groups:
-      client-deps:
-        patterns:
-          - "*"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "cargo"
     directory: "/apps/scribe"
     schedule:
       interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+      semver-major-days: 2
+      semver-minor-days: 1
+      semver-patch-days: 1
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
     labels:
       - "release:patch"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     groups:
-      scribe-rust-deps:
+      scribe-rust-minor-patch:
         patterns:
           - "*"
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "uv"
     directory: "/apps/scribe"
     schedule:
       interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+      semver-major-days: 2
+      semver-minor-days: 1
+      semver-patch-days: 1
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
     labels:
       - "release:patch"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
     groups:
-      scribe-python-deps:
+      scribe-python-minor-patch:
         patterns:
           - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── Container base images ──
+
+  - package-ecosystem: "docker"
+    directories:
+      - "/apps/client"
+      - "/apps/server"
+      - "/infra/docker/postgres"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+      semver-major-days: 2
+      semver-minor-days: 1
+      semver-patch-days: 1
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "release:patch"
+    open-pull-requests-limit: 10
+    groups:
+      docker-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
-      - dependency-name: "*"
+      # Postgres majors need a dump/restore of existing data directories; upgrade by hand.
+      - dependency-name: "postgres"
         update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: "docker-compose"
+    directory: "/infra"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+      semver-major-days: 2
+      semver-minor-days: 1
+      semver-patch-days: 1
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "release:patch"
+    open-pull-requests-limit: 10
+    groups:
+      compose-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+
+  # ── CI and infrastructure (nothing shipped → no release label) ──
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+      semver-major-days: 2
+      semver-minor-days: 1
+      semver-patch-days: 1
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    open-pull-requests-limit: 10
+    groups:
+      actions-docker-major:
+        patterns:
+          - "docker/*"
+        update-types:
+          - "major"
+      actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "terraform"
+    directory: "/infra/terraform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    cooldown:
+      default-days: 1
+      semver-major-days: 2
+      semver-minor-days: 1
+      semver-patch-days: 1
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    open-pull-requests-limit: 10
+    groups:
+      terraform-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
