@@ -49,7 +49,10 @@ fn xlsx_multi_sheet_full_dump() {
 
     let cursor = Cursor::new(bytes);
     let archive = zip::ZipArchive::new(cursor).unwrap();
-    let names: Vec<String> = archive.file_names().map(|s| s.to_string()).collect();
+    let names: Vec<String> = archive
+        .file_names()
+        .map(|n| n.unwrap().into_owned())
+        .collect();
     let sheet_count = names
         .iter()
         .filter(|n| n.starts_with("xl/worksheets/sheet"))
@@ -89,6 +92,7 @@ fn xlsx_accounts_single_sheet() {
     let archive = zip::ZipArchive::new(cursor).unwrap();
     let sheet_count = archive
         .file_names()
+        .map(|n| n.unwrap())
         .filter(|n| n.starts_with("xl/worksheets/sheet"))
         .count();
     assert_eq!(sheet_count, 1);
