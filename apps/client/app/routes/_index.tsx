@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, redirect } from "react-router";
 import ThemeToggle from "~/components/ThemeToggle";
 import { isAuthenticated } from "~/lib/auth";
+import { IS_LANDING } from "~/lib/constants";
 
 export function meta() {
   return [
@@ -44,7 +45,7 @@ export function meta() {
 }
 
 export async function clientLoader() {
-  if (isAuthenticated()) {
+  if (!IS_LANDING && isAuthenticated()) {
     throw redirect("/dashboard");
   }
   return null;
@@ -87,7 +88,9 @@ const JSON_LD = JSON.stringify({
           name: "Is cofr free?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Free to sign up at cofr.cash. No credit card required, no data harvesting. If you prefer full control, self-hosting via Docker is also completely free with no feature restrictions.",
+            text: IS_LANDING
+              ? "Yes. cofr is open-source under AGPL-3.0 and free to self-host via Docker, with no feature restrictions, no credit card and no data harvesting."
+              : "Free to sign up at cofr.cash. No credit card required, no data harvesting. If you prefer full control, self-hosting via Docker is also completely free with no feature restrictions.",
           },
         },
         {
@@ -273,6 +276,22 @@ function Reveal({
 
 // --- Nav ---
 
+// The hosted landing has no accounts, so its calls to action point at the installer instead.
+function StartLink({ className, children }: { className: string; children: React.ReactNode }) {
+  if (IS_LANDING) {
+    return (
+      <a href="#self-host" className={className}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link to="/login?mode=signup" className={className}>
+      {children}
+    </Link>
+  );
+}
+
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
 
@@ -298,18 +317,17 @@ function Nav() {
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            to="/login"
-            className="hidden sm:inline-flex h-9 px-4 items-center text-[13px] font-medium text-content-secondary hover:text-content-primary transition-colors"
-          >
-            Log in
-          </Link>
-          <Link
-            to="/login?mode=signup"
-            className="h-9 px-4 sm:px-5 inline-flex items-center text-[13px] font-medium text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors"
-          >
+          {!IS_LANDING && (
+            <Link
+              to="/login"
+              className="hidden sm:inline-flex h-9 px-4 items-center text-[13px] font-medium text-content-secondary hover:text-content-primary transition-colors"
+            >
+              Log in
+            </Link>
+          )}
+          <StartLink className="h-9 px-4 sm:px-5 inline-flex items-center text-[13px] font-medium text-white bg-accent hover:bg-accent-hover rounded-lg transition-colors">
             Get Started
-          </Link>
+          </StartLink>
         </div>
       </div>
     </nav>
@@ -352,12 +370,9 @@ function Hero() {
         </p>
 
         <div className="hero-enter hero-enter-d3 mt-9 sm:mt-11 flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-center gap-3 w-full sm:w-auto">
-          <Link
-            to="/login?mode=signup"
-            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-semibold text-white bg-accent hover:bg-accent-hover rounded-xl transition-colors"
-          >
+          <StartLink className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-semibold text-white bg-accent hover:bg-accent-hover rounded-xl transition-colors">
             Start building
-          </Link>
+          </StartLink>
           <a
             href="#dashboard"
             className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-medium text-content-secondary bg-surface-primary/80 dark:bg-surface-elevated/60 border border-edge-strong rounded-xl hover:bg-surface-hover backdrop-blur-sm transition-colors"
@@ -1165,7 +1180,10 @@ function SelfHostSection() {
   ];
 
   return (
-    <section className="content-defer landing-band-accent py-20 sm:py-28 md:py-36 px-5 sm:px-6 relative">
+    <section
+      id="self-host"
+      className="content-defer landing-band-accent py-20 sm:py-28 md:py-36 px-5 sm:px-6 relative"
+    >
       <div
         className="section-divider absolute top-0 left-1/2 -translate-x-1/2 w-64"
         aria-hidden="true"
@@ -1290,7 +1308,15 @@ const FAQ_ITEMS: { id: string; q: React.ReactNode; a: React.ReactNode }[] = [
         Is <CofrBrand /> free?
       </>
     ),
-    a: (
+    a: IS_LANDING ? (
+      <>
+        Yes. <CofrBrand /> is open-source under AGPL-3.0 and free to{" "}
+        <a href="#self-host" className="text-accent hover:underline">
+          self-host
+        </a>{" "}
+        via Docker, with no feature restrictions, no credit card and no data harvesting.
+      </>
+    ) : (
       <>
         Free to sign up at{" "}
         <Link to="/login?mode=signup" className="text-accent hover:underline">
@@ -1477,12 +1503,9 @@ function FinalCTA() {
           sharper picture of where your money actually goes.
         </p>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-center gap-3">
-          <Link
-            to="/login?mode=signup"
-            className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-semibold text-white bg-accent hover:bg-accent-hover rounded-xl transition-colors"
-          >
+          <StartLink className="h-12 w-full sm:w-auto px-8 inline-flex items-center justify-center text-[15px] font-semibold text-white bg-accent hover:bg-accent-hover rounded-xl transition-colors">
             Start building for free
-          </Link>
+          </StartLink>
         </div>
       </Reveal>
     </section>
@@ -1495,8 +1518,12 @@ const FOOTER_NAV = [
   {
     heading: "Product",
     items: [
-      { label: "Get started", to: "/login?mode=signup", external: false },
-      { label: "Log in", to: "/login", external: false },
+      ...(IS_LANDING
+        ? []
+        : ([
+            { label: "Get started", to: "/login?mode=signup", external: false },
+            { label: "Log in", to: "/login", external: false },
+          ] as const)),
       { label: "Self-host", to: "https://github.com/Felix-Hz/cofr", external: true },
     ],
   },

@@ -165,10 +165,13 @@ fn zip_full_dump_valid_archive() {
 
     let cursor = Cursor::new(bytes);
     let archive = zip::ZipArchive::new(cursor).unwrap();
-    let names: Vec<&str> = archive.file_names().collect();
-    assert!(names.contains(&"transactions.csv"));
-    assert!(names.contains(&"accounts.csv"));
-    assert!(names.contains(&"categories.csv"));
+    let names: Vec<String> = archive
+        .file_names()
+        .map(|n| n.unwrap().into_owned())
+        .collect();
+    assert!(names.iter().any(|n| n == "transactions.csv"));
+    assert!(names.iter().any(|n| n == "accounts.csv"));
+    assert!(names.iter().any(|n| n == "categories.csv"));
 }
 
 #[test]
