@@ -3,7 +3,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![CI](https://github.com/felix-hz/cofr/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/felix-hz/cofr/actions/workflows/ci.yml?query=branch%3Amain)
 
-A personal finance tracker. Run it yourself, or use the hosted version at [cofr.cash](https://cofr.cash).
+A personal finance tracker you run yourself. See [cofr.cash](https://cofr.cash).
 
 ## Features
 
