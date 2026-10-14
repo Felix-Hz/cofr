@@ -1,0 +1,363 @@
+/* ─── Landing page ──────────────────────────────────────────────────────────
+   Loaded only by the home route. Motion is transform/opacity where it loops,
+   plays once on load otherwise, and is off under prefers-reduced-motion. */
+
+.lp {
+  --paper: #fffdf8;
+  --ink: #1f2937;
+  --marker: rgba(250, 204, 21, 0.5);
+  --pen: #e11d48;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  background: var(--surface-page);
+}
+
+.dark .lp {
+  --paper: #172033;
+  --ink: #e2e8f0;
+  --marker: rgba(52, 211, 153, 0.3);
+  --pen: #fb7185;
+}
+
+.lp-display {
+  font-family: var(--font-brand);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-wrap: balance;
+}
+
+.lp-mono {
+  font-family: var(--mono);
+  font-feature-settings: "tnum" 1;
+}
+
+/* Below-the-fold sections skip layout and paint until they are near the viewport. */
+.lp-defer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
+}
+
+/* Highlighter swipe behind a word */
+.lp-marker {
+  background:
+    linear-gradient(
+      100deg,
+      transparent 0.25em,
+      var(--marker) 0.35em,
+      var(--marker) calc(100% - 0.3em),
+      transparent calc(100% - 0.2em)
+    )
+    no-repeat 0 82% / 100% 0.42em;
+  padding-inline: 0.06em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* ─── Receipt ─────────────────────────────────────────────────────────── */
+
+.lp-receipt-wrap {
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.06))
+    drop-shadow(0 18px 30px rgba(15, 23, 42, 0.1));
+  transform: rotate(1.5deg);
+}
+
+.dark .lp-receipt-wrap {
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.45));
+}
+
+.lp-receipt {
+  --z: 7px;
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 1.5rem 1.5rem calc(1.5rem + var(--z));
+  /* Torn zigzag bottom edge */
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% /
+    calc(2 * var(--z)) 100%;
+}
+
+.lp-dots {
+  flex: 1;
+  min-width: 1rem;
+  margin: 0 0.4rem;
+  border-bottom: 1.5px dotted currentColor;
+  opacity: 0.25;
+  transform: translateY(-0.3em);
+}
+
+.lp-pen {
+  stroke: var(--pen);
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lp-note {
+  color: var(--pen);
+  transform: rotate(-8deg);
+}
+
+/* ─── Ticker ──────────────────────────────────────────────────────────── */
+
+.lp-ticker-band {
+  transform: rotate(-1.5deg);
+  width: 110%;
+  margin-left: -5%;
+  background: var(--content-heading);
+  color: var(--surface-page);
+}
+
+.lp-ticker-track {
+  display: flex;
+  width: max-content;
+}
+
+.lp-ticker-band:hover .lp-ticker-track {
+  animation-play-state: paused;
+}
+
+/* ─── Cards ───────────────────────────────────────────────────────────── */
+
+.lp-card {
+  background: var(--surface-primary);
+  border: 1px solid var(--edge-default);
+  border-radius: 1.25rem;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.2s ease;
+}
+
+.lp-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--edge-strong);
+}
+
+.lp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--edge-default);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--content-primary);
+  white-space: nowrap;
+}
+
+.lp-wire {
+  background-image: linear-gradient(90deg, var(--edge-strong) 50%, transparent 0);
+  background-size: 8px 2px;
+  background-repeat: repeat-x;
+  background-position: 0 50%;
+}
+
+.lp-file {
+  position: relative;
+  border-radius: 0.4rem 0.9rem 0.4rem 0.4rem;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lp-card:hover .lp-file {
+  transform: translateY(-4px) rotate(var(--r, 0deg));
+}
+
+.lp-tile {
+  border-radius: 0.5rem;
+  background: var(--surface-elevated);
+  border: 1px solid var(--edge-default);
+}
+
+/* ─── Terminal ────────────────────────────────────────────────────────── */
+
+.lp-term {
+  background: #0b1220;
+  color: #cbd5e1;
+  border: 1px solid #1e293b;
+  border-radius: 1rem;
+  box-shadow: 0 24px 48px -24px rgba(15, 23, 42, 0.45);
+}
+
+.lp-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.1em;
+  vertical-align: -0.2em;
+  background: #34d399;
+}
+
+/* ─── FAQ ─────────────────────────────────────────────────────────────── */
+
+.lp-faq summary {
+  list-style: none;
+}
+
+.lp-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.lp-faq .lp-plus {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lp-faq[open] .lp-plus {
+  transform: rotate(45deg);
+}
+
+/* ─── Wordmark ────────────────────────────────────────────────────────── */
+
+.lp-wordmark {
+  font-family: var(--font-brand);
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 0.8;
+  font-size: clamp(6rem, 30vw, 22rem);
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--edge-strong);
+  user-select: none;
+}
+
+/* ─── Motion ──────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-in {
+    animation: lp-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--d, 0) * 90ms);
+  }
+
+  .lp-marker-anim {
+    animation: lp-marker 0.6s cubic-bezier(0.6, 0, 0.3, 1) 0.55s both;
+  }
+
+  .lp-receipt {
+    animation: lp-print 1.1s cubic-bezier(0.3, 0.7, 0.2, 1) 0.2s both;
+  }
+
+  .lp-line {
+    animation: lp-in 0.45s ease-out both;
+    animation-delay: calc(0.45s + var(--i, 0) * 70ms);
+  }
+
+  .lp-pen-draw {
+    stroke-dasharray: 1;
+    animation: lp-draw 0.7s cubic-bezier(0.6, 0, 0.3, 1) 1.5s both;
+  }
+
+  .lp-note {
+    animation: lp-pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) 2.05s both;
+  }
+
+  .lp-receipt .lp-marker {
+    animation: lp-marker 0.5s cubic-bezier(0.6, 0, 0.3, 1) 1.3s both;
+  }
+
+  .lp-ticker-track {
+    animation: lp-ticker 48s linear infinite;
+  }
+
+  .lp-coin {
+    animation: lp-coin 2.6s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+  }
+
+  .lp-card:hover .lp-wiggle {
+    animation: lp-wiggle 0.5s ease-in-out;
+  }
+
+  .lp-cursor {
+    animation: lp-blink 1.1s steps(1) infinite;
+  }
+
+  /* Sections rise in as they scroll into view, with no JS where supported. */
+  @supports (animation-timeline: view()) {
+    .lp-rise {
+      animation: lp-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+
+@keyframes lp-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes lp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+}
+
+@keyframes lp-marker {
+  from {
+    background-size: 0% 0.42em;
+  }
+}
+
+@keyframes lp-print {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-18px);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes lp-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes lp-pop {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) scale(0.4);
+  }
+}
+
+@keyframes lp-ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes lp-coin {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes lp-wiggle {
+  25% {
+    transform: rotate(-4deg);
+  }
+  75% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes lp-blink {
+  50% {
+    opacity: 0;
+  }
+}

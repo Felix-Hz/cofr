@@ -383,7 +383,7 @@ export default function Login() {
                     rel="noopener noreferrer"
                     className="font-semibold text-emerald hover:text-emerald-hover transition-colors"
                   >
-                    Terms of Service
+                    Terms of Use
                   </a>{" "}
                   and{" "}
                   <a

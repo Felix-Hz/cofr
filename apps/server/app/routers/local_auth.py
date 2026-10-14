@@ -61,7 +61,7 @@ class RegisterRequest(BaseModel):
     @classmethod
     def must_accept_terms(cls, v: bool) -> bool:
         if not v:
-            raise ValueError("You must accept the Terms of Service and Privacy Policy to register.")
+            raise ValueError("You must accept the Terms of Use and Privacy Policy to register.")
         return v
 
 

@@ -5,454 +5,329 @@ export function meta() {
     { title: "Privacy Policy | cofr" },
     {
       name: "description",
-      content: "Privacy Policy for cofr: what we collect, how we use it, and your rights.",
+      content:
+        "Privacy Policy for cofr: what the cofr.cash website collects, and how the self-hosted software handles data.",
     },
   ];
 }
 
-const LAST_UPDATED = "April 26, 2026";
+const LAST_UPDATED = "October 15, 2026";
+const CONTACT_EMAIL = "me@felix-hzv.dev";
 
 const TLDR = [
-  "We collect only what's necessary to run the service. No analytics. No ad networks. No data brokers.",
-  "Your financial data and PII are encrypted at rest using Fernet (AES-128). TLS everywhere.",
-  "We use Resend for transactional email and Sentry for error tracking (production only). That's it.",
-  "You can export all your data (CSV, XLSX, PDF) or permanently delete your account at any time.",
-  "Self-hosted instances are entirely independent. We have zero access to data on your server.",
+  "cofr is software you run on your own server. There is no hosted service and no cofr account.",
+  "Whoever runs an instance controls its data. The cofr project has no access to it.",
+  "The software sends nothing to the cofr project: no analytics, no telemetry, no error reports.",
+  "The cofr.cash website has no accounts, no cookies and no analytics.",
+  "Names, usernames and emails are encrypted at rest. Transactions are not.",
 ];
 
 const TOC = [
-  { id: "who-we-are", label: "Who We Are" },
-  { id: "scope", label: "Scope" },
-  { id: "data-collected", label: "Data We Collect" },
-  { id: "how-we-use", label: "How We Use Your Data" },
+  { id: "scope", label: "Who We Are & Scope" },
+  { id: "website", label: "The cofr.cash Website" },
+  { id: "instances", label: "Self-Hosted Instances" },
+  { id: "data-stored", label: "Data the Software Stores" },
+  { id: "connections", label: "Outbound Connections" },
   { id: "security", label: "Encryption & Security" },
-  { id: "sharing", label: "Data Sharing" },
-  { id: "selfhost", label: "Self-Hosted Instances" },
-  { id: "retention", label: "Data Retention" },
+  { id: "retention", label: "Deletion & Retention" },
+  { id: "storage", label: "Browser Storage" },
   { id: "rights", label: "Your Rights" },
-  { id: "gdpr", label: "GDPR" },
-  { id: "ccpa", label: "CCPA" },
-  { id: "cookies", label: "Cookies & Local Storage" },
-  { id: "children", label: "Children" },
   { id: "changes", label: "Changes to This Policy" },
   { id: "contact", label: "Contact" },
 ];
+
+function Email() {
+  return (
+    <a
+      href={`mailto:${CONTACT_EMAIL}`}
+      style={{ color: "var(--accent)" }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.color = "var(--accent-hover)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.color = "var(--accent)";
+      }}
+    >
+      {CONTACT_EMAIL}
+    </a>
+  );
+}
+
+function Term({ children }: { children: React.ReactNode }) {
+  return <strong style={{ color: "var(--content-heading)" }}>{children}</strong>;
+}
 
 export default function Privacy() {
   return (
     <LegalLayout
       title="Privacy Policy"
-      subtitle="What we collect, why we collect it, and how you stay in control"
+      subtitle="What the website collects, and what the software does with your data"
       lastUpdated={LAST_UPDATED}
       tldr={TLDR}
       toc={TOC}
     >
-      <LegalSection id="who-we-are" number="01" title="Who We Are">
+      <LegalSection id="scope" number="01" title="Who We Are & Scope">
         <p>
-          cofr is operated by Felix Hernandez Vieyra, an individual ("Operator," "we," "us," "our"),
-          reachable at{" "}
-          <a
-            href="mailto:me@felix-hzv.dev"
-            style={{ color: "var(--accent)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "var(--accent-hover)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--accent)";
-            }}
-          >
-            me@felix-hzv.dev
+          cofr is open-source personal finance software maintained by Felix Hernandez Vieyra
+          ("Maintainer," "we," "us," "our"), reachable at <Email />.
+        </p>
+        <p>
+          cofr is only available as software that you install and run yourself. There is no hosted
+          version and no central cofr account. This policy covers two things:
+        </p>
+        <ul className="ml-4 list-disc space-y-1.5 marker:opacity-50">
+          <li>
+            the <Term>cofr.cash website</Term>, which describes the project and serves the
+            installer; and
+          </li>
+          <li>
+            how the <Term>cofr software</Term> handles data on the instances people run, so that
+            instance operators and their users know what to expect.
+          </li>
+        </ul>
+        <p>
+          If you're reading this page on a self-hosted instance, that instance is run by whoever
+          installed it, not by us. See{" "}
+          <a href="#instances" style={{ color: "var(--accent)" }}>
+            Self-Hosted Instances
           </a>
           .
         </p>
+      </LegalSection>
+
+      <LegalSection id="website" number="02" title="The cofr.cash Website">
         <p>
-          For the purposes of data protection law, the Operator is the data controller for personal
-          data processed in connection with the hosted Service at cofr.cash.
+          cofr.cash is a static website. It has no sign-up, no login and no forms, and we don't run
+          analytics, advertising or tracking cookies on it.
+        </p>
+        <p>Visiting it still involves a few third parties, as with any website:</p>
+        <LegalTable
+          headers={["Provider", "Purpose", "Data involved"]}
+          rows={[
+            [
+              "Amazon Web Services (S3, CloudFront)",
+              "Hosting and delivering the website and install scripts",
+              "IP address and request metadata, processed to serve the page",
+            ],
+            [
+              "Google Fonts",
+              "Loading the site's typefaces",
+              "IP address and user agent, sent by your browser to Google",
+            ],
+          ]}
+        />
+        <p>
+          The site stores your light/dark theme choice in your browser and registers a service
+          worker so it loads faster on repeat visits. Neither is sent to us.
         </p>
       </LegalSection>
 
-      <LegalSection id="scope" number="02" title="Scope">
+      <LegalSection id="instances" number="03" title="Self-Hosted Instances">
         <p>
-          This Privacy Policy applies to the hosted Service at cofr.cash and any associated
-          transactional communications (e.g. verification emails).
+          Each cofr instance is an independent deployment on infrastructure chosen by whoever runs
+          it (the "Instance Operator"). We have no access to, knowledge of, or control over any
+          instance or the data on it.
         </p>
         <p>
-          It does not apply to self-hosted instances of cofr. If you deploy cofr on your own
-          infrastructure, you are the data controller for that deployment and are independently
-          responsible for applicable privacy obligations.
+          For data protection purposes, the Instance Operator is the data controller for their
+          instance. If you run an instance that other people use, you are responsible for complying
+          with the privacy laws that apply to you, including giving those people any notice they are
+          owed. The rest of this policy describes what the software does, which you can use as a
+          starting point.
+        </p>
+        <p>
+          If you use an instance someone else runs, contact them about your data. We can't see it,
+          change it or delete it.
         </p>
       </LegalSection>
 
-      <LegalSection id="data-collected" number="03" title="Data We Collect">
-        <p>We collect only the data necessary to operate the Service:</p>
+      <LegalSection id="data-stored" number="04" title="Data the Software Stores">
+        <p>
+          A cofr instance stores the following in its own PostgreSQL database, on the Instance
+          Operator's server:
+        </p>
         <LegalTable
           headers={["Category", "Data", "Encrypted at rest"]}
           rows={[
-            ["Account", "First name, last name, username", "Yes (Fernet/AES-128)"],
-            ["Auth: Email/Password", "Email address", "Yes (Fernet/AES-128)"],
-            [
-              "Auth: Email/Password",
-              "Password hash (bcrypt)",
-              "N/A (one-way hash, never recoverable)",
-            ],
-            ["Auth: Google OAuth", "Google provider user ID", "No (needed for account lookup)"],
-            ["Auth: Google OAuth", "Email address (from Google profile)", "Yes (Fernet/AES-128)"],
-            ["Auth: Google OAuth", "Display name (from Google profile)", "Yes (Fernet/AES-128)"],
+            ["Account", "First name, last name, username", "Yes (Fernet)"],
+            ["Email sign-in", "Email address", "Yes (Fernet)"],
+            ["Email sign-in", "Password hash (bcrypt)", "N/A (one-way hash)"],
+            ["Google sign-in", "Google account ID", "No (needed to look up the account)"],
+            ["Google sign-in", "Email address and display name", "Yes (Fernet)"],
             [
               "Financial",
-              "Transactions, amounts, categories, accounts, merchant tags",
-              "No (structured user data)",
+              "Transactions, amounts, merchants, notes, categories, accounts, import history",
+              "No",
             ],
-            ["Preferences", "Preferred currency, theme, session timeout setting", "No"],
-            ["Technical", "IP address (rate limiting only, not stored long-term)", "N/A"],
-            ["Technical", "JWT session token (stored in your browser, not our server)", "N/A"],
-            ["Technical", "User agent (Sentry error context, production only)", "N/A"],
+            ["Preferences", "Preferred currency, dashboard layout, session timeout", "No"],
             [
               "Email suppression",
-              "SHA-256 hashed email addresses (bounce/complaint list)",
-              "N/A (hash only, not reversible)",
+              "SHA-256 hashes of addresses that bounced or complained",
+              "N/A (hash only)",
             ],
           ]}
         />
         <p>
-          We do not collect payment information (there is no paid tier requiring card details),
-          location data, biometric data, or browsing history outside the Service.
+          Bank statements you import are parsed in memory. Only the transactions you choose to save
+          are stored, not the file.
         </p>
       </LegalSection>
 
-      <LegalSection id="how-we-use" number="04" title="How We Use Your Data">
-        <p>We use the data we collect for the following purposes only:</p>
+      <LegalSection id="connections" number="05" title="Outbound Connections">
+        <p>
+          The software does not send analytics, telemetry or error reports to the cofr project. A
+          default installation makes one kind of outbound request:
+        </p>
         <ul className="ml-4 list-disc space-y-1.5 marker:opacity-50">
           <li>
-            <strong style={{ color: "var(--content-heading)" }}>Authentication:</strong> verifying
-            your identity on login and maintaining your session
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Operating the Service:</strong>{" "}
-            storing and serving your financial data, calculating balances and summaries, applying
-            exchange rates
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Transactional email:</strong>{" "}
-            sending account verification emails and password reset links via Resend. No marketing
-            emails unless you explicitly opt in (no opt-in mechanism currently exists)
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Error tracking:</strong> detecting
-            and diagnosing bugs via Sentry in production environments only
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Security:</strong> rate-limiting
-            authentication endpoints using your IP address to prevent brute-force attacks
+            <Term>Exchange rates:</Term> once a day the server fetches public rates from Frankfurter
+            (frankfurter.app). No user data is sent.
           </li>
         </ul>
         <p>
-          We do not use your data for advertising, profiling, training machine learning models, or
-          any purpose not listed above.
-        </p>
-      </LegalSection>
-
-      <LegalSection id="security" number="05" title="Encryption & Security">
-        <p>We take security seriously and apply the following controls:</p>
-        <ul className="ml-4 list-disc space-y-1.5 marker:opacity-50">
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Encryption at rest:</strong>{" "}
-            Personal identifiers (name, email, display name) are encrypted field-by-field using
-            Fernet (AES-128-CBC with HMAC-SHA256) before being written to the database. The
-            encryption key is never stored alongside the data.
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Encryption in transit:</strong> All
-            connections to cofr.cash use TLS. Unencrypted HTTP is not accepted.
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Password storage:</strong> Passwords
-            are hashed with bcrypt and never stored in recoverable form.
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>No tracking infrastructure:</strong>{" "}
-            No advertising pixels, no third-party analytics, no data broker integrations.
-          </li>
-        </ul>
-        <p>
-          While we implement industry-standard safeguards, no system is completely immune to
-          breaches. In the event of a breach affecting your personal data, we will notify affected
-          users as required by applicable law.
-        </p>
-      </LegalSection>
-
-      <LegalSection id="sharing" number="06" title="Data Sharing">
-        <p>
-          We do not sell, rent, or trade your personal data. We share data only with the following
-          sub-processors required to operate the Service:
+          The Instance Operator can turn on extra integrations by adding their own credentials. Each
+          one then sends data to that provider, under the operator's own account:
         </p>
         <LegalTable
-          headers={["Service", "Purpose", "Data shared"]}
+          headers={["Integration", "Purpose", "Data shared"]}
           rows={[
-            ["Resend", "Transactional email delivery", "Your email address"],
+            ["Resend", "Verification and password reset emails", "Recipient email address"],
+            ["Google OAuth", "Sign in with Google", "Handled by Google during sign-in"],
             [
               "Sentry",
-              "Error tracking, performance tracing & session replay (production only)",
-              "Error context, session replay data (text masked by default), user agent",
-            ],
-            [
-              "DigitalOcean (Sydney, Australia)",
-              "Cloud hosting & database",
-              "All data at rest on our servers",
-            ],
-            ["Cloudflare", "Tunnel & network routing", "IP addresses, request metadata"],
-            [
-              "Frankfurter.app",
-              "Daily exchange rate data",
-              "No user data (public API, rates only)",
+              "Error tracking",
+              "Error details, user agent and, if enabled in the build, session replays",
             ],
           ]}
         />
-        <p>
-          We may disclose personal data if required by law, court order, or governmental authority.
-          We will make reasonable efforts to notify you before doing so, unless legally prohibited.
-        </p>
       </LegalSection>
 
-      <LegalSection id="selfhost" number="07" title="Self-Hosted Instances">
-        <p>
-          If you deploy cofr on your own server, the Operator has no access to, knowledge of, or
-          control over any data processed on that instance. You are the sole data controller and are
-          independently responsible for compliance with privacy and data protection laws applicable
-          in your jurisdiction.
-        </p>
-        <p>This Privacy Policy does not cover self-hosted deployments in any way.</p>
-      </LegalSection>
-
-      <LegalSection id="retention" number="08" title="Data Retention">
-        <p>We retain your data as follows:</p>
+      <LegalSection id="security" number="06" title="Encryption & Security">
         <ul className="ml-4 list-disc space-y-1.5 marker:opacity-50">
           <li>
-            <strong style={{ color: "var(--content-heading)" }}>Active accounts:</strong> retained
-            for as long as your account exists
+            <Term>Encryption at rest:</Term> names, usernames, emails and display names are
+            encrypted field by field with Fernet (AES-128-CBC with HMAC-SHA256) before they're
+            written to the database. The key lives in the server's environment file, not in the
+            database.
           </li>
           <li>
-            <strong style={{ color: "var(--content-heading)" }}>Soft delete:</strong> your account
-            becomes immediately inaccessible. Data is retained and restored if you log in again
-            within a reasonable period
+            <Term>Passwords:</Term> hashed with bcrypt and never stored in a recoverable form.
           </li>
           <li>
-            <strong style={{ color: "var(--content-heading)" }}>Hard delete:</strong> permanently
-            and irreversibly removes your profile, all transactions, all financial accounts, and all
-            auth connections. No recovery is possible after this action. Available in Settings →
-            Danger Zone
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Export jobs:</strong> export
-            artifacts are held in-memory only and automatically deleted after 30 minutes
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Email suppression list:</strong>{" "}
-            SHA-256 hashed email addresses from bounces and complaints are retained to prevent
-            re-sending to invalid or opted-out addresses. These hashes cannot be reversed to
-            identify you
+            <Term>In transit:</Term> when the installer is given a domain, Caddy serves the instance
+            over HTTPS with a Let's Encrypt certificate. On localhost it uses plain HTTP.
           </li>
         </ul>
+        <p>
+          Everything else, including server access, firewalls, updates and backups, is up to the
+          Instance Operator. The software can't protect data on a server that isn't itself secure.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="retention" number="07" title="Deletion & Retention">
+        <ul className="ml-4 list-disc space-y-1.5 marker:opacity-50">
+          <li>
+            <Term>Your account:</Term> kept until you delete it.
+          </li>
+          <li>
+            <Term>Deactivation:</Term> hides your account and keeps your data. Logging in again
+            restores it.
+          </li>
+          <li>
+            <Term>Permanent deletion:</Term> removes your profile, transactions, accounts and
+            sign-in connections from the instance's database. This can't be undone. It's in
+            Settings, under Danger Zone. It doesn't reach copies in backups the Instance Operator
+            has made.
+          </li>
+          <li>
+            <Term>Exports:</Term> generated files are kept in memory only and discarded after 30
+            minutes.
+          </li>
+          <li>
+            <Term>Email suppression list:</Term> hashes of addresses that bounced or complained are
+            kept so the instance doesn't email them again. They can't be reversed into an address.
+          </li>
+        </ul>
+      </LegalSection>
+
+      <LegalSection id="storage" number="08" title="Browser Storage">
+        <p>
+          The app uses no tracking or advertising cookies. It keeps the following in your browser's
+          local storage, and none of it is shared with third parties:
+        </p>
+        <LegalTable
+          headers={["Item", "Purpose", "Kept"]}
+          rows={[
+            [
+              "Session token",
+              "Keeps you signed in to the instance",
+              "Until you log out or it expires",
+            ],
+            ["Theme", "Remembers light or dark mode", "Until you change it"],
+            ["Session timeout", "Applies your inactivity timeout", "Until you change it"],
+            ["Last activity time", "Signs you out after inactivity", "Until you log out"],
+            ["Default account", "Pre-selects an account in forms", "Until you change it"],
+            ["Sign-in lockout time", "Blocks retries during a lockout", "Up to 15 minutes"],
+            [
+              "Currency and timezone flags",
+              "Detects your currency and timezone only once",
+              "Until cleared",
+            ],
+          ]}
+        />
       </LegalSection>
 
       <LegalSection id="rights" number="09" title="Your Rights">
-        <p>You have the following rights with respect to your personal data:</p>
+        <p>Inside the app, on any instance, you can:</p>
         <ul className="ml-4 list-disc space-y-1.5 marker:opacity-50">
           <li>
-            <strong style={{ color: "var(--content-heading)" }}>Access:</strong> view all your
-            financial data and account information in the dashboard at any time
+            <Term>See and correct</Term> your profile, transactions and preferences
           </li>
           <li>
-            <strong style={{ color: "var(--content-heading)" }}>Export (portability):</strong>{" "}
-            download your data as CSV, XLSX, PDF, or a full ZIP archive from Settings → Export.
-            Formats are open standards. Your data is not locked to cofr.
+            <Term>Export</Term> everything as CSV, XLSX, PDF or a ZIP from Settings
           </li>
           <li>
-            <strong style={{ color: "var(--content-heading)" }}>Correction:</strong> edit your
-            profile, transactions, and preferences at any time
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Deletion:</strong> permanently
-            delete your account and all associated data from Settings → Danger Zone
+            <Term>Delete</Term> your account and data permanently from Settings
           </li>
         </ul>
         <p>
-          To exercise any right that cannot be completed within the application, contact us at{" "}
-          <a
-            href="mailto:me@felix-hzv.dev"
-            style={{ color: "var(--accent)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "var(--accent-hover)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--accent)";
-            }}
-          >
-            me@felix-hzv.dev
-          </a>
-          . We will respond within 30 days.
+          For anything else about data on an instance, contact its Instance Operator. Depending on
+          where you and they are, you may have further rights under laws such as the GDPR or the
+          CCPA, which you exercise with them.
+        </p>
+        <p>
+          The Maintainer holds no personal data about cofr users. For questions about the cofr.cash
+          website, contact <Email />.
         </p>
       </LegalSection>
 
-      <LegalSection id="gdpr" number="10" title="GDPR: European Users">
+      <LegalSection id="changes" number="10" title="Changes to This Policy">
         <p>
-          If you are located in the European Economic Area (EEA) or United Kingdom, the following
-          additional rights and information apply.
-        </p>
-        <p>
-          <strong style={{ color: "var(--content-heading)" }}>Legal basis for processing:</strong>{" "}
-          We process your personal data on the basis of contractual necessity (Article 6(1)(b)
-          GDPR): your data is processed to provide the Service you signed up for. Rate-limiting and
-          security operations are processed on the basis of our legitimate interests (Article
-          6(1)(f) GDPR) in protecting the Service and its users.
-        </p>
-        <p>Your additional rights under GDPR include:</p>
-        <ul className="ml-4 list-disc space-y-1.5 marker:opacity-50">
-          <li>Right to restrict processing</li>
-          <li>Right to object to processing based on legitimate interests</li>
-          <li>
-            Right to lodge a complaint with your local supervisory authority (e.g. your national
-            Data Protection Authority)
-          </li>
-        </ul>
-        <p>
-          International transfer notice: the hosted Service stores data on DigitalOcean
-          infrastructure in Sydney, Australia. Australia is not recognised as adequate by the
-          European Commission under Article 45 GDPR. By creating an account and explicitly accepting
-          this Privacy Policy at registration, you provide specific, informed consent to this
-          international transfer under Article 49(1)(a) GDPR. If you do not consent, you should not
-          use the hosted Service. You may instead self-host cofr on infrastructure in your preferred
-          jurisdiction.
+          We may update this policy, for example when the software changes what it stores. When we
+          do, we'll change the "Last updated" date above. Each release of the software ships with
+          the version of this policy current at the time.
         </p>
       </LegalSection>
 
-      <LegalSection id="ccpa" number="11" title="CCPA / CPRA: California Residents">
-        <p>
-          If you are a California resident, you have the following rights under the California
-          Consumer Privacy Act (CCPA) as amended by the California Privacy Rights Act (CPRA,
-          effective January 1, 2023):
-        </p>
-        <ul className="ml-4 list-disc space-y-1.5 marker:opacity-50">
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Right to know:</strong> you may
-            request disclosure of the categories and specific pieces of personal information we have
-            collected about you
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Right to correct:</strong> you may
-            request correction of inaccurate personal information we hold about you (most data can
-            be corrected directly within the app)
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Right to delete:</strong> you may
-            request deletion of your personal information (available directly via hard-delete in
-            Settings)
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>
-              Right to limit use of sensitive personal information:
-            </strong>{" "}
-            under CPRA, financial transaction history and account balances qualify as sensitive
-            personal information. We use this data solely to operate the Service for you and do not
-            use it for any secondary purpose. You may contact us to exercise this right.
-          </li>
-          <li>
-            <strong style={{ color: "var(--content-heading)" }}>Right to opt out of sale:</strong>{" "}
-            we do not sell your personal information. This right is not applicable.
-          </li>
-        </ul>
-        <p>We do not discriminate against users who exercise their CCPA/CPRA rights.</p>
-      </LegalSection>
-
-      <LegalSection id="cookies" number="12" title="Cookies & Local Storage">
-        <p>
-          We do not use tracking cookies or advertising cookies. We store the following data in your
-          browser's local storage:
-        </p>
-        <LegalTable
-          headers={["Key", "Purpose", "Persists"]}
-          rows={[
-            [
-              "JWT token",
-              "Authenticates your session with our API",
-              "Until you log out or token expires",
-            ],
-            ["Theme preference", "Remembers your light/dark mode choice", "Until you change it"],
-            [
-              "Session timeout setting",
-              "Applies your inactivity timeout preference",
-              "Until you change it",
-            ],
-            [
-              "Rate-limit lockout timestamps",
-              "Prevents submission during auth lockout periods",
-              "Up to 15 minutes",
-            ],
-            [
-              "Currency detection flag",
-              "Ensures locale-based currency is only inferred once",
-              "Persistent",
-            ],
-          ]}
-        />
-        <p>
-          None of these items are shared with third parties or used for tracking across other
-          websites.
-        </p>
-      </LegalSection>
-
-      <LegalSection id="children" number="13" title="Children">
-        <p>
-          cofr is not directed at children. If you believe that a child has created an account on
-          the Service, please contact us immediately at{" "}
-          <a
-            href="mailto:me@felix-hzv.dev"
-            style={{ color: "var(--accent)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "var(--accent-hover)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--accent)";
-            }}
-          >
-            me@felix-hzv.dev
-          </a>{" "}
-          and we will promptly delete the account and all associated data.
-        </p>
-      </LegalSection>
-
-      <LegalSection id="changes" number="14" title="Changes to This Policy">
-        <p>
-          We may update this Privacy Policy from time to time. When we do, we will update the "Last
-          updated" date at the top of this page. For material changes, we will make reasonable
-          efforts to notify you via the email address on your account before the changes take
-          effect.
-        </p>
-        <p>
-          Your continued use of the Service after the effective date constitutes your acceptance of
-          the updated Policy.
-        </p>
-      </LegalSection>
-
-      <LegalSection id="contact" number="15" title="Contact">
-        <p>For privacy-related questions, data access requests, or to report a concern:</p>
+      <LegalSection id="contact" number="11" title="Contact">
+        <p>For questions about this policy or the cofr.cash website:</p>
         <p>
           Felix Hernandez Vieyra
           <br />
-          <a
-            href="mailto:me@felix-hzv.dev"
-            style={{ color: "var(--accent)" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "var(--accent-hover)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--accent)";
-            }}
-          >
-            me@felix-hzv.dev
-          </a>
+          <Email />
         </p>
-        <p>We aim to respond to all privacy inquiries within 30 days.</p>
+        <p>
+          To report a security issue, see{" "}
+          <a
+            href="https://github.com/Felix-Hz/cofr/blob/main/SECURITY.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "var(--accent)" }}
+          >
+            SECURITY.md
+          </a>
+          .
+        </p>
       </LegalSection>
     </LegalLayout>
   );

@@ -36,7 +36,7 @@ export function getTokenPayload(): {
 
 export function isTokenExpired(): boolean {
   const payload = getTokenPayload();
-  if (!payload || !payload.exp) return true;
+  if (!payload?.exp) return true;
 
   // Check if token expires in less than 5 minutes
   return Date.now() >= (payload.exp - 300) * 1000;
