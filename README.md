@@ -3,79 +3,54 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![CI](https://github.com/felix-hz/cofr/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/felix-hz/cofr/actions/workflows/ci.yml?query=branch%3Amain)
 
-Personal finance tracker. Self-host in seconds, or use [cofr.cash](https://cofr.cash).
-
-## Self-hosting
-
-```bash
-curl -fsSL https://cofr.cash/install.sh | bash
-```
-
-Bring your own domain or run on localhost. The installer auto-generates all secrets, pulls pre-built images, and starts everything via Docker Compose. No accounts, no telemetry.
-
-**Optional:** set `COFR_DOMAIN=yourdomain.com` before running to get automatic HTTPS via Let's Encrypt.
-
-See [`scripts/install.sh`](scripts/install.sh) for the full installer source.
-
-## Updating
-
-Re-run the installer on an existing installation. Env files are left untouched, images are pulled fresh, and data volumes are preserved:
-
-```bash
-curl -fsSL https://cofr.cash/install.sh | bash
-```
-
-To pin a specific release:
-
-```bash
-COFR_VERSION=2026.3.0 curl -fsSL https://cofr.cash/install.sh | bash
-```
-
-## Hosted
-
-[cofr.cash](https://cofr.cash) runs the same open-source codebase. Free tier available.
+A personal finance tracker. Run it yourself, or use the hosted version at [cofr.cash](https://cofr.cash).
 
 ## Features
 
-- Expense tracking with accounts, categories, and inter-account transfers
-- Composable dashboard - drag widgets into place
-- Multi-currency support with daily exchange rate updates
-- CSV, XLSX, and PDF exports (Rust-accelerated via PyO3)
-- Google OAuth + email/password auth, email verification
-- PII encrypted at rest (Fernet). No telemetry unless you opt in.
+- Accounts, categories and transfers between accounts
+- Multiple currencies, with exchange rates refreshed daily
+- Bank statement import (ANZ New Zealand CSV)
+- Export to CSV, XLSX and PDF
+- Configurable dashboard
+- Google or email/password sign-in
+- Personal data encrypted at rest; error reporting only if you configure it
+
+## Self-hosting
+
+Requires Docker.
+
+```bash
+curl -fsSL https://cofr.cash/install.sh | bash
+```
+
+The installer generates secrets, pulls the release images and starts the stack with Docker Compose. Set `COFR_DOMAIN=yourdomain.com` first to serve it over HTTPS with a Let's Encrypt certificate; otherwise it runs on localhost.
+
+To update, run the same command again. Env files and data are kept. To install a specific release, set `COFR_VERSION`, e.g. `COFR_VERSION=2026.3.0`.
+
+The installer source is in [`scripts/install.sh`](scripts/install.sh).
 
 ## Architecture
 
 ```
-Client (React Router 7)
-    |
-   Caddy (reverse proxy, auto-HTTPS)
-    |-- /api/*  --> Server (FastAPI, port 5784)
-    |-- /*      --> Client (Bun SSR, port 3000)
-                        |
-                   PostgreSQL 16
+Caddy
+ ├── /api/*  → server (FastAPI)
+ └── /*      → client (React Router, Bun)
+                 │
+              PostgreSQL
 ```
 
-Deployed via Docker Compose. Self-hosted variant uses `docker-compose.selfhost.yml` (direct ports, no Cloudflare Tunnel). Production variant at cofr.cash adds Cloudflare Tunnel + S3-backed Postgres.
+`apps/scribe` is a Rust extension used by the server for exports and statement parsing.
 
 ## Development
 
 ```bash
-./scripts/setup_dev.sh          # hot-reload dev stack at http://localhost:8080
-cd apps/server && uv run pytest # 131 server tests
-cd apps/scribe && cargo test    # 25 Rust serialization tests
-cd apps/client && bun run test  # 54 client tests
+./scripts/setup_dev.sh          # dev stack at http://localhost:8080
+cd apps/server && uv run pytest
+cd apps/scribe && cargo test
+cd apps/client && bun run test
 ```
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for prerequisites and PR guidelines.
-
-## Contributing
-
-Pull requests welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## Security
-
-No telemetry by default. See [`SECURITY.md`](SECURITY.md) for the disclosure process and data protection details.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for prerequisites and pull request guidelines, and [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
 
 ## License
 
