@@ -4,7 +4,6 @@
 
 .lp {
   --paper: #fffdf8;
-  --paper-line: rgba(15, 23, 42, 0.07);
   --ink: #1f2937;
   --marker: rgba(250, 204, 21, 0.5);
   --pen: #e11d48;
@@ -14,7 +13,6 @@
 
 .dark .lp {
   --paper: #172033;
-  --paper-line: rgba(148, 163, 184, 0.09);
   --ink: #e2e8f0;
   --marker: rgba(52, 211, 153, 0.3);
   --pen: #fb7185;
@@ -171,33 +169,6 @@
   border-radius: 0.5rem;
   background: var(--surface-elevated);
   border: 1px solid var(--edge-default);
-}
-
-/* ─── Napkin (privacy) ────────────────────────────────────────────────── */
-
-.lp-napkin {
-  background-color: var(--paper);
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent calc(2rem - 1px),
-    var(--paper-line) calc(2rem - 1px),
-    var(--paper-line) 2rem
-  );
-  color: var(--ink);
-  transform: rotate(-1.25deg);
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.06),
-    0 20px 40px -20px rgba(15, 23, 42, 0.25);
-}
-
-.dark .lp-napkin {
-  box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.6);
-}
-
-.lp-tape {
-  background: color-mix(in srgb, var(--accent) 28%, transparent);
-  transform: rotate(-4deg);
 }
 
 /* ─── Terminal ────────────────────────────────────────────────────────── */

@@ -46,9 +46,7 @@ const GITHUB_URL = "https://github.com/Felix-Hz/cofr";
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
     q: "Is it free?",
-    a: IS_LANDING
-      ? "Yes. It's open source (AGPL-3.0) and free to self-host, with every feature."
-      : "Yes. No card needed to sign up, and self-hosting is free too.",
+    a: "Yes. It's open source (AGPL-3.0) and you run it on your own machine, with every feature.",
   },
   {
     q: "Does it connect to my bank?",
@@ -56,7 +54,7 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   },
   {
     q: "What's encrypted?",
-    a: "Names, usernames and emails are encrypted at rest; all traffic uses HTTPS. Transactions aren't encrypted, so they can be totalled. Self-host if you want them on your own machine.",
+    a: "Names, usernames and emails are encrypted at rest; all traffic uses HTTPS. Transactions aren't encrypted so they can be totalled, but they live in your own database.",
   },
   {
     q: "Which currencies can I use?",
@@ -223,7 +221,7 @@ function Hero() {
             style={{ "--d": 2 } as React.CSSProperties}
           >
             <StartLink className={BTN_PRIMARY}>
-              {IS_LANDING ? "Run it yourself" : "Start tracking, free"}
+              {IS_LANDING ? "Install it" : "Start tracking"}
               <span aria-hidden="true">→</span>
             </StartLink>
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={BTN_GHOST}>
@@ -567,61 +565,6 @@ function Features() {
   );
 }
 
-// --- Privacy ---
-
-const SMALL_PRINT = [
-  "No bank logins. It only knows what you give it.",
-  "Names and emails are encrypted at rest.",
-  "No ads or marketing trackers. Data isn't sold or shared.",
-  "Deleting your account deletes your transactions.",
-];
-
-function Privacy() {
-  return (
-    <section className="lp-defer px-5 sm:px-6 py-20 sm:py-28 bg-surface-elevated border-y border-edge-default">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
-        <div className="lp-rise">
-          <h2 className="lp-display text-content-heading text-[clamp(2.2rem,5.5vw,3.6rem)]">
-            Privacy, plainly.
-          </h2>
-          <p className="mt-5 max-w-lg text-[16px] sm:text-[17px] leading-relaxed text-content-secondary">
-            Four lines instead of twelve pages. The{" "}
-            <Link to="/privacy" className="text-content-heading underline underline-offset-4">
-              full policy
-            </Link>{" "}
-            has the details.
-          </p>
-        </div>
-
-        <div className="lp-rise relative max-w-md w-full mx-auto lg:mx-0">
-          <span
-            className="lp-tape absolute -top-3 left-1/2 -ml-12 w-24 h-6 z-10"
-            aria-hidden="true"
-          />
-          <div className="lp-napkin rounded-sm px-6 sm:px-8 pt-8 pb-6">
-            <p className="cofr-brand text-[22px] leading-8">The small print</p>
-            <p className="text-[13px] leading-8 opacity-60">(it isn't very small)</p>
-            <ol className="mt-2">
-              {SMALL_PRINT.map((line, i) => (
-                <li key={line} className="flex gap-3 text-[15px] leading-8">
-                  <span className="lp-mono opacity-50 shrink-0">{i + 1}.</span>
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="mt-2 text-[15px] leading-8">
-              Still not sure?{" "}
-              <a href="#self-host" className="font-bold underline underline-offset-4">
-                Run it yourself.
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // --- Self-host ---
 
 type Platform = "unix" | "windows";
@@ -668,15 +611,18 @@ function SelfHost() {
   };
 
   return (
-    <section id="self-host" className="lp-defer scroll-mt-20 px-5 sm:px-6 py-20 sm:py-28">
+    <section
+      id="self-host"
+      className="lp-defer scroll-mt-20 px-5 sm:px-6 py-20 sm:py-28 border-t border-edge-default"
+    >
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-12 lg:gap-16 items-center">
         <div className="lp-rise">
           <h2 className="lp-display text-content-heading text-[clamp(2.2rem,5.5vw,3.6rem)]">
-            Rather run it yourself?
+            Install it in one command.
           </h2>
           <p className="mt-5 max-w-lg text-[16px] sm:text-[17px] leading-relaxed text-content-secondary">
-            One command on any machine with Docker. It generates secrets, starts Postgres and the
-            app, and sets up HTTPS if you give it a domain. Run it again to update.
+            Works on any machine with Docker. It generates secrets, starts Postgres and the app, and
+            sets up HTTPS if you give it a domain. Run it again to update.
           </p>
           <p className="mt-4 text-[14px] text-content-tertiary">
             AGPL-3.0.{" "}
@@ -794,7 +740,7 @@ function Closing() {
         </h2>
         <div className="mt-9 flex flex-col sm:flex-row justify-center gap-3">
           <StartLink className={BTN_PRIMARY}>
-            {IS_LANDING ? "Install cofr" : "Start tracking, free"}
+            {IS_LANDING ? "Install cofr" : "Start tracking"}
             <span aria-hidden="true">→</span>
           </StartLink>
         </div>
@@ -863,7 +809,6 @@ export default function Index() {
         <Hero />
         <Ticker />
         <Features />
-        <Privacy />
         <SelfHost />
         <FAQ />
         <Closing />
