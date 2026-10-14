@@ -215,7 +215,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
   };
 
   const handleUndo = async () => {
-    if (!result) return;
+    if (!result?.batch_id) return;
     setUndoState("working");
     try {
       await undoImport(result.batch_id);
@@ -581,7 +581,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
             )}
             {error && <ErrorNote message={error} />}
             <div className="flex items-center gap-2 pt-2">
-              {undoState !== "done" && (
+              {undoState !== "done" && result.batch_id && (
                 <button
                   type="button"
                   onClick={handleUndo}

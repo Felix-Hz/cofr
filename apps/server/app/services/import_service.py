@@ -501,7 +501,6 @@ class ImportService:
             filename=filename[:255],
             currency=request.currency,
         )
-        self.db.add(batch)
 
         # One executemany per statement instead of ORM unit-of-work per row: every dict
         # has the same keys so the whole file goes out in as few batches as possible.
@@ -574,9 +573,15 @@ class ImportService:
         batch.date_from = min(imported_dates) if imported_dates else None
         batch.date_to = max(imported_dates) if imported_dates else None
 
+        if not tx_rows:
+            # Nothing new (e.g. the file was already imported): leave no empty batch behind.
+            return ImportCommitResponse(
+                batch_id=None, imported=0, transfers=0, skipped=len(statement.rows)
+            )
+
+        self.db.add(batch)
         self.db.flush()  # the batch row must exist before transactions reference it
-        if tx_rows:
-            self.db.execute(insert(Transaction), tx_rows)
+        self.db.execute(insert(Transaction), tx_rows)
         if links:
             # Legs reference each other, so they're linked once both exist.
             self.db.execute(update(Transaction), links)

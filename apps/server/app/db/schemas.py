@@ -564,7 +564,7 @@ class ImportCommitRequest(BaseModel):
 
 
 class ImportCommitResponse(BaseModel):
-    batch_id: str
+    batch_id: str | None  # None when nothing new was imported
     imported: int
     transfers: int
     skipped: int

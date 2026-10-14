@@ -244,7 +244,7 @@ export const ImportPreviewSchema = z.object({
 });
 
 export const ImportCommitResponseSchema = z.object({
-  batch_id: z.string(),
+  batch_id: z.string().nullable(),
   imported: z.number(),
   transfers: z.number(),
   skipped: z.number(),

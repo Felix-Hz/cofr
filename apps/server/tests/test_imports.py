@@ -151,9 +151,10 @@ def test_commit_then_reimport_is_idempotent(client, auth_headers, cats, accounts
         "skipped": 0,
     }
 
-    # Double-submit imports nothing new.
+    # Double-submit imports nothing new, and leaves no empty batch in the history.
     again = commit(client, headers, accounts["Checking"], rows)
-    assert again.json()["imported"] == 0
+    assert (again.json()["imported"], again.json()["batch_id"]) == (0, None)
+    assert len(client.get("/imports/", headers=headers).json()) == 1
     assert db_session.query(Transaction).count() == 12  # 11 rows; the transfer has two legs
 
     # The same bank account is remembered, and every row is recognised.
@@ -305,7 +306,9 @@ def test_rejects_ambiguous_or_foreign_targets(client, auth_headers, second_auth,
     other_headers, _ = second_auth
     assert commit(client, other_headers, accounts["Checking"], []).status_code == 404
 
-    batch_id = commit(client, headers, accounts["Checking"], []).json()["batch_id"]
+    batch_id = commit(
+        client, headers, accounts["Checking"], [{"index": FUEL, "category_id": cats["transport"]}]
+    ).json()["batch_id"]
     assert client.delete(f"/imports/{batch_id}", headers=other_headers).status_code == 404
 
 
