@@ -87,7 +87,11 @@ export default function Privacy() {
         </ul>
         <p>
           If you're reading this page on a self-hosted instance, that instance is run by whoever
-          installed it, not by us. See <a href="#instances" style={{ color: "var(--accent)" }}>Self-Hosted Instances</a>.
+          installed it, not by us. See{" "}
+          <a href="#instances" style={{ color: "var(--accent)" }}>
+            Self-Hosted Instances
+          </a>
+          .
         </p>
       </LegalSection>
 
