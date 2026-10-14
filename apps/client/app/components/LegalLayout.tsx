@@ -280,13 +280,13 @@ export function LegalTable({ headers, rows }: { headers: string[]; rows: string[
                     : "none",
               }}
             >
-              {row.map((cell, j) => (
+              {headers.map((h, j) => (
                 <td
-                  key={`${row[0]}-${j}`}
+                  key={h}
                   className="px-4 py-2.5 align-top"
                   style={{ color: j === 0 ? "var(--content-heading)" : "var(--content-secondary)" }}
                 >
-                  {cell}
+                  {row[j]}
                 </td>
               ))}
             </tr>

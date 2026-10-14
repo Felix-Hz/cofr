@@ -2239,7 +2239,7 @@ export default function Settings() {
                 href={`${API_BASE_URL}/auth/oauth/${provider}/login`}
                 className="px-3 py-1.5 text-sm font-medium text-content-primary border border-edge-strong rounded-md hover:bg-surface-hover transition-colors"
               >
-                Link
+                Connect
               </a>
             </div>
           ))}
