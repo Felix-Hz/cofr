@@ -153,16 +153,36 @@ fill_if_empty "apps/server/.env" "JWT_SECRET" "gen_hex 64"
 fill_if_empty "apps/server/.env" "ENCRYPTION_KEY" "gen_fernet_key"
 
 # ── Start services ──────────────────────────────────────────
+COMPOSE="docker compose -p cofr-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml"
+
 echo ""
 echo "Starting dev services..."
-docker compose -p cofr-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d --build
+$COMPOSE up -d --build
+
+# Containers report "started" before the client has installed deps and its dev
+# server is listening; Caddy answers 502 until then, so wait for a real page.
+printf "Waiting for the app to respond"
+for _ in $(seq 1 90); do
+    if [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:8080/ 2>/dev/null)" = "200" ]; then
+        echo " ok"
+        READY=1
+        break
+    fi
+    printf "."
+    sleep 2
+done
+if [ -z "${READY:-}" ]; then
+    echo ""
+    echo "Warning: http://localhost:8080 isn't answering yet. Check the logs:"
+    echo "  $COMPOSE logs -f client server caddy"
+fi
 
 echo ""
 echo "=== Dev Environment Ready ==="
 echo ""
 echo "Dashboard:       http://localhost:8080"
-echo "API:             http://localhost:8080/api"
-echo "API Health:      http://localhost:8080/health"
+echo "API health:      http://localhost:8080/api/health"
+echo "API docs:        http://localhost:5784/docs"
 echo ""
-echo "View logs:       docker compose -p cofr-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml logs -f"
-echo "Stop:            docker compose -p cofr-dev -f infra/docker-compose.yml -f infra/docker-compose.dev.yml down"
+echo "View logs:       $COMPOSE logs -f"
+echo "Stop:            $COMPOSE down"
