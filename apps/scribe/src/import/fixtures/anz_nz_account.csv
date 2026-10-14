@@ -1,0 +1,12 @@
+Type,Details,Particulars,Code,Reference,Amount,Date,ForeignCurrencyAmount,ConversionCharge
+Visa Purchase,4000-****-****-1234  Df,,Corner Fuel,,-84.20,14/03/2025,,
+Visa Purchase,4000-****-****-1234  Df,,Daily Grind,,-5.50,14/03/2025,,
+Visa Purchase,4000-****-****-1234  Df,,Daily Grind,,-5.50,14/03/2025,,
+Payment,Alex Sample,Parking,,,-25.00,13/03/2025,,
+Visa Purchase,4000-****-****-1234  Df,,NORTHSIDE GRO,,-112.37,13/03/2025,,
+Visa Purchase,4000-****-****-1234  Df,,STREAMFLIX.CO,,-22.99,12/03/2025,USD 13.99,0.65
+Automatic Payment,Example Lettings,Rent,Flat 1,,-650.00,12/03/2025,,
+Direct Credit,EXAMPLE EMPLOYER LTD,Salary,Mar,,"3,250.00",11/03/2025,,
+Transfer,Savings Account,,,,-200.00,11/03/2025,,
+Interest,,,,,1.23,11/03/2025,,
+Visa Purchase,4000-****-****-1234  Df,,Daily Grind,,-4.80,11/03/2025,,

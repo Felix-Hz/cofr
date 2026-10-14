@@ -35,6 +35,13 @@ import {
   ExportHistoryResponseSchema,
   type ExportJobResponse,
   ExportJobResponseSchema,
+  type ImportBatch,
+  ImportBatchSchema,
+  type ImportCommitResponse,
+  ImportCommitResponseSchema,
+  type ImportPreview,
+  ImportPreviewSchema,
+  type ImportRowDecision,
   type LifetimeStats,
   LifetimeStatsSchema,
   type MonthlyStats,
@@ -102,7 +109,8 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promi
   const token = getToken();
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    // FormData needs the browser to set its own multipart boundary.
+    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers as Record<string, string>),
   };
 
@@ -128,6 +136,41 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}): Promi
   }
 
   return response;
+}
+
+// ── Imports ──
+
+export async function previewImport(
+  file: File,
+  options: { accountId?: string; currency?: string } = {},
+): Promise<ImportPreview> {
+  const body = new FormData();
+  body.append("file", file);
+  if (options.accountId) body.append("account_id", options.accountId);
+  if (options.currency) body.append("currency", options.currency);
+  const response = await fetchWithAuth(`/imports/preview`, { method: "POST", body });
+  return ImportPreviewSchema.parse(await response.json());
+}
+
+export async function commitImport(
+  file: File,
+  payload: { account_id: string; currency: string; rows: ImportRowDecision[] },
+): Promise<ImportCommitResponse> {
+  const body = new FormData();
+  body.append("file", file);
+  body.append("payload", JSON.stringify(payload));
+  const response = await fetchWithAuth(`/imports/`, { method: "POST", body });
+  return ImportCommitResponseSchema.parse(await response.json());
+}
+
+export async function getImportHistory(limit = 20): Promise<ImportBatch[]> {
+  const response = await fetchWithAuth(`/imports/?limit=${limit}`);
+  return ImportBatchSchema.array().parse(await response.json());
+}
+
+export async function undoImport(batchId: string): Promise<{ removed: number }> {
+  const response = await fetchWithAuth(`/imports/${batchId}`, { method: "DELETE" });
+  return response.json();
 }
 
 // ── Categories ──

@@ -1,6 +1,6 @@
 # scribe
 
-`scribe` is the Rust-backed export engine for Cofr.
+`scribe` is the Rust-backed export and statement-parsing engine for Cofr.
 
 It is packaged as a Python extension module with `PyO3` and `maturin`, then imported by the server as `import scribe`.
 
@@ -12,6 +12,7 @@ It is packaged as a Python extension module with `PyO3` and `maturin`, then impo
 - Exports full data dumps as:
   - zipped CSV files
   - multi-sheet XLSX workbooks
+- Parses bank statement CSVs for import (currently ANZ New Zealand account exports)
 
 ## Public Python API
 
@@ -26,6 +27,7 @@ scribe.export_pdf(rows, meta) -> bytes
 scribe.export_csv_full_dump(transactions, accounts, categories) -> bytes
 scribe.export_accounts_csv(rows) -> bytes
 scribe.export_categories_csv(rows) -> bytes
+scribe.parse_bank_csv(data, filename=None) -> dict
 ```
 
 All export functions return raw file bytes. The caller is responsible for writing those bytes to disk or sending them in an HTTP response.
@@ -80,6 +82,38 @@ Expected keys:
 ```
 
 Missing values are currently defaulted during extraction rather than hard-failing. That keeps the bridge tolerant, but it also means malformed input can degrade output quality silently.
+
+## Statement Import
+
+`parse_bank_csv(data, filename=None)` is the inverse of export: it turns a raw bank download into normalized rows. The format is detected from the header row (columns may be in any order), the file is decoded as UTF-8 with a Latin-1 fallback, and amounts are parsed exactly into cents.
+
+```python
+{
+    "format": "anz_nz_account",
+    "bank": "ANZ",
+    "currency_hint": "NZD" | None,
+    "account_ref": "01-2345-6789012-00" | None,  # taken from the filename when present
+    "rows": [{
+        "line": int,              # 1-based line in the file
+        "date": "YYYY-MM-DD",
+        "amount_cents": int,      # signed; negative is money out
+        "kind": str,              # bank's own type, e.g. "Visa Purchase"
+        "merchant": str,          # store or payee, cleaned for display
+        "notes": str,             # every other field, joined
+        "card_last4": str | None,
+        "foreign_amount": str | None,
+        "conversion_charge_cents": int | None,
+        "fingerprint": str,       # stable row identity for deduplication
+    }],
+    "errors": [{"line": int, "message": str}],  # unreadable rows; never fatal
+}
+```
+
+Raises `ValueError` for an empty file or an unrecognized format.
+
+`fingerprint` is the raw fields plus the count of identical rows before it, so two real same-day purchases stay distinct while an overlapping re-export reproduces the same values. The server hashes it with the user and account into `transactions.hash`.
+
+Adding a bank: add a module under `src/import/` with a header detector and a row parser, and register it in `parse_statement`. Test fixtures must be anonymised (see `src/import/fixtures/`).
 
 ## Export Modes
 

@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -502,3 +503,83 @@ class DashboardSpaceInput(BaseModel):
 
 class DashboardLayoutUpdate(BaseModel):
     spaces: list[DashboardSpaceInput] = Field(min_length=1)
+
+
+# ── Import Schemas ──
+
+
+class ImportDuplicateRef(BaseModel):
+    id: str
+    date: date
+    amount: float
+    label: str  # merchant or description of the existing transaction
+
+
+class ImportPreviewRow(BaseModel):
+    index: int  # position in the parsed file; the key decisions refer back to
+    line: int
+    date: date
+    amount: float = Field(ge=0)
+    direction: Literal["debit", "credit"]
+    kind: str
+    merchant: str
+    notes: str
+    status: Literal["new", "already_imported", "possible_duplicate"]
+    duplicate_of: ImportDuplicateRef | None = None
+    suggested_category_id: str | None = None
+    suggested_transfer_account_id: str | None = None
+    suggestion_source: Literal["history", "rule", "default", "transfer"] | None = None
+
+
+class ImportRowError(BaseModel):
+    line: int
+    message: str
+
+
+class ImportPreviewResponse(BaseModel):
+    source_format: str
+    bank: str
+    account_ref: str | None
+    filename: str
+    date_from: date | None
+    date_to: date | None
+    account_id: str
+    account_remembered: bool  # account picked from a previous import of this bank account
+    currency: str
+    rows: list[ImportPreviewRow]
+    errors: list[ImportRowError]
+
+
+class ImportRowDecision(BaseModel):
+    index: int = Field(ge=0)
+    category_id: str | None = None
+    transfer_account_id: str | None = None
+    merchant: str | None = Field(default=None, max_length=120)
+
+
+class ImportCommitRequest(BaseModel):
+    account_id: str
+    currency: str = Field(pattern="^[A-Z]{3}$")
+    rows: list[ImportRowDecision]
+
+
+class ImportCommitResponse(BaseModel):
+    batch_id: str | None  # None when nothing new was imported
+    imported: int
+    transfers: int
+    skipped: int
+
+
+class ImportBatchSchema(BaseModel):
+    id: str
+    filename: str
+    source_format: str
+    account_ref: str | None
+    account_id: str | None
+    account_name: str | None
+    currency: str
+    imported_count: int
+    skipped_count: int
+    date_from: date | None
+    date_to: date | None
+    created_at: datetime

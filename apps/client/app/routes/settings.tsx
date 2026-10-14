@@ -8,6 +8,8 @@ import DeleteConfirmModal from "~/components/DeleteConfirmModal";
 import ExchangeRatesModal from "~/components/ExchangeRatesModal";
 import ExportHistoryTable from "~/components/ExportHistoryTable";
 import ExportModal from "~/components/ExportModal";
+import ImportHistoryList from "~/components/ImportHistoryList";
+import ImportModal from "~/components/ImportModal";
 import PasswordInput from "~/components/PasswordInput";
 import { PasswordRequirements } from "~/components/PasswordRequirements";
 import RecurringFormModal from "~/components/RecurringFormModal";
@@ -110,6 +112,7 @@ const SECTIONS = [
   { id: "budgets", label: "Budgets" },
   { id: "linked-accounts", label: "Linked Accounts" },
   { id: "security", label: "Security" },
+  { id: "import", label: "Import" },
   { id: "export", label: "Export" },
   { id: "danger-zone", label: "Danger Zone" },
 ] as const;
@@ -202,6 +205,24 @@ function DownloadIcon() {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+      />
+    </svg>
+  );
+}
+
+function UploadIcon() {
+  return (
+    <svg
+      className="w-5 h-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
       />
     </svg>
   );
@@ -382,6 +403,8 @@ export default function Settings() {
   const acctMenuRef = useRef<HTMLDivElement>(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportHistoryRefreshToken, setExportHistoryRefreshToken] = useState(0);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importHistoryRefreshToken, setImportHistoryRefreshToken] = useState(0);
 
   // Budgets
   const { budgets, refresh: refreshBudgets } = useBudgets();
@@ -2296,6 +2319,44 @@ export default function Settings() {
           </form>
         </div>
       )}
+
+      {/* ── Import ── */}
+      <div
+        id="import"
+        ref={(el) => {
+          sectionRefs.current.import = el;
+        }}
+        style={{ scrollMarginTop: "4rem" }}
+        className="bg-surface-primary rounded-xl border border-edge-default mb-6 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+      >
+        <div className="px-6 py-4 border-b border-edge-default flex items-center gap-3">
+          <span className="text-content-tertiary">
+            <UploadIcon />
+          </span>
+          <h3 className="text-lg font-medium text-content-primary">Import</h3>
+        </div>
+        <div className="px-6 py-4 space-y-4">
+          <p className="text-sm text-content-secondary">
+            Bring in transactions from a bank statement CSV. You review and categorise everything
+            before it's saved, re-importing the same period never creates duplicates, and any import
+            can be undone.
+          </p>
+          <button
+            type="button"
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md transition-colors"
+          >
+            Import CSV
+          </button>
+          <ImportHistoryList refreshToken={importHistoryRefreshToken} />
+        </div>
+      </div>
+
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImported={() => setImportHistoryRefreshToken((n) => n + 1)}
+      />
 
       {/* ── Export ── */}
       <div

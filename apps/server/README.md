@@ -22,8 +22,8 @@ uv run uvicorn app.main:app --reload --port 5784
 The Docker dev stack is fronted by Caddy, so browser traffic should use:
 
 - App: `http://localhost:8080`
-- API: `http://localhost:8080/api`
-- Docs: `http://localhost:8080/docs`
+- API: `http://localhost:8080/api/...` (e.g. `/api/health`); `/api` on its own isn't a route
+- Docs: `http://localhost:5784/docs` (direct to the server; the docs page loads `/openapi.json` from the site root, which Caddy sends to the client)
 
 Google OAuth redirects are built from `API_URL`. In Docker dev, set:
 

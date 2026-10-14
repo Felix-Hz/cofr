@@ -171,6 +171,12 @@ class Transaction(Base):
         index=True,
         nullable=True,
     )
+    import_batch_id: Mapped[uuid.UUID | None] = mapped_column(
+        SaUuid,
+        ForeignKey("import_batches.id", ondelete="SET NULL"),
+        index=True,
+        nullable=True,
+    )
 
     user: Mapped["User"] = relationship(back_populates="transactions")
     category_rel: Mapped["Category | None"] = relationship(back_populates="transactions")
@@ -215,6 +221,29 @@ class RecurringRule(Base):
     )
 
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="recurring_rule")
+
+
+class ImportBatch(Base):
+    """One bank statement file imported into an account; lets an import be undone."""
+
+    __tablename__ = "import_batches"
+
+    id: Mapped[uuid.UUID] = mapped_column(SaUuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        SaUuid, ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    account_id: Mapped[uuid.UUID | None] = mapped_column(
+        SaUuid, ForeignKey("accounts.id", ondelete="SET NULL"), nullable=True
+    )
+    source_format: Mapped[str] = mapped_column(String(40))  # e.g. anz_nz_account
+    account_ref: Mapped[str | None] = mapped_column(String(40), nullable=True)  # bank acct no.
+    filename: Mapped[str] = mapped_column(String(255), default="")
+    currency: Mapped[str] = mapped_column(String(3))
+    imported_count: Mapped[int] = mapped_column(Integer, default=0)
+    skipped_count: Mapped[int] = mapped_column(Integer, default=0)
+    date_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class AuthProvider(Base):

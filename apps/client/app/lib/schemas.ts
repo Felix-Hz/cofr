@@ -207,6 +207,65 @@ export const ExportHistoryResponseSchema = z.object({
 });
 
 // ============================================================================
+// Import Schemas
+// ============================================================================
+
+export const ImportPreviewRowSchema = z.object({
+  index: z.number(),
+  line: z.number(),
+  date: z.string(),
+  amount: z.number(),
+  direction: z.enum(["debit", "credit"]),
+  kind: z.string(),
+  merchant: z.string(),
+  notes: z.string(),
+  status: z.enum(["new", "already_imported", "possible_duplicate"]),
+  duplicate_of: z
+    .object({ id: z.string(), date: z.string(), amount: z.number(), label: z.string() })
+    .nullable()
+    .optional(),
+  suggested_category_id: z.string().nullable().optional(),
+  suggested_transfer_account_id: z.string().nullable().optional(),
+  suggestion_source: z.enum(["history", "rule", "default", "transfer"]).nullable().optional(),
+});
+
+export const ImportPreviewSchema = z.object({
+  source_format: z.string(),
+  bank: z.string(),
+  account_ref: z.string().nullable(),
+  filename: z.string(),
+  date_from: z.string().nullable(),
+  date_to: z.string().nullable(),
+  account_id: z.string(),
+  account_remembered: z.boolean(),
+  currency: z.string(),
+  rows: z.array(ImportPreviewRowSchema),
+  errors: z.array(z.object({ line: z.number(), message: z.string() })),
+});
+
+export const ImportCommitResponseSchema = z.object({
+  batch_id: z.string().nullable(),
+  imported: z.number(),
+  transfers: z.number(),
+  skipped: z.number(),
+});
+
+export const ImportBatchSchema = z.object({
+  id: z.string(),
+  filename: z.string(),
+  source_format: z.string(),
+  account_ref: z.string().nullable(),
+  account_id: z.string().nullable(),
+  account_name: z.string().nullable(),
+  currency: z.string(),
+  imported_count: z.number(),
+  skipped_count: z.number(),
+  date_from: z.string().nullable(),
+  date_to: z.string().nullable(),
+  created_at: z.string(),
+});
+
+// ============================================================================
 // Lifetime + Sparkline Stats Schemas
 // ============================================================================
 
@@ -511,6 +570,16 @@ export type ExportCreate = z.infer<typeof ExportCreateSchema>;
 export type ExportJobResponse = z.infer<typeof ExportJobResponseSchema>;
 export type ExportRecord = z.infer<typeof ExportRecordSchema>;
 export type ExportHistoryResponse = z.infer<typeof ExportHistoryResponseSchema>;
+export type ImportPreviewRow = z.infer<typeof ImportPreviewRowSchema>;
+export type ImportPreview = z.infer<typeof ImportPreviewSchema>;
+export type ImportCommitResponse = z.infer<typeof ImportCommitResponseSchema>;
+export type ImportBatch = z.infer<typeof ImportBatchSchema>;
+export interface ImportRowDecision {
+  index: number;
+  category_id?: string;
+  transfer_account_id?: string;
+  merchant?: string;
+}
 export type LifetimeStats = z.infer<typeof LifetimeStatsSchema>;
 export type SparklinePoint = z.infer<typeof SparklinePointSchema>;
 export type SparklineResponse = z.infer<typeof SparklineResponseSchema>;
