@@ -1,7 +1,8 @@
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyDict, PyList};
 
 mod export;
+mod import;
 mod models;
 
 use models::{AccountRow, CategoryRow, TransactionRow};
@@ -205,6 +206,53 @@ fn export_categories_csv(rows: Vec<Bound<'_, PyDict>>) -> PyResult<Vec<u8>> {
         .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))
 }
 
+/// Parse a bank statement CSV into normalized rows.
+/// Returns a dict: format, bank, currency_hint, account_ref, rows (list[dict]), errors (list[dict]).
+/// Raises ValueError when the file is empty or its format is not recognized.
+#[pyfunction]
+#[pyo3(signature = (data, filename=None))]
+fn parse_bank_csv<'py>(
+    py: Python<'py>,
+    data: &[u8],
+    filename: Option<&str>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let statement = import::parse_statement(data, filename)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?;
+
+    let rows = PyList::empty(py);
+    for row in &statement.rows {
+        let d = PyDict::new(py);
+        d.set_item("line", row.line)?;
+        d.set_item("date", row.date.to_string())?;
+        d.set_item("amount_cents", row.amount_cents)?;
+        d.set_item("kind", &row.kind)?;
+        d.set_item("merchant", &row.merchant)?;
+        d.set_item("notes", &row.notes)?;
+        d.set_item("card_last4", &row.card_last4)?;
+        d.set_item("foreign_amount", &row.foreign_amount)?;
+        d.set_item("conversion_charge_cents", row.conversion_charge_cents)?;
+        d.set_item("fingerprint", &row.fingerprint)?;
+        rows.append(d)?;
+    }
+
+    let errors = PyList::empty(py);
+    for err in &statement.errors {
+        let d = PyDict::new(py);
+        d.set_item("line", err.line)?;
+        d.set_item("message", &err.message)?;
+        errors.append(d)?;
+    }
+
+    let out = PyDict::new(py);
+    out.set_item("format", statement.format)?;
+    out.set_item("bank", statement.bank)?;
+    out.set_item("currency_hint", statement.currency_hint)?;
+    out.set_item("account_ref", &statement.account_ref)?;
+    out.set_item("rows", rows)?;
+    out.set_item("errors", errors)?;
+    Ok(out)
+}
+
 #[pymodule]
 fn scribe(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(export_csv, m)?)?;
@@ -213,5 +261,6 @@ fn scribe(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(export_csv_full_dump, m)?)?;
     m.add_function(wrap_pyfunction!(export_accounts_csv, m)?)?;
     m.add_function(wrap_pyfunction!(export_categories_csv, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_bank_csv, m)?)?;
     Ok(())
 }

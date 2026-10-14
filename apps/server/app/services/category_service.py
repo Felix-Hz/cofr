@@ -15,32 +15,9 @@ class CategoryService:
 
     async def get_categories(self, user_id: str) -> list[CategorySchema]:
         """Get system + user's custom categories with preferences in a single query."""
-        rows = (
-            self.db.query(Category, UserCategoryPreference.is_active)
-            .outerjoin(
-                UserCategoryPreference,
-                (UserCategoryPreference.category_id == Category.id)
-                & (UserCategoryPreference.user_id == user_id),
-            )
-            .filter(
-                ((Category.user_id == user_id) & Category.deleted_at.is_(None))
-                | Category.user_id.is_(None)
-            )
-            .order_by(Category.display_order)
-            .all()
-        )
-
-        result = []
-        for cat, pref_active in rows:
-            # For system categories, use the user's preference if set, otherwise the default
-            # For custom categories, use the category's own is_active flag
-            if cat.is_system:
-                is_active = pref_active if pref_active is not None else cat.is_active
-            else:
-                is_active = cat.is_active
-            result.append(_to_schema(cat, is_active))
-
-        return result
+        return [
+            _to_schema(cat, is_active) for cat, is_active in visible_categories(self.db, user_id)
+        ]
 
     async def create_category(self, user_id: str, data: CategoryCreateRequest) -> CategorySchema:
         """Create a custom category (max 20 per user). If a soft-deleted category with the same slug exists, restores it."""
@@ -216,6 +193,35 @@ def _check_alias_conflict(
     if exclude_id:
         query = query.filter(Category.id != exclude_id)
     return query.first() is not None
+
+
+def visible_categories(db: Session, user_id: str) -> list[tuple[Category, bool]]:
+    """System + the user's live custom categories, each with its effective active flag."""
+    rows = (
+        db.query(Category, UserCategoryPreference.is_active)
+        .outerjoin(
+            UserCategoryPreference,
+            (UserCategoryPreference.category_id == Category.id)
+            & (UserCategoryPreference.user_id == user_id),
+        )
+        .filter(
+            ((Category.user_id == user_id) & Category.deleted_at.is_(None))
+            | Category.user_id.is_(None)
+        )
+        .order_by(Category.display_order)
+        .all()
+    )
+
+    result = []
+    for cat, pref_active in rows:
+        # For system categories, use the user's preference if set, otherwise the default
+        # For custom categories, use the category's own is_active flag
+        if cat.is_system:
+            is_active = pref_active if pref_active is not None else cat.is_active
+        else:
+            is_active = cat.is_active
+        result.append((cat, is_active))
+    return result
 
 
 def _to_schema(category: Category, is_active: bool) -> CategorySchema:

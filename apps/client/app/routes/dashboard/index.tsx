@@ -15,6 +15,7 @@ import { ensureWidgetsRegistered } from "~/components/dashboard/widgets/register
 import ExchangeRatesModal from "~/components/ExchangeRatesModal";
 import ExpenseFormModal from "~/components/ExpenseFormModal";
 import ExportModal from "~/components/ExportModal";
+import ImportModal from "~/components/ImportModal";
 import RecurringFormModal from "~/components/RecurringFormModal";
 import Tooltip from "~/components/Tooltip";
 import TransferFormModal from "~/components/TransferFormModal";
@@ -253,6 +254,7 @@ export default function Dashboard() {
   const [isRatesModalOpen, setIsRatesModalOpen] = useState(false);
   const [isControlsOpen, setIsControlsOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const mobileControlsToggleRef = useRef<HTMLButtonElement>(null);
   const desktopControlsToggleRef = useRef<HTMLButtonElement>(null);
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
@@ -1030,6 +1032,26 @@ export default function Dashboard() {
                   </svg>
                 }
               />
+              <ToolbarButton
+                label="Import transactions"
+                onClick={() => setIsImportModalOpen(true)}
+                className="h-9 w-9 rounded-md border-transparent"
+                icon={
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                }
+              />
 
               <div className="relative">
                 <Tooltip content="Filters & controls">
@@ -1238,6 +1260,26 @@ export default function Dashboard() {
                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
                     <polyline points="7 10 12 15 17 10" />
                     <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                }
+              />
+              <ToolbarButton
+                label="Import transactions"
+                onClick={() => setIsImportModalOpen(true)}
+                className="border-transparent"
+                icon={
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                 }
               />
@@ -1529,6 +1571,14 @@ export default function Dashboard() {
           isOpen={isRatesModalOpen}
           onClose={() => setIsRatesModalOpen(false)}
           preferredCurrency={preferredCurrency}
+        />
+        <ImportModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onImported={() => {
+            revalidator.revalidate();
+            refreshBudgets();
+          }}
         />
         <ExportModal
           isOpen={isExportModalOpen}

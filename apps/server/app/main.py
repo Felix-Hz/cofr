@@ -21,6 +21,7 @@ from app.routers import (
     exchange_rates,
     expenses,
     exports,
+    imports,
     local_auth,
     oauth,
     recurring,
@@ -156,6 +157,7 @@ app.include_router(exchange_rates.router)
 app.include_router(local_auth.router)
 app.include_router(webhooks.router)
 app.include_router(exports.router)
+app.include_router(imports.router)
 app.include_router(dashboard.router)
 app.include_router(budgets.router)
 if settings.ENV.lower() in _DEV_EMAIL_ENVS:

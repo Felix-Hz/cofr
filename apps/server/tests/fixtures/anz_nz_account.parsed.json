@@ -1,0 +1,141 @@
+{
+  "format": "anz_nz_account",
+  "bank": "ANZ",
+  "currency_hint": "NZD",
+  "account_ref": "01-2345-6789012-00",
+  "rows": [
+    {
+      "line": 2,
+      "date": "2025-03-14",
+      "amount_cents": -8420,
+      "kind": "Visa Purchase",
+      "merchant": "Corner Fuel",
+      "notes": "Visa Purchase · card ••1234",
+      "card_last4": "1234",
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-14\u001f-8420\u001fVisa Purchase\u001f4000-****-****-1234  Df\u001f\u001fCorner Fuel\u001f\u001f0"
+    },
+    {
+      "line": 3,
+      "date": "2025-03-14",
+      "amount_cents": -550,
+      "kind": "Visa Purchase",
+      "merchant": "Daily Grind",
+      "notes": "Visa Purchase · card ••1234",
+      "card_last4": "1234",
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-14\u001f-550\u001fVisa Purchase\u001f4000-****-****-1234  Df\u001f\u001fDaily Grind\u001f\u001f0"
+    },
+    {
+      "line": 4,
+      "date": "2025-03-14",
+      "amount_cents": -550,
+      "kind": "Visa Purchase",
+      "merchant": "Daily Grind",
+      "notes": "Visa Purchase · card ••1234",
+      "card_last4": "1234",
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-14\u001f-550\u001fVisa Purchase\u001f4000-****-****-1234  Df\u001f\u001fDaily Grind\u001f\u001f1"
+    },
+    {
+      "line": 5,
+      "date": "2025-03-13",
+      "amount_cents": -2500,
+      "kind": "Payment",
+      "merchant": "Alex Sample",
+      "notes": "Payment · Parking",
+      "card_last4": null,
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-13\u001f-2500\u001fPayment\u001fAlex Sample\u001fParking\u001f\u001f\u001f0"
+    },
+    {
+      "line": 6,
+      "date": "2025-03-13",
+      "amount_cents": -11237,
+      "kind": "Visa Purchase",
+      "merchant": "Northside Gro",
+      "notes": "Visa Purchase · card ••1234",
+      "card_last4": "1234",
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-13\u001f-11237\u001fVisa Purchase\u001f4000-****-****-1234  Df\u001f\u001fNORTHSIDE GRO\u001f\u001f0"
+    },
+    {
+      "line": 7,
+      "date": "2025-03-12",
+      "amount_cents": -2299,
+      "kind": "Visa Purchase",
+      "merchant": "Streamflix.co",
+      "notes": "Visa Purchase · card ••1234 · foreign amount USD 13.99 · conversion charge 0.65",
+      "card_last4": "1234",
+      "foreign_amount": "USD 13.99",
+      "conversion_charge_cents": 65,
+      "fingerprint": "2025-03-12\u001f-2299\u001fVisa Purchase\u001f4000-****-****-1234  Df\u001f\u001fSTREAMFLIX.CO\u001f\u001f0"
+    },
+    {
+      "line": 8,
+      "date": "2025-03-12",
+      "amount_cents": -65000,
+      "kind": "Automatic Payment",
+      "merchant": "Example Lettings",
+      "notes": "Automatic Payment · Rent · Flat 1",
+      "card_last4": null,
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-12\u001f-65000\u001fAutomatic Payment\u001fExample Lettings\u001fRent\u001fFlat 1\u001f\u001f0"
+    },
+    {
+      "line": 9,
+      "date": "2025-03-11",
+      "amount_cents": 325000,
+      "kind": "Direct Credit",
+      "merchant": "Example Employer Ltd",
+      "notes": "Direct Credit · Salary · Mar",
+      "card_last4": null,
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-11\u001f325000\u001fDirect Credit\u001fEXAMPLE EMPLOYER LTD\u001fSalary\u001fMar\u001f\u001f0"
+    },
+    {
+      "line": 10,
+      "date": "2025-03-11",
+      "amount_cents": -20000,
+      "kind": "Transfer",
+      "merchant": "Savings Account",
+      "notes": "Transfer",
+      "card_last4": null,
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-11\u001f-20000\u001fTransfer\u001fSavings Account\u001f\u001f\u001f\u001f0"
+    },
+    {
+      "line": 11,
+      "date": "2025-03-11",
+      "amount_cents": 123,
+      "kind": "Interest",
+      "merchant": "Interest",
+      "notes": "Interest",
+      "card_last4": null,
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-11\u001f123\u001fInterest\u001f\u001f\u001f\u001f\u001f0"
+    },
+    {
+      "line": 12,
+      "date": "2025-03-11",
+      "amount_cents": -480,
+      "kind": "Visa Purchase",
+      "merchant": "Daily Grind",
+      "notes": "Visa Purchase · card ••1234",
+      "card_last4": "1234",
+      "foreign_amount": null,
+      "conversion_charge_cents": null,
+      "fingerprint": "2025-03-11\u001f-480\u001fVisa Purchase\u001f4000-****-****-1234  Df\u001f\u001fDaily Grind\u001f\u001f0"
+    }
+  ],
+  "errors": []
+}
