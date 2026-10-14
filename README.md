@@ -1,7 +1,7 @@
 # <img width="20" height="20" alt="cofr" src="https://github.com/user-attachments/assets/574a7125-4c7a-4697-9080-7b3636e6f5ee" /> cofr
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![CI](https://github.com/felix-hz/cofr/actions/workflows/ci.yml/badge.svg)](https://github.com/felix-hz/cofr/actions)
+[![CI](https://github.com/felix-hz/cofr/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/felix-hz/cofr/actions/workflows/ci.yml?query=branch%3Amain)
 
 Personal finance tracker. Self-host in seconds, or use [cofr.cash](https://cofr.cash).
 

@@ -2,6 +2,9 @@ name: CI
 
 on:
   pull_request:
+  # Also run on main so the README badge reflects main, not whichever PR ran last.
+  push:
+    branches: [main]
 
 jobs:
   changes:
