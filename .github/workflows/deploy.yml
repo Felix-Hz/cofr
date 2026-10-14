@@ -197,11 +197,8 @@ jobs:
           tags: |
             ${{ needs.changes.outputs.registry-namespace }}/cofr-client:${{ needs.changes.outputs.image-tag }}
             ${{ needs.changes.outputs.registry-namespace }}/cofr-client:main
-          build-args: |
-            VITE_SENTRY_DSN=${{ secrets.SENTRY_DSN_CLIENT }}
-            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
-            SENTRY_ORG=${{ secrets.SENTRY_ORG }}
-            SENTRY_RELEASE=${{ github.sha }}
+          # No Sentry build args: these images run on other people's servers, so they must not
+          # report to the project's Sentry. Self-hosters can build with their own VITE_SENTRY_DSN.
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
