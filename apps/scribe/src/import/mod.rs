@@ -6,6 +6,7 @@
 
 mod anz;
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -150,11 +151,11 @@ pub fn parse_statement(data: &[u8], filename: Option<&str>) -> Result<Statement,
 }
 
 /// Banks still emit Windows-1252 now and then; fall back to Latin-1 rather than fail.
-fn decode(data: &[u8]) -> String {
+fn decode(data: &[u8]) -> Cow<'_, str> {
     let data = data.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(data);
     match std::str::from_utf8(data) {
-        Ok(s) => s.to_string(),
-        Err(_) => data.iter().map(|&b| b as char).collect(),
+        Ok(s) => Cow::Borrowed(s),
+        Err(_) => Cow::Owned(data.iter().map(|&b| b as char).collect()),
     }
 }
 
@@ -180,10 +181,24 @@ struct Fingerprints {
 
 impl Fingerprints {
     fn next(&mut self, fields: &[&str]) -> String {
-        let base = fields.join(&FIELD_SEP.to_string());
-        let count = self.seen.entry(base.clone()).or_insert(0);
-        let fingerprint = format!("{base}{FIELD_SEP}{count}");
-        *count += 1;
+        let mut base = String::with_capacity(fields.iter().map(|f| f.len() + 1).sum::<usize>() + 4);
+        for (i, field) in fields.iter().enumerate() {
+            if i > 0 {
+                base.push(FIELD_SEP);
+            }
+            base.push_str(field);
+        }
+        let occurrence = match self.seen.get_mut(&base) {
+            Some(count) => {
+                *count += 1;
+                *count - 1
+            }
+            None => 0,
+        };
+        let fingerprint = format!("{base}{FIELD_SEP}{occurrence}");
+        if occurrence == 0 {
+            self.seen.insert(base, 1);
+        }
         fingerprint
     }
 }

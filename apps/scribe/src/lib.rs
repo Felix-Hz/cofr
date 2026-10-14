@@ -1,3 +1,4 @@
+use pyo3::intern;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 
@@ -222,24 +223,27 @@ fn parse_bank_csv<'py>(
     let rows = PyList::empty(py);
     for row in &statement.rows {
         let d = PyDict::new(py);
-        d.set_item("line", row.line)?;
-        d.set_item("date", row.date.to_string())?;
-        d.set_item("amount_cents", row.amount_cents)?;
-        d.set_item("kind", &row.kind)?;
-        d.set_item("merchant", &row.merchant)?;
-        d.set_item("notes", &row.notes)?;
-        d.set_item("card_last4", &row.card_last4)?;
-        d.set_item("foreign_amount", &row.foreign_amount)?;
-        d.set_item("conversion_charge_cents", row.conversion_charge_cents)?;
-        d.set_item("fingerprint", &row.fingerprint)?;
+        d.set_item(intern!(py, "line"), row.line)?;
+        d.set_item(intern!(py, "date"), row.date.to_string())?;
+        d.set_item(intern!(py, "amount_cents"), row.amount_cents)?;
+        d.set_item(intern!(py, "kind"), &row.kind)?;
+        d.set_item(intern!(py, "merchant"), &row.merchant)?;
+        d.set_item(intern!(py, "notes"), &row.notes)?;
+        d.set_item(intern!(py, "card_last4"), &row.card_last4)?;
+        d.set_item(intern!(py, "foreign_amount"), &row.foreign_amount)?;
+        d.set_item(
+            intern!(py, "conversion_charge_cents"),
+            row.conversion_charge_cents,
+        )?;
+        d.set_item(intern!(py, "fingerprint"), &row.fingerprint)?;
         rows.append(d)?;
     }
 
     let errors = PyList::empty(py);
     for err in &statement.errors {
         let d = PyDict::new(py);
-        d.set_item("line", err.line)?;
-        d.set_item("message", &err.message)?;
+        d.set_item(intern!(py, "line"), err.line)?;
+        d.set_item(intern!(py, "message"), &err.message)?;
         errors.append(d)?;
     }
 

@@ -225,7 +225,8 @@ export const ImportPreviewRowSchema = z.object({
     .nullable()
     .optional(),
   suggested_category_id: z.string().nullable().optional(),
-  suggestion_source: z.enum(["history", "rule", "default"]).nullable().optional(),
+  suggested_transfer_account_id: z.string().nullable().optional(),
+  suggestion_source: z.enum(["history", "rule", "default", "transfer"]).nullable().optional(),
 });
 
 export const ImportPreviewSchema = z.object({

@@ -527,7 +527,8 @@ class ImportPreviewRow(BaseModel):
     status: Literal["new", "already_imported", "possible_duplicate"]
     duplicate_of: ImportDuplicateRef | None = None
     suggested_category_id: str | None = None
-    suggestion_source: Literal["history", "rule", "default"] | None = None
+    suggested_transfer_account_id: str | None = None
+    suggestion_source: Literal["history", "rule", "default", "transfer"] | None = None
 
 
 class ImportRowError(BaseModel):

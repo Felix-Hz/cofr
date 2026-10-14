@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useBodyScrollLock } from "~/hooks/useBodyScrollLock";
 import { useModalKeyboardShortcuts } from "~/hooks/useModalKeyboardShortcuts";
 import { commitImport, getAccounts, getCategories, previewImport, undoImport } from "~/lib/api";
@@ -11,8 +11,10 @@ import {
   importTotals,
   initialDecision,
   type MerchantGroup,
+  needsCheck,
   type RowDecision,
   sharedTarget,
+  suggestedTarget,
   transferTarget,
 } from "~/lib/import";
 import type {
@@ -22,6 +24,7 @@ import type {
   ImportPreview,
   ImportPreviewRow,
 } from "~/lib/schemas";
+import { useTheme } from "~/lib/theme";
 import { formatCurrency } from "~/lib/utils";
 
 interface ImportModalProps {
@@ -34,8 +37,6 @@ type Step = "pick" | "review" | "done";
 type Filter = "all" | "review" | "duplicates";
 
 const GROUP_PAGE = 100;
-const MIXED = "__mixed";
-
 /** `2025-03-14` → `14 Mar`, in local time (Date parsing would treat it as UTC). */
 function formatDay(iso: string, withYear = false): string {
   const [y, m, d] = iso.split("-").map(Number);
@@ -126,14 +127,33 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
     [preview, decisions],
   );
   const counts = useMemo(() => {
-    const rows = preview?.rows ?? [];
+    const out = { fresh: 0, already: 0, duplicates: 0 };
+    for (const r of preview?.rows ?? []) {
+      if (r.status === "new") out.fresh += 1;
+      else if (r.status === "already_imported") out.already += 1;
+      else out.duplicates += 1;
+    }
+    return out;
+  }, [preview]);
+  // Live: drops as the user confirms guesses (the filter list itself stays put).
+  const toCheck = useMemo(
+    () => groups.filter((g) => needsCheck(g, decisions)).length,
+    [groups, decisions],
+  );
+
+  const { resolvedTheme } = useTheme();
+  const picker = useMemo<PickerContext>(() => {
+    const byDirection = (credit: boolean) =>
+      categories.filter((c) => (c.type === "income") === credit);
     return {
-      fresh: rows.filter((r) => r.status === "new").length,
-      already: rows.filter((r) => r.status === "already_imported").length,
-      duplicates: rows.filter((r) => r.status === "possible_duplicate").length,
-      review: groups.filter((g) => g.guessed).length,
+      debit: byDirection(false),
+      credit: byDirection(true),
+      accounts: accounts.filter((a) => a.id !== preview?.account_id),
+      categoryById: new Map(categories.map((c) => [c.id, c])),
+      accountById: new Map(accounts.map((a) => [a.id, a])),
+      isDark: resolvedTheme === "dark",
     };
-  }, [preview, groups]);
+  }, [categories, accounts, preview?.account_id, resolvedTheme]);
 
   const visibleGroups = useMemo(() => {
     if (filter === "review") return groups.filter((g) => g.guessed);
@@ -145,15 +165,34 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
   const account = accounts.find((a) => a.id === preview?.account_id);
   const currency = preview?.currency ?? "NZD";
 
-  const setRows = (indexes: number[], patch: Partial<RowDecision>) =>
-    setDecisions((prev) => {
-      const next = new Map(prev);
-      for (const i of indexes) {
-        const current = next.get(i) ?? { include: true, target: "" };
-        next.set(i, { ...current, ...patch });
-      }
-      return next;
-    });
+  // Stable callbacks so memoised group rows only re-render when their own rows change.
+  const setRows = useCallback(
+    (indexes: number[], patch: Partial<RowDecision>) =>
+      setDecisions((prev) => {
+        const next = new Map(prev);
+        const reviewed = patch.target !== undefined ? { reviewed: true } : {};
+        for (const i of indexes) {
+          const current = next.get(i) ?? { include: true, target: "", reviewed: false };
+          next.set(i, { ...current, ...patch, ...reviewed });
+        }
+        return next;
+      }),
+    [],
+  );
+  const toggleExpanded = useCallback(
+    (key: string) =>
+      setExpanded((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      }),
+    [],
+  );
+  const rename = useCallback(
+    (key: string, value: string) => setMerchantNames((prev) => new Map(prev).set(key, value)),
+    [],
+  );
 
   const handleCommit = async () => {
     if (!file || !preview || !totals || totals.count === 0 || totals.undecided > 0) return;
@@ -328,7 +367,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                     onChange={(e) =>
                       file && void loadPreview(file, { accountId: e.target.value, currency })
                     }
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary focus:outline-none focus:ring-1 focus:ring-emerald"
+                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary focus:outline-none focus:ring-1 focus:ring-emerald"
                   >
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -351,7 +390,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                         currency: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary focus:outline-none focus:ring-1 focus:ring-emerald"
+                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary focus:outline-none focus:ring-1 focus:ring-emerald"
                   >
                     {[...new Set([currency, ...SUPPORTED_CURRENCIES])].map((c) => (
                       <option key={c} value={c}>
@@ -374,13 +413,13 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                 <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>
                   {counts.fresh} new
                 </FilterChip>
-                {counts.review > 0 && (
+                {(toCheck > 0 || filter === "review") && (
                   <FilterChip
                     active={filter === "review"}
                     tone="warning"
                     onClick={() => setFilter(filter === "review" ? "all" : "review")}
                   >
-                    {counts.review} to check
+                    {toCheck} to check
                   </FilterChip>
                 )}
                 {counts.duplicates > 0 && (
@@ -433,22 +472,11 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                       group={group}
                       decisions={decisions}
                       currency={currency}
-                      categories={categories}
-                      accounts={accounts}
-                      accountId={preview.account_id}
+                      picker={picker}
                       name={merchantNames.get(group.key) ?? group.merchant}
                       expanded={expanded.has(group.key)}
-                      onToggleExpanded={() =>
-                        setExpanded((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(group.key)) next.delete(group.key);
-                          else next.add(group.key);
-                          return next;
-                        })
-                      }
-                      onRename={(value) =>
-                        setMerchantNames((prev) => new Map(prev).set(group.key, value))
-                      }
+                      onToggleExpanded={toggleExpanded}
+                      onRename={rename}
                       onSetRows={setRows}
                     />
                   ))}
@@ -614,109 +642,312 @@ function FilterChip({
   );
 }
 
-function TargetSelect({
-  direction,
-  value,
-  categories,
-  accounts,
-  accountId,
-  onChange,
-  compact = false,
-  label,
-}: {
-  direction: "debit" | "credit";
-  value: ImportTarget | null;
-  categories: Category[];
+interface PickerContext {
+  debit: Category[];
+  credit: Category[];
+  /** Accounts other than the one being imported into. */
   accounts: Account[];
-  accountId: string;
-  onChange: (target: ImportTarget) => void;
-  compact?: boolean;
-  label: string;
-}) {
-  const fitting = categories.filter((c) => (c.type === "income") === (direction === "credit"));
-  const others = accounts.filter((a) => a.id !== accountId);
+  categoryById: Map<string, Category>;
+  accountById: Map<string, Account>;
+  isDark: boolean;
+}
+
+const MIXED = "__mixed";
+
+function TransferIcon({ className = "h-3 w-3" }: { className?: string }) {
   return (
-    <select
-      aria-label={label}
-      value={value === null ? MIXED : value}
-      onChange={(e) => onChange(e.target.value)}
-      className={`w-full rounded-lg border border-edge-default bg-surface-primary text-content-primary focus:outline-none focus:ring-1 focus:ring-emerald ${
-        compact ? "px-2 py-1 text-xs" : "px-2.5 py-1.5 text-sm"
-      } ${value === "" ? "border-warning-border" : ""}`}
-    >
-      {value === null && (
-        <option value={MIXED} disabled>
-          Mixed
-        </option>
-      )}
-      {value === "" && (
-        <option value="" disabled>
-          Choose…
-        </option>
-      )}
-      <optgroup label="Category">
-        {fitting.map((c) => (
-          <option key={c.id} value={categoryTarget(c.id)}>
-            {c.name}
-          </option>
-        ))}
-      </optgroup>
-      {others.length > 0 && (
-        <optgroup label={direction === "debit" ? "Transfer to" : "Transfer from"}>
-          {others.map((a) => (
-            <option key={a.id} value={transferTarget(a.id)}>
-              {a.name}
-            </option>
-          ))}
-        </optgroup>
-      )}
-    </select>
+    <svg className={`${className} shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"
+      />
+    </svg>
   );
 }
 
-const SOURCE_HINTS: Record<string, { text: string; className: string }> = {
-  history: { text: "From your history", className: "text-content-tertiary" },
-  rule: { text: "Suggested", className: "text-content-tertiary" },
-  default: { text: "Guessed, check it", className: "text-warning-text" },
-};
+/**
+ * Looks like cofr's category label (colour dot + name) but is a real native <select>
+ * laid over it, so keyboard, screen readers and mobile pickers all work as usual.
+ */
+function CategoryPicker({
+  direction,
+  value,
+  picker,
+  guessed,
+  label,
+  onChange,
+}: {
+  direction: "debit" | "credit";
+  value: ImportTarget | null;
+  picker: PickerContext;
+  guessed: boolean;
+  label: string;
+  onChange: (target: ImportTarget) => void;
+}) {
+  const categories = direction === "credit" ? picker.credit : picker.debit;
+  const isTransfer = !!value?.startsWith("xfer:");
+  const category = value?.startsWith("cat:") ? picker.categoryById.get(value.slice(4)) : undefined;
+  const account = value?.startsWith("xfer:") ? picker.accountById.get(value.slice(5)) : undefined;
+  const unset = value === "";
 
-function GroupRow({
+  const text =
+    value === null
+      ? "Mixed"
+      : unset
+        ? "Choose category"
+        : isTransfer
+          ? `${direction === "debit" ? "To" : "From"} ${account?.name ?? "account"}`
+          : (category?.name ?? "Category");
+
+  const tone =
+    guessed || unset
+      ? "border-warning-border bg-warning-bg text-warning-text"
+      : isTransfer
+        ? "border-transparent bg-accent-soft-bg text-accent-soft-text"
+        : "border-edge-default bg-surface-primary text-content-primary hover:bg-surface-hover";
+
+  return (
+    <label
+      title={
+        guessed ? "Guessed. Pick the right category, or choose it again to confirm." : undefined
+      }
+      className={`relative inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors focus-within:ring-2 focus-within:ring-emerald ${tone}`}
+    >
+      {isTransfer ? (
+        <TransferIcon />
+      ) : category ? (
+        <span
+          className="h-1.5 w-1.5 shrink-0 rounded-full"
+          style={{ backgroundColor: picker.isDark ? category.color_dark : category.color_light }}
+        />
+      ) : null}
+      <span className="truncate">{text}</span>
+      {guessed && <span className="shrink-0 font-semibold">?</span>}
+      <svg
+        className="h-3 w-3 shrink-0 opacity-60"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
+      <select
+        aria-label={label}
+        value={value === null ? MIXED : value}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      >
+        {value === null && (
+          <option value={MIXED} disabled>
+            Mixed
+          </option>
+        )}
+        {unset && (
+          <option value="" disabled>
+            Choose category
+          </option>
+        )}
+        <optgroup label="Category">
+          {categories.map((c) => (
+            <option key={c.id} value={categoryTarget(c.id)}>
+              {c.name}
+            </option>
+          ))}
+        </optgroup>
+        {picker.accounts.length > 0 && (
+          <optgroup label={direction === "debit" ? "Transfer to" : "Transfer from"}>
+            {picker.accounts.map((a) => (
+              <option key={a.id} value={transferTarget(a.id)}>
+                {a.name}
+              </option>
+            ))}
+          </optgroup>
+        )}
+      </select>
+    </label>
+  );
+}
+
+/** Merchant shown as text; the pencil swaps in an input (16px, so iOS won't zoom). */
+function MerchantName({
+  name,
+  muted,
+  onRename,
+}: {
+  name: string;
+  muted: boolean;
+  onRename: (value: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select();
+  }, [editing]);
+
+  if (editing) {
+    const commit = () => {
+      setEditing(false);
+      if (draft.trim()) onRename(draft.trim());
+      else setDraft(name);
+    };
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        maxLength={120}
+        aria-label="Merchant name"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.stopPropagation();
+            commit();
+          } else if (e.key === "Escape") {
+            e.stopPropagation();
+            setDraft(name);
+            setEditing(false);
+          }
+        }}
+        className="w-full min-w-0 rounded-md border border-edge-strong bg-surface-primary px-1.5 py-0 text-sm font-medium text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+      />
+    );
+  }
+
+  return (
+    <span className="group/name inline-flex min-w-0 items-center gap-1">
+      <span
+        className={`truncate text-sm font-medium ${muted ? "text-content-tertiary" : "text-content-primary"}`}
+        title={name}
+      >
+        {name}
+      </span>
+      <button
+        type="button"
+        aria-label={`Rename ${name}`}
+        onClick={() => {
+          setDraft(name);
+          setEditing(true);
+        }}
+        className="shrink-0 rounded p-0.5 text-content-tertiary opacity-60 transition-opacity hover:text-content-primary focus-visible:opacity-100 sm:opacity-0 sm:group-hover/name:opacity-100"
+      >
+        <svg
+          className="h-3 w-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15.232 5.232l3.536 3.536M9 13l6.232-6.232a2.5 2.5 0 113.536 3.536L12.536 16.536 9 17l.464-3.536z"
+          />
+        </svg>
+      </button>
+    </span>
+  );
+}
+
+function Amount({
+  amount,
+  currency,
+  direction,
+  isTransfer,
+  className = "text-sm",
+}: {
+  amount: number;
+  currency: string;
+  direction: "debit" | "credit";
+  isTransfer: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center justify-end gap-1 whitespace-nowrap font-medium tabular-nums text-content-primary ${className}`}
+    >
+      {isTransfer ? (
+        <span className="rounded bg-accent-soft-bg px-1 py-0.5 text-[9px] font-semibold text-accent-soft-text">
+          TR
+        </span>
+      ) : (
+        direction === "credit" && (
+          <span className="rounded bg-positive-bg px-1 py-0.5 text-[9px] font-semibold text-positive-text-strong">
+            IN
+          </span>
+        )
+      )}
+      {formatCurrency(amount, currency)}
+    </span>
+  );
+}
+
+function DuplicateNote({ row }: { row: ImportPreviewRow }) {
+  if (!row.duplicate_of) return null;
+  return (
+    <p className="mt-0.5 flex min-w-0 items-center gap-1 text-[11px] text-warning-text">
+      <svg className="h-3 w-3 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fillRule="evenodd"
+          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+          clipRule="evenodd"
+        />
+      </svg>
+      <span className="truncate">
+        Possible duplicate of “{row.duplicate_of.label}”, {formatDay(row.duplicate_of.date)}
+      </span>
+    </p>
+  );
+}
+
+interface GroupRowProps {
+  group: MerchantGroup;
+  decisions: Map<number, RowDecision>;
+  currency: string;
+  picker: PickerContext;
+  name: string;
+  expanded: boolean;
+  onToggleExpanded: (key: string) => void;
+  onRename: (key: string, value: string) => void;
+  onSetRows: (indexes: number[], patch: Partial<RowDecision>) => void;
+}
+
+function GroupRowImpl({
   group,
   decisions,
   currency,
-  categories,
-  accounts,
-  accountId,
+  picker,
   name,
   expanded,
   onToggleExpanded,
   onRename,
   onSetRows,
-}: {
-  group: MerchantGroup;
-  decisions: Map<number, RowDecision>;
-  currency: string;
-  categories: Category[];
-  accounts: Account[];
-  accountId: string;
-  name: string;
-  expanded: boolean;
-  onToggleExpanded: () => void;
-  onRename: (value: string) => void;
-  onSetRows: (indexes: number[], patch: Partial<RowDecision>) => void;
-}) {
+}: GroupRowProps) {
   const indexes = group.rows.map((r) => r.index);
   const included = group.rows.filter((r) => decisions.get(r.index)?.include).length;
   const target = sharedTarget(group, decisions);
   const single = group.rows.length === 1 ? group.rows[0] : null;
   const duplicates = group.rows.filter((r) => r.status === "possible_duplicate").length;
-  const source = group.guessed ? "default" : group.rows[0].suggestion_source;
-  const hint = source ? SOURCE_HINTS[source] : null;
-  const sign = group.direction === "credit" ? "+" : "−";
+  const guessed = needsCheck(group, decisions) && target === suggestedTarget(group.rows[0]);
+  const isTransfer = !!target?.startsWith("xfer:");
+  const muted = included === 0;
+
+  const tint = muted
+    ? ""
+    : isTransfer
+      ? "bg-accent-soft-bg/30"
+      : group.direction === "credit"
+        ? "bg-positive-bg/50"
+        : "";
 
   return (
-    <li className={included === 0 ? "bg-surface-elevated/40" : ""}>
-      <div className="flex items-start gap-3 px-5 py-3">
+    <li className={`transition-colors ${tint}`}>
+      <div className="flex items-start gap-3 px-5 py-2.5">
         <input
           type="checkbox"
           aria-label={`Import ${name}`}
@@ -725,36 +956,37 @@ function GroupRow({
             if (el) el.indeterminate = included > 0 && included < group.rows.length;
           }}
           onChange={(e) => onSetRows(indexes, { include: e.target.checked })}
-          className="mt-2 h-4 w-4 accent-emerald shrink-0"
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge-strong accent-emerald"
         />
-        <div className="flex-1 min-w-0 grid gap-2 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-start">
-          <div className="min-w-0">
-            <input
-              type="text"
-              value={name}
-              maxLength={120}
-              aria-label="Merchant name"
-              onChange={(e) => onRename(e.target.value)}
-              className={`w-full -ml-1 px-1 py-0.5 rounded text-sm font-medium bg-transparent border border-transparent hover:border-edge-default focus:border-edge-strong focus:outline-none ${
-                included === 0 ? "text-content-tertiary line-through" : "text-content-primary"
-              }`}
+        <div className={`min-w-0 flex-1 ${muted ? "opacity-60" : ""}`}>
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <MerchantName name={name} muted={muted} onRename={(v) => onRename(group.key, v)} />
+            </div>
+            <Amount
+              amount={group.total}
+              currency={currency}
+              direction={group.direction}
+              isTransfer={isTransfer}
             />
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-content-tertiary">
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:flex-nowrap">
+            <div className="min-w-0 basis-full truncate text-[11px] text-content-tertiary sm:basis-auto sm:flex-1">
               {single ? (
                 <>
-                  <span>{formatDay(single.date)}</span>
-                  {single.notes && <span className="truncate max-w-full">{single.notes}</span>}
+                  <span className="tabular-nums">{formatDay(single.date)}</span>
+                  {single.notes && <span> · {single.notes}</span>}
                 </>
               ) : (
                 <button
                   type="button"
-                  onClick={onToggleExpanded}
-                  className="inline-flex items-center gap-1 hover:text-content-primary"
+                  onClick={() => onToggleExpanded(group.key)}
                   aria-expanded={expanded}
+                  className="inline-flex items-center gap-1 font-medium text-content-secondary hover:text-content-primary"
                 >
                   {group.rows.length} transactions
                   <svg
-                    className={`w-3 h-3 transition-transform ${expanded ? "rotate-180" : ""}`}
+                    className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -762,79 +994,69 @@ function GroupRow({
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
+                  {duplicates > 0 && (
+                    <span className="font-normal text-warning-text">
+                      · {duplicates} possible duplicate{duplicates === 1 ? "" : "s"}
+                    </span>
+                  )}
                 </button>
               )}
-              {duplicates > 0 && !single && (
-                <span className="text-warning-text">
-                  {duplicates} possible duplicate{duplicates === 1 ? "" : "s"}
-                </span>
-              )}
             </div>
-            {single?.duplicate_of && <DuplicateNote row={single} currency={currency} />}
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="flex-1 min-w-0">
-              <TargetSelect
+            <div className="min-w-0 sm:shrink-0">
+              <CategoryPicker
                 label={`Category for ${name}`}
                 direction={group.direction}
                 value={target}
-                categories={categories}
-                accounts={accounts}
-                accountId={accountId}
+                picker={picker}
+                guessed={guessed}
                 onChange={(t) => onSetRows(indexes, { target: t })}
               />
-              {hint && target === categoryTarget(group.rows[0].suggested_category_id ?? "") && (
-                <p className={`mt-0.5 text-[11px] ${hint.className}`}>{hint.text}</p>
-              )}
             </div>
-            <span
-              className={`pt-1.5 text-sm tabular-nums whitespace-nowrap ${
-                group.direction === "credit" ? "text-positive-text" : "text-content-primary"
-              }`}
-            >
-              {sign}
-              {formatCurrency(group.total, currency)}
-            </span>
           </div>
+          {single && <DuplicateNote row={single} />}
         </div>
       </div>
 
       {expanded && !single && (
-        <ul className="pb-2 pl-12 pr-5 space-y-1">
+        <ul className="space-y-1 pb-2.5 pl-12 pr-5">
           {group.rows.map((row) => {
             const decision = decisions.get(row.index);
+            const rowTarget = decision?.target ?? "";
             return (
-              <li
-                key={row.index}
-                className="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 gap-y-1 items-start text-xs"
-              >
+              <li key={row.index} className="flex items-start gap-3 text-[11px]">
                 <input
                   type="checkbox"
                   aria-label={`Import row from line ${row.line}`}
                   checked={!!decision?.include}
                   onChange={(e) => onSetRows([row.index], { include: e.target.checked })}
-                  className="mt-1.5 h-3.5 w-3.5 accent-emerald"
+                  className="mt-1 h-3.5 w-3.5 shrink-0 accent-emerald"
                 />
-                <div className="min-w-0 grid gap-1 sm:grid-cols-[minmax(0,1fr)_11rem] sm:items-center">
-                  <div className="min-w-0 text-content-secondary">
-                    <span className="text-content-primary">{formatDay(row.date)}</span>
-                    {row.notes && <span className="ml-2 text-content-tertiary">{row.notes}</span>}
-                    {row.duplicate_of && <DuplicateNote row={row} currency={currency} />}
+                <div className={`min-w-0 flex-1 ${decision?.include ? "" : "opacity-60"}`}>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:flex-nowrap">
+                    <span className="min-w-0 basis-full truncate text-content-tertiary sm:basis-auto sm:flex-1">
+                      <span className="tabular-nums text-content-secondary">
+                        {formatDay(row.date)}
+                      </span>
+                      {row.notes && ` · ${row.notes}`}
+                    </span>
+                    <CategoryPicker
+                      label={`Category for line ${row.line}`}
+                      direction={row.direction}
+                      value={rowTarget}
+                      picker={picker}
+                      guessed={row.suggestion_source === "default" && !decision?.reviewed}
+                      onChange={(t) => onSetRows([row.index], { target: t })}
+                    />
+                    <Amount
+                      amount={row.amount}
+                      currency={currency}
+                      direction={row.direction}
+                      isTransfer={rowTarget.startsWith("xfer:")}
+                      className="ml-auto text-[11px] sm:ml-0 sm:w-20"
+                    />
                   </div>
-                  <TargetSelect
-                    compact
-                    label={`Category for line ${row.line}`}
-                    direction={row.direction}
-                    value={decision?.target ?? ""}
-                    categories={categories}
-                    accounts={accounts}
-                    accountId={accountId}
-                    onChange={(t) => onSetRows([row.index], { target: t })}
-                  />
+                  <DuplicateNote row={row} />
                 </div>
-                <span className="pt-1 tabular-nums whitespace-nowrap text-content-secondary">
-                  {formatCurrency(row.amount, currency)}
-                </span>
               </li>
             );
           })}
@@ -844,12 +1066,18 @@ function GroupRow({
   );
 }
 
-function DuplicateNote({ row, currency }: { row: ImportPreviewRow; currency: string }) {
-  if (!row.duplicate_of) return null;
-  return (
-    <p className="mt-1 text-xs text-warning-text">
-      Looks like “{row.duplicate_of.label}” ({formatCurrency(row.duplicate_of.amount, currency)},{" "}
-      {formatDay(row.duplicate_of.date)}) you already have. Skipped unless you tick it.
-    </p>
-  );
-}
+/** Re-render a group only when one of its own rows' decisions (or its display props) changed. */
+const GroupRow = memo(GroupRowImpl, (prev, next) => {
+  if (
+    prev.group !== next.group ||
+    prev.name !== next.name ||
+    prev.expanded !== next.expanded ||
+    prev.currency !== next.currency ||
+    prev.picker !== next.picker ||
+    prev.onSetRows !== next.onSetRows ||
+    prev.onRename !== next.onRename ||
+    prev.onToggleExpanded !== next.onToggleExpanded
+  )
+    return false;
+  return prev.group.rows.every((r) => prev.decisions.get(r.index) === next.decisions.get(r.index));
+});

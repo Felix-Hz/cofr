@@ -95,7 +95,9 @@ def commit(client, headers, account_id, rows, currency="NZD"):
 
 def accept_suggestions(preview_json):
     return [
-        {"index": r["index"], "category_id": r["suggested_category_id"]}
+        {"index": r["index"], "transfer_account_id": r["suggested_transfer_account_id"]}
+        if r["suggested_transfer_account_id"]
+        else {"index": r["index"], "category_id": r["suggested_category_id"]}
         for r in preview_json["rows"]
         if r["status"] == "new"
     ]
@@ -130,6 +132,10 @@ def test_preview_reads_statement_and_suggests(client, auth_headers, cats, accoun
         cats["miscellaneous"],
         "default",
     )
+    # "Transfer" to "Savings Account" names exactly one other account.
+    assert rows[TRANSFER]["suggestion_source"] == "transfer"
+    assert rows[TRANSFER]["suggested_transfer_account_id"] == accounts["Savings"]
+    assert rows[TRANSFER]["suggested_category_id"] is None
 
 
 def test_commit_then_reimport_is_idempotent(client, auth_headers, cats, accounts, db_session):
@@ -141,14 +147,14 @@ def test_commit_then_reimport_is_idempotent(client, auth_headers, cats, accounts
     assert first.json() == {
         "batch_id": first.json()["batch_id"],
         "imported": 11,
-        "transfers": 0,
+        "transfers": 1,
         "skipped": 0,
     }
 
     # Double-submit imports nothing new.
     again = commit(client, headers, accounts["Checking"], rows)
     assert again.json()["imported"] == 0
-    assert db_session.query(Transaction).count() == 11
+    assert db_session.query(Transaction).count() == 12  # 11 rows; the transfer has two legs
 
     # The same bank account is remembered, and every row is recognised.
     body = preview(client, headers).json()
@@ -230,10 +236,10 @@ def test_transfer_creates_linked_pair_and_undo_removes_both(
 ):
     headers, _ = auth_headers
     rows = accept_suggestions(preview(client, headers).json())
-    for r in rows:
-        if r["index"] == TRANSFER:
-            r.pop("category_id")
-            r["transfer_account_id"] = accounts["Savings"]
+    assert next(r for r in rows if r["index"] == TRANSFER) == {
+        "index": TRANSFER,
+        "transfer_account_id": accounts["Savings"],
+    }
     resp = commit(client, headers, accounts["Checking"], rows)
     assert resp.json()["transfers"] == 1
 

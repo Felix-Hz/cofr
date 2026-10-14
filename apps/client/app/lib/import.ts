@@ -6,6 +6,8 @@ export type ImportTarget = string;
 export interface RowDecision {
   include: boolean;
   target: ImportTarget;
+  /** The user has explicitly set this row's target (a guess they keep is no longer a guess). */
+  reviewed: boolean;
 }
 
 export interface MerchantGroup {
@@ -29,12 +31,25 @@ export function groupKey(row: Pick<ImportPreviewRow, "merchant" | "direction">):
  * Default decision for a row. Previous decisions survive a re-preview (e.g. after
  * switching account), except that a row's inclusion follows its new status.
  */
+export function suggestedTarget(row: ImportPreviewRow): ImportTarget {
+  if (row.suggested_transfer_account_id) return transferTarget(row.suggested_transfer_account_id);
+  return row.suggested_category_id ? categoryTarget(row.suggested_category_id) : "";
+}
+
 export function initialDecision(row: ImportPreviewRow, previous?: RowDecision): RowDecision {
-  const suggested = row.suggested_category_id ? categoryTarget(row.suggested_category_id) : "";
-  const target = previous?.target || suggested;
-  if (row.status === "already_imported") return { include: false, target };
-  if (row.status === "possible_duplicate") return { include: false, target };
-  return { include: previous?.include ?? true, target };
+  const reviewed = previous?.reviewed ?? false;
+  const target = (reviewed && previous?.target) || suggestedTarget(row);
+  const include = row.status === "new" ? (previous?.include ?? true) : false;
+  return { include, target, reviewed };
+}
+
+/** A group still showing a fallback guess the user hasn't confirmed. */
+export function needsCheck(group: MerchantGroup, decisions: Map<number, RowDecision>): boolean {
+  if (!group.guessed) return false;
+  return group.rows.some((r) => {
+    const d = decisions.get(r.index);
+    return !!d?.include && !d.reviewed;
+  });
 }
 
 /**

@@ -20,7 +20,7 @@ from datetime import UTC, date, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import HTTPException
-from sqlalchemy import func, or_
+from sqlalchemy import func, insert, or_, update
 from sqlalchemy.orm import Session, joinedload
 
 from app.db.models import Account, Category, ImportBatch, Transaction, User
@@ -184,6 +184,7 @@ class ImportService:
             user, user_id, str(account.id), currency, rows, hashes, existing_hashes
         )
         suggestions = self._suggest_categories(user_id, rows)
+        transfer_hints = self._suggest_transfers(user_id, str(account.id), rows)
 
         preview_rows = []
         for i, (r, h) in enumerate(zip(rows, hashes, strict=True)):
@@ -194,6 +195,9 @@ class ImportService:
             else:
                 status = "new"
             category_id, source = suggestions[i]
+            transfer_to = transfer_hints[i]
+            if transfer_to:
+                category_id, source = None, "transfer"
             preview_rows.append(
                 ImportPreviewRow(
                     index=i,
@@ -208,6 +212,7 @@ class ImportService:
                     duplicate_of=duplicates.get(i),
                     suggested_category_id=category_id,
                     suggestion_source=source,
+                    suggested_transfer_account_id=transfer_to,
                 )
             )
 
@@ -350,6 +355,29 @@ class ImportService:
             )
         return matches
 
+    def _suggest_transfers(
+        self, user_id: str, account_id: str, rows: list[dict]
+    ) -> list[str | None]:
+        """A bank "Transfer" row that names exactly one of the user's other accounts
+        (e.g. "Savings Account" → Savings) is most likely a move between them."""
+        others = [
+            (a.name.lower(), str(a.id))
+            for a in self.db.query(Account).filter(
+                Account.user_id == user_id, Account.id != account_id
+            )
+        ]
+        out: list[str | None] = []
+        for r in rows:
+            hit = None
+            if others and "transfer" in r["kind"].lower():
+                text = f"{r['merchant']} {r['notes']}".lower()
+                matches = [
+                    aid for name, aid in others if re.search(rf"\b{re.escape(name)}\b", text)
+                ]
+                hit = matches[0] if len(matches) == 1 else None
+            out.append(hit)
+        return out
+
     def _suggest_categories(
         self, user_id: str, rows: list[dict]
     ) -> list[tuple[str | None, str | None]]:
@@ -475,69 +503,83 @@ class ImportService:
         )
         self.db.add(batch)
 
-        imported = transfers = 0
+        # One executemany per statement instead of ORM unit-of-work per row: every dict
+        # has the same keys so the whole file goes out in as few batches as possible.
+        tx_rows: list[dict] = []
+        links: list[dict] = []
+        transfers = 0
         imported_dates: list[date] = []
-        pairs: list[tuple[Transaction, Transaction]] = []
         for i in sorted(decisions):
             if hashes[i] in already:
                 continue
             d, r = decisions[i], statement.rows[i]
             row_date = date.fromisoformat(r["date"])
-            common = {
+            base = {
                 "user_id": user_id,
                 "amount": abs(r["amount_cents"]) / 100,
                 "currency": request.currency,
                 "notes": r["notes"][:NOTES_MAX],
                 "timestamp": _occurrence_timestamp(row_date, user),
                 "import_batch_id": batch.id,
+                "merchant": None,
+                "category_id": None,
+                "is_transfer": False,
+                "transfer_direction": None,
             }
-            merchant = ((d.merchant if d.merchant is not None else r["merchant"]).strip())[
-                :MERCHANT_MAX
-            ] or None
             if d.category_id is not None:
-                self.db.add(
-                    Transaction(
-                        **common,
-                        account_id=account.id,
-                        category_id=d.category_id,
-                        merchant=merchant,
-                        hash=hashes[i],
-                    )
+                merchant = (d.merchant if d.merchant is not None else r["merchant"]).strip()
+                tx_rows.append(
+                    {
+                        **base,
+                        "id": uuid.uuid4(),
+                        "account_id": account.id,
+                        "category_id": d.category_id,
+                        "merchant": merchant[:MERCHANT_MAX] or None,
+                        "hash": hashes[i],
+                    }
                 )
             else:
-                other = transfer_accounts[d.transfer_account_id]
                 out_of_this = r["amount_cents"] < 0
-                this_leg = Transaction(
-                    **common,
-                    account_id=account.id,
-                    is_transfer=True,
-                    transfer_direction="from" if out_of_this else "to",
-                    hash=hashes[i],
+                this_id, other_id = uuid.uuid4(), uuid.uuid4()
+                tx_rows.append(
+                    {
+                        **base,
+                        "id": this_id,
+                        "account_id": account.id,
+                        "is_transfer": True,
+                        "transfer_direction": "from" if out_of_this else "to",
+                        "hash": hashes[i],
+                    }
                 )
-                other_leg = Transaction(
-                    **common,
-                    account_id=other.id,
-                    is_transfer=True,
-                    transfer_direction="to" if out_of_this else "from",
-                    hash="imp-pair:" + hashes[i].removeprefix("imp:"),
+                tx_rows.append(
+                    {
+                        **base,
+                        "id": other_id,
+                        "account_id": transfer_accounts[d.transfer_account_id].id,
+                        "is_transfer": True,
+                        "transfer_direction": "to" if out_of_this else "from",
+                        "hash": "imp-pair:" + hashes[i].removeprefix("imp:"),
+                    }
                 )
-                self.db.add_all([this_leg, other_leg])
-                pairs.append((this_leg, other_leg))
+                links += [
+                    {"id": this_id, "linked_transaction_id": other_id},
+                    {"id": other_id, "linked_transaction_id": this_id},
+                ]
                 transfers += 1
-            imported += 1
             imported_dates.append(row_date)
 
+        imported = len(imported_dates)
         batch.imported_count = imported
         batch.skipped_count = len(statement.rows) - imported
         batch.date_from = min(imported_dates) if imported_dates else None
         batch.date_to = max(imported_dates) if imported_dates else None
 
-        if pairs:
-            # Legs reference each other, so they need ids in the database first.
-            self.db.flush()
-            for a, b in pairs:
-                a.linked_transaction_id = b.id
-                b.linked_transaction_id = a.id
+        self.db.flush()  # the batch row must exist before transactions reference it
+        if tx_rows:
+            self.db.execute(insert(Transaction), tx_rows)
+        if links:
+            # Legs reference each other, so they're linked once both exist.
+            self.db.execute(update(Transaction), links)
         self.db.commit()
 
         return ImportCommitResponse(

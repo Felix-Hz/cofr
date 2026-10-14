@@ -5,6 +5,7 @@ import {
   groupRows,
   importTotals,
   initialDecision,
+  needsCheck,
   type RowDecision,
   sharedTarget,
   transferTarget,
@@ -33,14 +34,28 @@ const decide = (rows: ImportPreviewRow[]) =>
 
 describe("initialDecision", () => {
   it("includes new rows with their suggestion and skips duplicates", () => {
-    expect(initialDecision(row({ index: 0 }))).toEqual({ include: true, target: "cat:food" });
+    expect(initialDecision(row({ index: 0 }))).toEqual({
+      include: true,
+      target: "cat:food",
+      reviewed: false,
+    });
     expect(initialDecision(row({ index: 0, status: "possible_duplicate" })).include).toBe(false);
     expect(initialDecision(row({ index: 0, status: "already_imported" })).include).toBe(false);
   });
 
   it("keeps the user's earlier choice across a re-preview", () => {
-    const prev = { include: false, target: transferTarget("savings") };
+    const prev = { include: false, target: transferTarget("savings"), reviewed: true };
     expect(initialDecision(row({ index: 0 }), prev)).toEqual(prev);
+  });
+
+  it("re-applies fresh suggestions to rows the user hasn't touched", () => {
+    const prev = { include: true, target: "cat:old", reviewed: false };
+    expect(initialDecision(row({ index: 0 }), prev).target).toBe("cat:food");
+  });
+
+  it("prefers a suggested transfer over a category", () => {
+    const transfer = row({ index: 0, suggested_transfer_account_id: "acc-2" });
+    expect(initialDecision(transfer).target).toBe("xfer:acc-2");
   });
 });
 
@@ -69,11 +84,22 @@ describe("sharedTarget", () => {
     const decisions = decide(rows);
     const [group] = groupRows(rows);
     expect(sharedTarget(group, decisions)).toBe("cat:food");
-    decisions.set(1, { include: true, target: categoryTarget("misc") });
+    decisions.set(1, { include: true, target: categoryTarget("misc"), reviewed: true });
     expect(sharedTarget(group, decisions)).toBeNull();
     // Excluded rows don't make a group mixed.
-    decisions.set(1, { include: false, target: categoryTarget("misc") });
+    decisions.set(1, { include: false, target: categoryTarget("misc"), reviewed: true });
     expect(sharedTarget(group, decisions)).toBe("cat:food");
+  });
+});
+
+describe("needsCheck", () => {
+  it("clears once the user confirms a guessed group", () => {
+    const rows = [row({ index: 0, suggestion_source: "default" })];
+    const decisions = decide(rows);
+    const [group] = groupRows(rows);
+    expect(needsCheck(group, decisions)).toBe(true);
+    decisions.set(0, { include: true, target: "cat:misc", reviewed: true });
+    expect(needsCheck(group, decisions)).toBe(false);
   });
 });
 
@@ -86,7 +112,7 @@ describe("buildDecisions / importTotals", () => {
       row({ index: 3, status: "possible_duplicate" }),
     ];
     const decisions = decide(rows);
-    decisions.set(1, { include: true, target: transferTarget("acc-2") });
+    decisions.set(1, { include: true, target: transferTarget("acc-2"), reviewed: true });
     const names = new Map([["debit:daily grind", "Daily Grind Café"]]);
 
     expect(buildDecisions(rows, decisions, names)).toEqual([
