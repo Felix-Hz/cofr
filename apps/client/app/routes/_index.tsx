@@ -52,7 +52,7 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   },
   {
     q: "Does it connect to my bank?",
-    a: "No. Add transactions yourself or import a bank CSV (ANZ New Zealand for now).",
+    a: "No. Add transactions yourself or import a CSV statement exported from your bank.",
   },
   {
     q: "What's encrypted?",
@@ -411,7 +411,7 @@ function Features() {
           <Card
             className="md:col-span-2"
             title="Import your bank statement"
-            body="ANZ New Zealand CSV. Repeat shops are grouped so you categorise them once. Rows already imported are skipped."
+            body="Upload the CSV your bank exports. Repeat shops are grouped so you categorise them once. Rows already imported are skipped."
           >
             <div className="w-full flex items-center gap-4">
               <div className="lp-file lp-wiggle hidden sm:flex shrink-0 w-20 h-24 bg-surface-elevated border border-edge-strong flex-col justify-end p-2">

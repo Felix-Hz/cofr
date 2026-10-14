@@ -9,7 +9,7 @@ A personal finance tracker you run yourself. See [cofr.cash](https://cofr.cash).
 
 - Accounts, categories and transfers between accounts
 - Multiple currencies, with exchange rates refreshed daily
-- Bank statement import (ANZ New Zealand CSV)
+- Bank statement import (CSV)
 - Export to CSV, XLSX and PDF
 - Configurable dashboard
 - Google or email/password sign-in
