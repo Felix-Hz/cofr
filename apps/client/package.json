@@ -17,7 +17,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
     "@react-router/dev": "^8.4.0",
-    "@sentry/vite-plugin": "^5.4.1",
+    "@sentry/vite-plugin": "^11.8.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/bun": "latest",
     "@types/react": "^19.3.0",
