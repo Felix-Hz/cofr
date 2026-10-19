@@ -14,7 +14,7 @@ COPY --from=scribe . ./scribe/
 RUN cd scribe && maturin build --release --strip --out /dist
 
 # Python build stage
-FROM python:3.14-slim AS builder
+FROM python:3.15-slim AS builder
 
 WORKDIR /app
 
@@ -43,7 +43,7 @@ COPY --from=rust-builder /dist/*.whl /tmp/
 RUN uv pip install --python /opt/venv/bin/python /tmp/*.whl && rm -f /tmp/*.whl
 
 # Runtime stage
-FROM python:3.14-slim
+FROM python:3.15-slim
 
 # Install libpq for psycopg2 runtime
 RUN apt-get update && apt-get install -y libpq5 && rm -rf /var/lib/apt/lists/*
