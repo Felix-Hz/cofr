@@ -39,7 +39,7 @@ services:
 
   # Cloudflare Tunnel
   cloudflared:
-    image: cloudflare/cloudflared:2026.10.1
+    image: cloudflare/cloudflared:2026.10.3
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     restart: unless-stopped
     environment:
