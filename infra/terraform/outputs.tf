@@ -17,3 +17,13 @@ output "deploy_role_arn" {
   description = "IAM role GitHub Actions assumes to deploy (GitHub variable LANDING_DEPLOY_ROLE_ARN)."
   value       = aws_iam_role.deploy.arn
 }
+
+output "terraform_plan_role_arn" {
+  description = "IAM role the Infrastructure workflow assumes to plan (GitHub variable TF_PLAN_ROLE_ARN)."
+  value       = aws_iam_role.terraform_plan.arn
+}
+
+output "terraform_apply_role_arn" {
+  description = "IAM role the Infrastructure workflow assumes to apply (GitHub variable TF_APPLY_ROLE_ARN)."
+  value       = aws_iam_role.terraform_apply.arn
+}
