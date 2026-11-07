@@ -10,6 +10,7 @@ import {
   ScrollRestoration,
 } from "react-router";
 import AppleSplashLinks from "~/components/AppleSplashLinks";
+import LandingAnalytics from "~/components/LandingAnalytics";
 import UpdateBanner from "~/components/UpdateBanner";
 import { IS_LANDING } from "~/lib/constants";
 import type { Route } from "./+types/root";
@@ -77,6 +78,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           rel="stylesheet"
         />
         <script src="/theme.js" />
+        <LandingAnalytics />
         <Meta />
         <Links />
       </head>
