@@ -8,7 +8,8 @@ cofr is self-host only. The only thing we run is the static landing page at `cof
 - CloudFront Function: `www` → apex 301, `/terms` → `/terms/index.html`
 - security headers (HSTS, nosniff, `X-Frame-Options: DENY`, referrer and permissions policies)
 - DNS stays on Cloudflare: DNS-only CNAMEs to CloudFront plus the ACM validation records
-- an IAM role GitHub Actions assumes over OIDC to deploy (no long-lived deploy keys)
+- IAM roles GitHub Actions assumes over OIDC: `cofr-landing-deploy` (deploy), `cofr-terraform-plan`
+  (read-only, PRs and `main`) and `cofr-terraform-apply` (admin, `production` environment). No long-lived AWS keys.
 
 Cost is close to zero for a landing page: S3 storage is a few MB, CloudFront's free tier covers 1 TB and
 10M requests a month, `PriceClass_100` keeps edge pricing at the cheapest tier, and one `/*`
@@ -16,11 +17,12 @@ invalidation per deploy stays inside the 1,000 free paths. No Route 53, WAF, or 
 
 ## Setup
 
-GitHub secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (Terraform only),
-`CLOUDFLARE_API_TOKEN` (Zone → DNS → Edit on `cofr.cash`). See [Credentials and rotation](#credentials-and-rotation).
+GitHub secrets: `CLOUDFLARE_API_TOKEN` (Zone → DNS → Edit on `cofr.cash`). See [Credentials and rotation](#credentials-and-rotation).
 
-GitHub variables: `CLOUDFLARE_ZONE_ID`, and `GITHUB_OIDC_PROVIDER_ARN` if the AWS account already
-has a GitHub Actions OIDC provider (only one is allowed per account).
+GitHub variables: `CLOUDFLARE_ZONE_ID`, `TF_PLAN_ROLE_ARN`, `TF_APPLY_ROLE_ARN`, and `GITHUB_OIDC_PROVIDER_ARN`
+if the AWS account already has a GitHub Actions OIDC provider (only one is allowed per account).
+
+The Terraform roles are created by this configuration, so a fresh account needs one local apply first.
 
 Before the first apply, delete the existing `cofr.cash` and `www.cofr.cash` records in Cloudflare
 (they point at the old tunnel), or Terraform cannot create its own. Leave every other record alone:
@@ -30,18 +32,21 @@ Apply via the `Infrastructure` workflow, or locally:
 
 ```bash
 cd infra/terraform
-export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... CLOUDFLARE_API_TOKEN=...
+aws sso login --sso-session <session>
+export AWS_PROFILE=cofr CLOUDFLARE_API_TOKEN=...
 terraform init
 terraform apply -var cloudflare_zone_id=<zone id>
 ```
 
-Then copy the outputs into GitHub variables so the `Deploy Landing` workflow can publish:
+Then copy the outputs into GitHub variables for the `Deploy Landing` and `Infrastructure` workflows:
 
-| Output            | GitHub variable           |
-| ----------------- | ------------------------- |
-| `bucket_name`     | `LANDING_BUCKET`          |
-| `distribution_id` | `LANDING_DISTRIBUTION_ID` |
-| `deploy_role_arn` | `LANDING_DEPLOY_ROLE_ARN` |
+| Output                     | GitHub variable           |
+| -------------------------- | ------------------------- |
+| `bucket_name`              | `LANDING_BUCKET`          |
+| `distribution_id`          | `LANDING_DISTRIBUTION_ID` |
+| `deploy_role_arn`          | `LANDING_DEPLOY_ROLE_ARN` |
+| `terraform_plan_role_arn`  | `TF_PLAN_ROLE_ARN`        |
+| `terraform_apply_role_arn` | `TF_APPLY_ROLE_ARN`       |
 
 ## Credentials and rotation
 
@@ -51,7 +56,8 @@ No secret values live in this repo. This table records what each credential is a
 | --- | --- | --- | --- |
 | `CLOUDFLARE_API_TOKEN` (secret) | Cloudflare account-owned token `cofr-github-terraform-dns` (id `3314ea8a27e6d3cc1ca75aa00a6c22f6`) | DNS Write on zone `cofr.cash` only | **2027-10-13** |
 | `CLOUDFLARE_ZONE_ID` (variable) | `cofr.cash` zone ID | n/a | never |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (secrets) | Access key for IAM user `felix-admin`, account `474418737672` | Terraform plan/apply only | no expiry; rotate yearly |
+| `TF_PLAN_ROLE_ARN` (variable) | IAM role `cofr-terraform-plan`, account `474418737672` | `ReadOnlyAccess`, PRs and `main` | no long-lived key |
+| `TF_APPLY_ROLE_ARN` (variable) | IAM role `cofr-terraform-apply`, account `474418737672` | `AdministratorAccess`, `production` environment | no long-lived key |
 | `LANDING_DEPLOY_ROLE_ARN` (variable) | IAM role assumed over GitHub OIDC by `Deploy Landing` | S3 sync + CloudFront invalidation, `main` only | no long-lived key |
 
 Rotating the Cloudflare token, before it expires:
@@ -62,8 +68,6 @@ Rotating the Cloudflare token, before it expires:
 3. Re-run the `Infrastructure` workflow; `infra-plan` should report no changes.
 4. Update the expiry date in the table above.
 
-Rotating the AWS key: create a second access key for the IAM user, update both GitHub secrets,
-re-run `Infrastructure`, then deactivate and delete the old key.
 
 ## Deploys
 

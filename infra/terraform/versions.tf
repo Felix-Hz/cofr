@@ -20,7 +20,7 @@ terraform {
   }
 }
 
-# Credentials come from the environment: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY and CLOUDFLARE_API_TOKEN.
+# Credentials come from the environment: AWS (OIDC role in CI, SSO profile locally) and CLOUDFLARE_API_TOKEN.
 provider "aws" {
   region = var.aws_region
 
