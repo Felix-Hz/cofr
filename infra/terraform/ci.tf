@@ -1,7 +1,4 @@
-# ── GitHub Actions Terraform roles (OIDC, replaces the felix-admin access key) ──
-#
-# plan:  PRs and pushes to main. Read-only.
-# apply: only jobs running in the `production` environment.
+# ── GitHub Actions Terraform roles (OIDC) ──
 
 data "aws_iam_policy_document" "terraform_plan_assume" {
   statement {
@@ -67,7 +64,7 @@ resource "aws_iam_role" "terraform_apply" {
   assume_role_policy = data.aws_iam_policy_document.terraform_apply_assume.json
 }
 
-# Terraform here manages IAM, CloudFront, ACM and S3, so apply needs full admin.
+# Applies IAM changes, so needs full admin.
 resource "aws_iam_role_policy_attachment" "terraform_apply_admin" {
   role       = aws_iam_role.terraform_apply.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
