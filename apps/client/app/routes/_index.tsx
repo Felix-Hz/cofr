@@ -123,7 +123,7 @@ function CofrBrand({ className = "" }: { className?: string }) {
 function StartLink({ className, children }: { className: string; children: React.ReactNode }) {
   if (IS_LANDING) {
     return (
-      <a href="#self-host" className={className}>
+      <a href="#self-host" className={className} data-event="cta:install">
         {children}
       </a>
     );
@@ -167,6 +167,7 @@ function Nav() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="cofr on GitHub"
+            data-event="nav:github"
             className="h-10 w-10 rounded-full flex items-center justify-center text-content-tertiary hover:text-content-primary hover:bg-surface-hover transition-colors"
           >
             <GitHubIcon className="w-[18px] h-[18px]" />
@@ -224,7 +225,13 @@ function Hero() {
               {IS_LANDING ? "Install it" : "Start tracking"}
               <span aria-hidden="true">→</span>
             </StartLink>
-            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className={BTN_GHOST}>
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={BTN_GHOST}
+              data-event="cta:github"
+            >
               <GitHubIcon className="w-4 h-4" />
               Read the code
             </a>
@@ -628,6 +635,7 @@ function SelfHost() {
             AGPL-3.0.{" "}
             <a
               href={`${GITHUB_URL}/blob/main/scripts/install.sh`}
+              data-event="install:read-script"
               target="_blank"
               rel="noopener noreferrer"
               className="text-content-heading underline underline-offset-4"
@@ -646,6 +654,7 @@ function SelfHost() {
                   key={id}
                   type="button"
                   onClick={() => setPlatform(id)}
+                  data-event={`install:tab:${id}`}
                   aria-pressed={platform === id}
                   className={`px-3.5 py-2 text-[13px] font-semibold rounded-t-lg transition-colors ${
                     platform === id
@@ -667,6 +676,7 @@ function SelfHost() {
                 <button
                   type="button"
                   onClick={copy}
+                  data-event={`install:copy:${platform}`}
                   aria-label={copied ? "Copied" : "Copy install command"}
                   className={`shrink-0 font-sans text-[12px] font-semibold px-2.5 py-1 rounded-md transition-colors ${
                     copied
