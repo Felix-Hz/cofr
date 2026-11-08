@@ -11,14 +11,14 @@ export function meta() {
   ];
 }
 
-const LAST_UPDATED = "October 15, 2026";
+const LAST_UPDATED = "November 7, 2026";
 const CONTACT_EMAIL = "me@felix-hzv.dev";
 
 const TLDR = [
   "cofr is software you run on your own server. There is no hosted service and no cofr account.",
   "Whoever runs an instance controls its data. The cofr project has no access to it.",
   "The software sends nothing to the cofr project: no analytics, no telemetry, no error reports.",
-  "The cofr.cash website has no accounts, no cookies and no analytics.",
+  "The cofr.cash website has no accounts and no cookies. It counts visits anonymously, without identifying you.",
   "Names, usernames and emails are encrypted at rest. Transactions are not.",
 ];
 
@@ -97,8 +97,17 @@ export default function Privacy() {
 
       <LegalSection id="website" number="02" title="The cofr.cash Website">
         <p>
-          cofr.cash is a static website. It has no sign-up, no login and no forms, and we don't run
-          analytics, advertising or tracking cookies on it.
+          cofr.cash is a static website. It has no sign-up, no login and no forms, and sets no
+          cookies. There is no advertising or cross-site tracking on it.
+        </p>
+        <p>
+          To see which pages are read and where visitors come from, the cofr.cash website alone
+          counts page views, clicks on its links and buttons, and how long a page stays open. Each
+          record holds the page, the referring site, the country, the device type, the browser and
+          operating system family, and the language setting. It holds no identifier, so visits
+          cannot be linked to each other or to you, and your IP address is used only to limit abuse
+          and is never stored. Records are kept for three months. The self-hosted software does none
+          of this.
         </p>
         <p>Visiting it still involves a few third parties, as with any website:</p>
         <LegalTable
@@ -108,6 +117,11 @@ export default function Privacy() {
               "Amazon Web Services (S3, CloudFront)",
               "Hosting and delivering the website and install scripts",
               "IP address and request metadata, processed to serve the page",
+            ],
+            [
+              "Cloudflare (Workers Analytics Engine)",
+              "Anonymous visit counts described above",
+              "Page, referring site, country and browser family; IP address used for rate limiting only",
             ],
             [
               "Google Fonts",
