@@ -15,7 +15,7 @@ describe("LandingAnalytics", () => {
   });
 
   it("renders the beacon tag in the landing build", async () => {
-    expect(await render(true)).toBe('<script defer="" src="https://e.felix-hzv.dev/b.js"></script>');
+    expect(await render(true)).toBe('<script defer="" src="https://e.cofr.cash/b.js"></script>');
   });
 
   it("renders nothing in the self-hosted app", async () => {
