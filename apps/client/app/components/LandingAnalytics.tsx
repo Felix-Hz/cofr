@@ -4,5 +4,5 @@ import { IS_LANDING } from "~/lib/constants";
 // at build time, so self-hosted builds contain neither the tag nor the URL.
 export default function LandingAnalytics() {
   if (!IS_LANDING) return null;
-  return <script defer src="https://e.cofr.cash/b.js" />;
+  return <script defer src="https://e.felix-hzv.dev/b.js" />;
 }
