@@ -1,9 +1,25 @@
-# <img width="20" height="20" alt="cofr" src="https://github.com/user-attachments/assets/574a7125-4c7a-4697-9080-7b3636e6f5ee" /> cofr
+<p align="center"><img src="apps/client/public/icon.svg" width="72" height="72" alt=""></p>
 
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![CI](https://github.com/felix-hz/cofr/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/felix-hz/cofr/actions/workflows/ci.yml?query=branch%3Amain)
+<h1 align="center">cofr</h1>
 
-A personal finance tracker you run yourself. See [cofr.cash](https://cofr.cash).
+<p align="center">A personal finance tracker you run yourself.</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL_v3-blue.svg" alt="License: AGPL v3"></a>
+  <a href="https://github.com/felix-hz/cofr/actions/workflows/ci.yml?query=branch%3Amain"><img src="https://github.com/felix-hz/cofr/actions/workflows/ci.yml/badge.svg?branch=main&event=push" alt="CI"></a>
+</p>
+
+---
+
+cofr keeps track of your accounts, spending and transfers in your own currencies, on a server you control. It installs with one command, imports bank statements and exports to CSV, XLSX and PDF. See [cofr.cash](https://cofr.cash).
+
+## Contents
+
+- [Features](#features)
+- [Self-hosting](#self-hosting)
+- [Architecture](#architecture)
+- [Development](#development)
+- [License](#license)
 
 ## Features
 
@@ -25,7 +41,7 @@ curl -fsSL https://cofr.cash/install.sh | bash
 
 The installer generates secrets, pulls the release images and starts the stack with Docker Compose. Set `COFR_DOMAIN=yourdomain.com` first to serve it over HTTPS with a Let's Encrypt certificate; otherwise it runs on localhost.
 
-To update, run the same command again. Env files and data are kept. To install a specific release, set `COFR_VERSION`, e.g. `COFR_VERSION=2026.3.0`.
+To update, run the same command again. Env files and data are kept. To install a specific release, set `COFR_VERSION`, for example `COFR_VERSION=2026.3.0`.
 
 The installer source is in [`scripts/install.sh`](scripts/install.sh).
 
@@ -49,6 +65,8 @@ cd apps/server && uv run pytest
 cd apps/scribe && cargo test
 cd apps/client && bun run test
 ```
+
+The icon, favicon, app icons and iOS splash screens are all drawn from one 16-pixel grid in [`apps/client/scripts/make-icon.mjs`](apps/client/scripts/make-icon.mjs); run `node scripts/make-icon.mjs` from `apps/client` after changing it.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for prerequisites and pull request guidelines, and [`SECURITY.md`](SECURITY.md) for reporting vulnerabilities.
 
