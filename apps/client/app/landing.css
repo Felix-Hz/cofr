@@ -127,6 +127,7 @@
   font-size: clamp(6rem, 30vw, 22rem);
   color: var(--sm-rule);
   user-select: none;
+  pointer-events: none;
 }
 
 /* ─── Entrance: one short rise for the hero, final state under reduced motion ── */
