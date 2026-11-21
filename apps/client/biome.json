@@ -12,8 +12,7 @@
       "!**/node_modules",
       "!**/dist",
       "!**/build",
-      "!**/.react-router",
-      "!app/seamount"
+      "!**/.react-router"
     ]
   },
   "formatter": {
