@@ -31,7 +31,7 @@ export function LegalLayout({
   return (
     <div className="min-h-screen" style={{ background: "var(--surface-page)" }}>
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b bg-surface-page/95 backdrop-blur-md border-edge-default">
+      <nav className="sticky top-0 z-50 border-b bg-surface-page/95 border-edge-default">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-6">
           <Link to="/" className="text-[20px]" style={{ color: "var(--content-heading)" }}>
             <CofrBrand />

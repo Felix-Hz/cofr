@@ -163,7 +163,7 @@ export default function ExportHistoryTable({ refreshToken = 0 }: ExportHistoryTa
                   <div className="flex items-center gap-1 shrink-0">
                     <a
                       href={getExportRecordDownloadUrl(rec.id)}
-                      className="p-1.5 text-emerald hover:text-emerald-hover rounded-md hover:bg-surface-hover transition-colors"
+                      className="p-1.5 text-accent hover:text-accent-hover rounded-md hover:bg-surface-hover transition-colors"
                       title="Download"
                       aria-label={`Download export ${rec.name}`}
                     >
@@ -272,7 +272,7 @@ export default function ExportHistoryTable({ refreshToken = 0 }: ExportHistoryTa
                       <div className="flex items-center justify-end gap-1">
                         <a
                           href={getExportRecordDownloadUrl(rec.id)}
-                          className="p-1.5 text-emerald hover:text-emerald-hover rounded-md hover:bg-surface-hover transition-colors"
+                          className="p-1.5 text-accent hover:text-accent-hover rounded-md hover:bg-surface-hover transition-colors"
                           title="Download"
                           aria-label={`Download export ${rec.name}`}
                         >
@@ -360,7 +360,7 @@ export default function ExportHistoryTable({ refreshToken = 0 }: ExportHistoryTa
                     setPageSize(Number(e.target.value));
                     setPage(0);
                   }}
-                  className="h-7 px-1.5 border border-edge-strong rounded-md text-xs text-content-tertiary bg-surface-primary focus:outline-none focus:ring-2 focus:ring-emerald/40 transition-shadow"
+                  className="h-7 px-1.5 border border-edge-strong rounded-md text-xs text-content-tertiary bg-surface-primary focus:outline-none focus:ring-2 focus:ring-accent/40 transition-shadow"
                 >
                   {PAGE_SIZE_OPTIONS.map((n) => (
                     <option key={n} value={n}>

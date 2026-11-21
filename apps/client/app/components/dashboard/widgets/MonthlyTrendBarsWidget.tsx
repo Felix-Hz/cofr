@@ -104,11 +104,11 @@ export function MonthlyTrendBarsWidget() {
                       >
                         <div className="group relative z-[1] flex h-full min-w-0 flex-1 items-end justify-center gap-[2px]">
                           <div
-                            className="w-1/2 max-w-[10px] rounded-t-[2px] bg-emerald/85 transition-opacity group-hover:bg-emerald"
+                            className="w-1/2 max-w-[10px] rounded-t-[2px] bg-data-1 transition-opacity"
                             style={{ height: `${Math.max(incomeH, p.income > 0 ? 2 : 0)}%` }}
                           />
                           <div
-                            className="w-1/2 max-w-[10px] rounded-t-[2px] bg-negative-btn/85 transition-opacity group-hover:bg-negative-btn"
+                            className="w-1/2 max-w-[10px] rounded-t-[2px] bg-data-2 transition-opacity"
                             style={{ height: `${Math.max(spentH, p.spent > 0 ? 2 : 0)}%` }}
                           />
                         </div>
@@ -132,14 +132,14 @@ export function MonthlyTrendBarsWidget() {
 
           <div className="mt-3 flex items-center justify-between gap-3 border-t border-edge-default/80 pt-2.5 text-[11px]">
             <div className="flex items-center gap-1.5 text-content-tertiary">
-              <span className="h-2 w-2 rounded-sm bg-emerald/85" />
+              <span className="h-0.5 w-3.5 bg-data-1" />
               <span className="font-semibold tabular-nums text-content-secondary">
                 {formatCurrency(totalIncome, ccy, true, 0)}
               </span>
               <span className="text-content-muted">income</span>
             </div>
             <div className="flex items-center gap-1.5 text-content-tertiary">
-              <span className="h-2 w-2 rounded-sm bg-negative-btn/85" />
+              <span className="h-0.5 w-3.5 bg-data-2" />
               <span className="font-semibold tabular-nums text-content-secondary">
                 {formatCurrency(totalSpent, ccy, true, 0)}
               </span>

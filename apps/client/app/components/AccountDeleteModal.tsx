@@ -119,7 +119,7 @@ export default function AccountDeleteModal({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-on-ember bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
                   disabled={loading}
                 >
                   {loading ? "Deleting..." : "Delete"}
@@ -143,7 +143,7 @@ export default function AccountDeleteModal({
               <select
                 value={targetAccountId}
                 onChange={(e) => setTargetAccountId(e.target.value)}
-                className="w-full h-10 px-3 mb-6 border border-edge-strong rounded-lg text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                className="w-full h-10 px-3 mb-6 border border-edge-strong rounded-lg text-sm bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
               >
                 <option value="">Select account...</option>
                 {availableAccounts.map((a) => (
@@ -165,7 +165,7 @@ export default function AccountDeleteModal({
                 <button
                   type="button"
                   onClick={handleMoveAndDelete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-on-ember bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
                   disabled={loading || !targetAccountId}
                 >
                   {loading ? "Moving..." : "Move & Delete"}

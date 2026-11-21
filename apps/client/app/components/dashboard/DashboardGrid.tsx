@@ -155,7 +155,7 @@ export function DashboardGrid({
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: durations.medium, ease: EASE_OUT_EXPO }}
-              className="dashboard-ambient relative overflow-hidden rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-6 py-8 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] sm:px-8 sm:py-10"
+              className="dashboard-ambient relative overflow-hidden rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-6 py-8 sm:px-8 sm:py-10"
             >
               <div className="relative flex flex-col gap-8">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -176,7 +176,7 @@ export function DashboardGrid({
                     <button
                       type="button"
                       onClick={onOpenGallery}
-                      className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-emerald px-5 text-sm font-medium text-white transition-[background-color] duration-200 hover:bg-emerald-hover"
+                      className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-accent px-5 text-sm font-medium text-on-accent transition-[background-color] duration-200 hover:bg-accent-hover"
                     >
                       <svg
                         className="h-4 w-4"

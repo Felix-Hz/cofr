@@ -67,7 +67,7 @@ export default function DeleteConfirmModal({
             <button
               type="button"
               onClick={onConfirm}
-              className="px-4 py-2 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-on-ember bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
               disabled={isLoading}
             >
               {isLoading ? "Deleting..." : "Delete"}

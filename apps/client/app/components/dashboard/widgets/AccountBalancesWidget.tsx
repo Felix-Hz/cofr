@@ -107,7 +107,7 @@ export function AccountBalancesWidget({ widget }: WidgetRenderProps) {
                   ab.balance > 0
                     ? "text-positive-text-strong"
                     : ab.balance < 0
-                      ? "text-negative-text"
+                      ? "text-content-primary"
                       : "text-content-tertiary"
                 }`}
               >

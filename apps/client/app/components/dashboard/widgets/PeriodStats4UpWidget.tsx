@@ -12,13 +12,13 @@ export function PeriodStats4UpWidget({ widget }: WidgetRenderProps) {
   ];
   const toneLabel = {
     positive: "text-positive-text-strong/70",
-    negative: "text-negative-text/70",
+    negative: "text-content-tertiary",
     accent: "text-accent-soft-text/70",
     neutral: "text-content-tertiary",
   };
   const pillTone = {
     positive: "bg-positive-bg text-positive-text-strong",
-    negative: "bg-negative-bg text-negative-text",
+    negative: "bg-tint text-content-primary",
     accent: "bg-accent-soft-bg text-accent-soft-text",
     neutral: "bg-surface-elevated text-content-tertiary",
   };

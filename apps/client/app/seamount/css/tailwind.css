@@ -1,0 +1,64 @@
+/* ── Seamount for Tailwind 4 ──
+   Import after "tailwindcss" and styles.css. Maps the tokens into the theme, so utilities read
+   bg-paper, text-ink-3, border-rule, font-mono and rounded follow Seamount, and both themes switch through
+   the tokens with no dark: variants. `inline` keeps each utility pointing at the live token. */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
+@theme inline {
+  --color-paper: var(--sm-paper);
+  --color-surface: var(--sm-surface);
+  --color-tint: var(--sm-tint);
+  --color-ink: var(--sm-ink);
+  --color-ink-2: var(--sm-ink-2);
+  --color-ink-3: var(--sm-ink-3);
+  --color-accent: var(--sm-accent);
+  --color-ember: var(--sm-ember);
+  --color-on-accent: var(--sm-on-accent);
+  --color-on-ember: var(--sm-on-ember);
+  --color-rule: var(--sm-rule);
+  --color-data-1: var(--sm-data-1);
+  --color-data-2: var(--sm-data-2);
+  --color-data-3: var(--sm-data-3);
+  --color-data-4: var(--sm-data-4);
+
+  --font-serif: var(--sm-font-serif);
+  --font-display: var(--sm-font-display);
+  --font-sans: var(--sm-font-sans);
+  --font-mono: var(--sm-font-mono);
+  --font-pixel: var(--sm-font-pixel);
+
+  --text-label: var(--sm-text-label);
+  --text-label--line-height: 1.7;
+  --text-help: var(--sm-text-help);
+  --text-body: var(--sm-text-body);
+  --text-name: var(--sm-text-name);
+  --text-section: var(--sm-text-section);
+  --text-title: var(--sm-text-title);
+
+  --radius-xs: var(--sm-radius-sm);
+  --radius-sm: var(--sm-radius-sm);
+  --radius: var(--sm-radius);
+  --radius-md: var(--sm-radius);
+  --radius-lg: var(--sm-radius);
+
+  --shadow-float: var(--sm-shadow-float);
+  --ease-sm: var(--sm-ease);
+}
+
+/* Mono caps instrument label: section numbers, field names, nav */
+@utility label {
+  font-family: var(--sm-font-mono);
+  font-size: var(--sm-text-label);
+  line-height: 1.7;
+  font-weight: 500;
+  letter-spacing: var(--sm-tracking-label);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--sm-ink-3);
+}
+
+@utility figures {
+  font-family: var(--sm-font-mono);
+  font-variant-numeric: tabular-nums;
+}

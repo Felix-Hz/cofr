@@ -15,8 +15,13 @@ function getEffectiveTheme(): Theme {
   return stored || getSystemTheme();
 }
 
+// The class drives Tailwind's dark: variant; data-theme pins Seamount's tokens, so a Light choice holds
+// while the OS is dark
 function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle("dark", theme === "dark");
+  const root = document.documentElement;
+  root.classList.toggle("dark", theme === "dark");
+  root.dataset.theme = theme;
+  root.style.colorScheme = theme;
 }
 
 // Simple pub/sub for external store

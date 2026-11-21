@@ -4,7 +4,7 @@ import { AccountTrendWidget } from "./AccountTrendWidget";
 import { AverageDailySpendWidget } from "./AverageDailySpendWidget";
 import { BudgetHistoryWidget } from "./BudgetHistoryWidget";
 import { BudgetOverviewWidget } from "./BudgetOverviewWidget";
-import { CategoryPieWidget } from "./CategoryPieWidget";
+import { CategoryBreakdownWidget } from "./CategoryBreakdownWidget";
 import { IncomeSpendCompareWidget } from "./IncomeSpendCompareWidget";
 import { MonthlyTrendBarsWidget } from "./MonthlyTrendBarsWidget";
 import { NetWorthWidget } from "./NetWorthWidget";
@@ -32,7 +32,7 @@ export function ensureWidgetsRegistered(): void {
     stat_net: StatNetWidget,
     stat_savings_rate: StatSavingsRateWidget,
     avg_daily_spend: AverageDailySpendWidget,
-    category_pie: CategoryPieWidget,
+    category_pie: CategoryBreakdownWidget,
     top_categories_bars: TopCategoriesBarsWidget,
     income_spend_compare: IncomeSpendCompareWidget,
     monthly_trend_bars: MonthlyTrendBarsWidget,

@@ -4,9 +4,9 @@ import type { Budget } from "~/lib/schemas";
 import { formatCurrency } from "~/lib/utils";
 
 function progressColor(pct: number): string {
-  if (pct >= 100) return "bg-negative-btn";
+  if (pct >= 100) return "bg-content-heading";
   if (pct >= 85) return "bg-warning-text";
-  return "bg-emerald";
+  return "bg-accent";
 }
 
 function BudgetRow({ budget }: { budget: Budget }) {
@@ -21,7 +21,7 @@ function BudgetRow({ budget }: { budget: Budget }) {
           <span
             className={`shrink-0 text-[9px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded-sm ${
               budget.budget_type === "income"
-                ? "bg-emerald/15 text-emerald"
+                ? "bg-accent/15 text-accent"
                 : "bg-surface-elevated text-content-tertiary"
             }`}
           >
@@ -31,7 +31,7 @@ function BudgetRow({ budget }: { budget: Budget }) {
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <span
-            className={`tabular-nums text-xs font-semibold ${overshoot ? "text-negative-text" : "text-content-secondary"}`}
+            className={`tabular-nums text-xs font-semibold ${overshoot ? "text-accent" : "text-content-secondary"}`}
           >
             {formatCurrency(budget.spent, budget.currency, true, 0)}
           </span>
@@ -94,7 +94,7 @@ export function BudgetOverviewWidget() {
 
       {loading ? (
         <div className="flex flex-1 items-center justify-center">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald border-t-transparent" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
         </div>
       ) : displayed.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">

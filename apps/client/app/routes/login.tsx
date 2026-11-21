@@ -348,7 +348,7 @@ export default function Login() {
                 {mode === "signin" && (
                   <Link
                     to="/forgot-password"
-                    className="text-xs font-semibold text-emerald transition-colors hover:text-emerald-hover"
+                    className="text-xs font-semibold text-accent transition-colors hover:text-accent-hover"
                   >
                     Forgot password?
                   </Link>
@@ -373,7 +373,7 @@ export default function Login() {
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
                   disabled={isLocked}
-                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-emerald"
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-accent"
                 />
                 <span className="text-xs leading-relaxed text-content-tertiary">
                   I agree to the{" "}
@@ -381,7 +381,7 @@ export default function Login() {
                     href="/terms"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-emerald hover:text-emerald-hover transition-colors"
+                    className="font-semibold text-accent hover:text-accent-hover transition-colors"
                   >
                     Terms of Use
                   </a>{" "}
@@ -390,7 +390,7 @@ export default function Login() {
                     href="/privacy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-emerald hover:text-emerald-hover transition-colors"
+                    className="font-semibold text-accent hover:text-accent-hover transition-colors"
                   >
                     Privacy Policy
                   </a>
@@ -442,7 +442,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
-                className="font-semibold text-emerald transition-colors hover:text-emerald-hover"
+                className="font-semibold text-accent transition-colors hover:text-accent-hover"
               >
                 {mode === "signin" ? "Create one" : "Sign in"}
               </button>

@@ -89,7 +89,7 @@ export function WeekdayHeatmapWidget() {
                 {row.cells.map((cell) => (
                   <div
                     key={cell.id}
-                    className="flex-1 rounded-[3px] bg-emerald"
+                    className="flex-1 rounded-[3px] bg-accent"
                     style={{ opacity: cell.opacity }}
                     title={`${row.dayName} · week ${cell.weekNumber}: ${formatCurrency(cell.value, ccy, true, 0)}`}
                   />

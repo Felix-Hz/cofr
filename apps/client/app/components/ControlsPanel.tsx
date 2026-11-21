@@ -222,7 +222,7 @@ export default function ControlsPanel({
                 onClick={() => onPresetChange(p.value)}
                 className={`rounded-lg px-2 py-1.5 text-xs font-medium transition-colors ${
                   preset === p.value
-                    ? "bg-emerald text-white"
+                    ? "bg-accent text-on-accent"
                     : "bg-surface-elevated text-content-secondary hover:bg-surface-hover"
                 }`}
               >
@@ -255,7 +255,7 @@ export default function ControlsPanel({
                     onCustomStartChange(v);
                   }
                 }}
-                className="h-9 w-full min-w-0 rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                className="h-9 w-full min-w-0 rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
               />
             </div>
             <div className="min-w-0">
@@ -278,7 +278,7 @@ export default function ControlsPanel({
                     onCustomEndChange(v);
                   }
                 }}
-                className="h-9 w-full min-w-0 rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+                className="h-9 w-full min-w-0 rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs text-content-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
               />
             </div>
           </div>
@@ -297,7 +297,7 @@ export default function ControlsPanel({
               id="ctrl-currency"
               value={currency}
               onChange={(e) => onCurrencyChange(e.target.value)}
-              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs font-medium text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs font-medium text-content-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
             >
               <option value="">All</option>
               {currencies.map((c) => (
@@ -318,7 +318,7 @@ export default function ControlsPanel({
               id="ctrl-category"
               value={category}
               onChange={(e) => onCategoryChange(e.target.value)}
-              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs font-medium text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs font-medium text-content-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
             >
               <option value="">All</option>
               {categories.map((cat) => (
@@ -346,7 +346,7 @@ export default function ControlsPanel({
               }}
               min="0"
               step="0.01"
-              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs tabular-nums text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs tabular-nums text-content-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
             />
             <input
               type="number"
@@ -358,7 +358,7 @@ export default function ControlsPanel({
               }}
               min="0"
               step="0.01"
-              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs tabular-nums text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              className="h-9 w-full rounded-lg border border-edge-strong bg-surface-primary px-2.5 text-xs tabular-nums text-content-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
             />
           </div>
         </div>
