@@ -1,10 +1,7 @@
 @layer theme, base, components, utilities;
 @import "tailwindcss";
-@import "./seamount/css/tokens.css";
-@import "./seamount/css/fonts.css";
-@import "./seamount/css/base.css";
-@import "./seamount/css/components.css";
-@import "./seamount/css/tailwind.css";
+@import "@felix-hz/seamount/styles.css";
+@import "@felix-hz/seamount/tailwind.css";
 
 /* cofr's role names point at Seamount tokens, so both themes switch through them and existing class names
    keep working. emerald is the old accent's name; it is the cobalt accent now. */
