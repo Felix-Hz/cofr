@@ -202,7 +202,7 @@ export default function BudgetFormModal({
                   onClick={() => setBudgetType("expense")}
                   className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     budgetType === "expense"
-                      ? "bg-emerald text-white shadow-sm"
+                      ? "bg-accent text-on-accent shadow-sm"
                       : "text-content-tertiary hover:text-content-secondary"
                   }`}
                 >
@@ -239,13 +239,18 @@ export default function BudgetFormModal({
                         key={cat.id}
                         type="button"
                         onClick={() => toggleCategory(cat.id)}
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                        aria-pressed={selected}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
                           selected
-                            ? "border-transparent text-white"
-                            : "border-edge-strong text-content-secondary hover:border-emerald/50"
+                            ? "border-accent bg-tint text-accent"
+                            : "border-edge-strong text-content-secondary hover:border-accent/50"
                         }`}
-                        style={selected ? { backgroundColor: cat.color_light } : {}}
                       >
+                        <span
+                          aria-hidden="true"
+                          className="size-1.5"
+                          style={{ backgroundColor: cat.color_light }}
+                        />
                         {cat.name}
                       </button>
                     );
@@ -277,7 +282,7 @@ export default function BudgetFormModal({
                 }}
                 maxLength={80}
                 placeholder="e.g. Wonderful Travel"
-                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-accent"
                 required
               />
             </div>
@@ -295,7 +300,7 @@ export default function BudgetFormModal({
                     onClick={() => setPeriodType(p)}
                     className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors capitalize ${
                       periodType === p
-                        ? "bg-emerald text-white shadow-sm"
+                        ? "bg-accent text-on-accent shadow-sm"
                         : "text-content-tertiary hover:text-content-secondary"
                     }`}
                   >
@@ -320,7 +325,7 @@ export default function BudgetFormModal({
                     id="budget-start"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     required
                   />
                 </div>
@@ -337,7 +342,7 @@ export default function BudgetFormModal({
                     value={endDate}
                     min={startDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     required
                   />
                 </div>
@@ -361,13 +366,13 @@ export default function BudgetFormModal({
                   min="0.01"
                   step="0.01"
                   placeholder="0.00"
-                  className="flex-1 px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald tabular-nums"
+                  className="flex-1 px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-accent tabular-nums"
                   required
                 />
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
-                  className="w-24 px-2 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald text-sm"
+                  className="w-24 px-2 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
                 >
                   {SUPPORTED_CURRENCIES.map((c) => (
                     <option key={c} value={c}>
@@ -387,7 +392,7 @@ export default function BudgetFormModal({
                   disabled={isLoading}
                   className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     confirmDelete
-                      ? "bg-negative-btn text-white hover:bg-negative-btn/90"
+                      ? "bg-negative-btn text-on-ember hover:bg-negative-btn/90"
                       : "text-negative-text hover:bg-negative-bg"
                   }`}
                 >
@@ -408,7 +413,7 @@ export default function BudgetFormModal({
                 <button
                   type="submit"
                   disabled={!canSubmit}
-                  className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md disabled:opacity-50"
                 >
                   {isLoading ? "Saving…" : isEditMode ? "Update" : "Create"}
                 </button>

@@ -140,7 +140,7 @@ export default function AuthenticatedLayout() {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((prev) => !prev)}
-                  className="h-10 w-10 rounded-full bg-emerald text-white flex items-center justify-center hover:bg-emerald-hover transition-colors"
+                  className="h-10 w-10 rounded-full bg-accent text-on-accent flex items-center justify-center hover:bg-accent-hover transition-colors"
                 >
                   {getUserInitials(user?.username || "User")}
                 </button>

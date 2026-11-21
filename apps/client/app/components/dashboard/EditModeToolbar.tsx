@@ -55,7 +55,7 @@ export function EditModeToolbar({
           role="toolbar"
           aria-label="Dashboard edit controls"
         >
-          <div className="rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-3 py-3 shadow-[0_18px_40px_-26px_rgba(15,23,42,0.28)] sm:hidden">
+          <div className="rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-3 py-3 shadow-xl sm:hidden">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-content-tertiary">
@@ -108,7 +108,7 @@ export function EditModeToolbar({
                 disabled={isSaving}
                 className={`flex h-11 items-center justify-center rounded-md px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   isDirty
-                    ? "bg-emerald text-white hover:bg-emerald-hover"
+                    ? "bg-accent text-on-accent hover:bg-accent-hover"
                     : "border border-edge-strong bg-surface-primary text-content-primary hover:bg-surface-hover"
                 }`}
               >
@@ -117,12 +117,12 @@ export function EditModeToolbar({
             </div>
           </div>
 
-          <div className="hidden items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-4 py-3 shadow-[0_18px_40px_-26px_rgba(15,23,42,0.28)] sm:flex">
+          <div className="hidden items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-4 py-3 shadow-xl sm:flex">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 onClick={onOpenGallery}
-                className="flex h-10 items-center gap-2 rounded-md bg-emerald px-4 text-sm font-medium text-white transition-colors hover:bg-emerald-hover"
+                className="flex h-10 items-center gap-2 rounded-md bg-accent px-4 text-sm font-medium text-on-accent transition-colors hover:bg-accent-hover"
               >
                 <svg
                   className="h-4 w-4"
@@ -170,7 +170,7 @@ export function EditModeToolbar({
                 disabled={isSaving}
                 className={`flex h-10 items-center rounded-md px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   isDirty
-                    ? "bg-emerald text-white hover:bg-emerald-hover"
+                    ? "bg-accent text-on-accent hover:bg-accent-hover"
                     : "border border-edge-strong bg-surface-primary text-content-primary hover:bg-surface-hover"
                 }`}
               >

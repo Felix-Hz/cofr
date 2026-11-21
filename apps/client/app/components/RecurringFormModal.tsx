@@ -293,7 +293,7 @@ export default function RecurringFormModal({
                   type === t
                     ? t === "income"
                       ? "bg-positive-bg text-positive-text-strong shadow-sm"
-                      : "bg-emerald text-white shadow-sm"
+                      : "bg-accent text-on-accent shadow-sm"
                     : "text-content-tertiary hover:text-content-secondary"
                 } ${isEditMode ? "cursor-not-allowed opacity-60" : ""}`}
               >
@@ -319,7 +319,7 @@ export default function RecurringFormModal({
                   onChange={(e) => setName(e.target.value)}
                   maxLength={80}
                   placeholder="e.g. Rent, Salary, Savings transfer"
-                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                   required
                 />
               </div>
@@ -340,7 +340,7 @@ export default function RecurringFormModal({
                     min="0"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     required
                   />
                 </div>
@@ -355,7 +355,7 @@ export default function RecurringFormModal({
                     id="rec-currency"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     required
                   >
                     {SUPPORTED_CURRENCIES.map((c) => (
@@ -386,7 +386,7 @@ export default function RecurringFormModal({
                       id="rec-account"
                       value={accountId}
                       onChange={(e) => setAccountId(e.target.value)}
-                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                       required
                     >
                       {accounts.map((a) => (
@@ -408,7 +408,7 @@ export default function RecurringFormModal({
                         id="rec-to-account"
                         value={toAccountId}
                         onChange={(e) => setToAccountId(e.target.value)}
-                        className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                        className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                         required
                       >
                         <option value="">Select…</option>
@@ -438,7 +438,7 @@ export default function RecurringFormModal({
                     id="rec-category"
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     required
                   >
                     {(type === "income" ? incomeCategories : expenseCategories).map((cat) => (
@@ -467,7 +467,7 @@ export default function RecurringFormModal({
                       onChange={(e) => setMerchant(e.target.value)}
                       maxLength={120}
                       autoComplete="off"
-                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                      className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                       placeholder="e.g. Spark"
                     />
                   </div>
@@ -485,7 +485,7 @@ export default function RecurringFormModal({
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     maxLength={360}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     placeholder="Optional notes"
                   />
                 </div>
@@ -504,7 +504,7 @@ export default function RecurringFormModal({
                       onClick={() => handlePresetChange(p.id)}
                       className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
                         cadence.preset === p.id
-                          ? "bg-emerald text-white border-emerald"
+                          ? "bg-accent text-on-accent border-accent"
                           : "bg-surface-primary text-content-secondary border-edge-strong hover:bg-surface-hover"
                       }`}
                     >
@@ -526,7 +526,7 @@ export default function RecurringFormModal({
                           count: Math.max(1, Number.parseInt(e.target.value, 10) || 1),
                         }))
                       }
-                      className="w-16 px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                      className="w-16 px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     />
                     <select
                       value={cadence.unit}
@@ -536,7 +536,7 @@ export default function RecurringFormModal({
                           unit: e.target.value as RecurringIntervalUnit,
                         }))
                       }
-                      className="px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                      className="px-2 py-1 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     >
                       <option value="day">{cadence.count === 1 ? "day" : "days"}</option>
                       <option value="week">{cadence.count === 1 ? "week" : "weeks"}</option>
@@ -561,7 +561,7 @@ export default function RecurringFormModal({
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     required
                   />
                 </div>
@@ -575,7 +575,7 @@ export default function RecurringFormModal({
                     onChange={(e) => setEndDate(e.target.value)}
                     min={startDate}
                     placeholder="No end date"
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                   />
                   <p className="mt-1 text-[10px] text-content-muted">
                     Leave blank to repeat indefinitely.
@@ -614,7 +614,7 @@ export default function RecurringFormModal({
                           setShowDeleteConfirm(false);
                           void onDelete();
                         }}
-                        className="px-3 py-1.5 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
+                        className="px-3 py-1.5 text-sm font-medium text-on-ember bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
                         disabled={isLoading}
                       >
                         {isLoading ? "Deleting..." : "Yes"}
@@ -650,7 +650,7 @@ export default function RecurringFormModal({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md disabled:opacity-50"
                   disabled={isLoading}
                 >
                   {isLoading ? "Saving..." : isEditMode ? "Update" : "Create"}

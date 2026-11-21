@@ -1,0 +1,159 @@
+/* ── Seamount tokens ──
+   Named by role in three layers: surfaces, content, strokes. Dark mode follows the OS unless the page sets
+   data-theme="light" or data-theme="dark" on <html>; .dark and .light classes are accepted for apps that
+   already toggle a class. */
+
+@layer theme {
+  :root {
+    /* surfaces */
+    --sm-paper: #fafaf8;
+    --sm-surface: #f2f2ee;
+    --sm-tint: #edf0fa;
+    /* content */
+    --sm-ink: #15161b;
+    --sm-ink-2: #3f414b;
+    --sm-ink-3: #5f6270;
+    --sm-accent: #1d3ea8;
+    --sm-ember: #b8430f;
+    /* text on an ember or accent ground */
+    --sm-on-ember: #fafaf8;
+    --sm-on-accent: #fafaf8;
+    /* strokes and effects */
+    --sm-rule: #dadbe2;
+    --sm-float: rgba(21, 22, 27, 0.12);
+
+    /* data palette, charts only; validated with the six checks (slot order is fixed) */
+    --sm-data-1: #2f56c9;
+    --sm-data-2: #d9541e;
+    --sm-data-3: #0f8a6a;
+    --sm-data-4: #8a5cd6;
+    --sm-seq-1: #e6ebfa;
+    --sm-seq-2: #c3cef3;
+    --sm-seq-3: #98ace9;
+    --sm-seq-4: #6b86dc;
+    --sm-seq-5: #4567d0;
+    --sm-seq-6: #2f56c9;
+    --sm-seq-7: #1d3ea8;
+    --sm-div-1: #2f56c9;
+    --sm-div-2: #7f95da;
+    --sm-div-3: #c7cfe9;
+    --sm-div-4: #e4e4e6;
+    --sm-div-5: #efcbb9;
+    --sm-div-6: #e48e65;
+    --sm-div-7: #d9541e;
+
+    /* faces: one job each */
+    --sm-font-serif: "newsreader", "newsreader-fallback", Georgia, "Times New Roman", serif;
+    --sm-font-display: "newsreader-display", "newsreader-display-fallback", Georgia, "Times New Roman", serif;
+    --sm-font-sans: "instrument-sans", "instrument-sans-fallback", ui-sans-serif, system-ui, sans-serif;
+    --sm-font-mono: "jetbrains-mono", "jetbrains-mono-fallback", ui-monospace, "Cascadia Mono", Consolas, monospace;
+    --sm-font-pixel: "departure-mono", "departure-mono-fallback", ui-monospace, monospace;
+
+    /* app scale (base 14 px) */
+    --sm-text-label: 0.6875rem;
+    --sm-text-button: 0.75rem;
+    --sm-text-state: 0.75rem;
+    --sm-text-help: 0.8125rem;
+    --sm-text-body: 0.875rem;
+    --sm-text-name: 0.90625rem;
+    --sm-text-section: 1.25rem;
+    --sm-text-title: 1.625rem;
+    --sm-tracking-label: 0.04em;
+
+    /* 4 px base: group 8, separate 16, sections 56 */
+    --sm-space-1: 0.25rem;
+    --sm-space-2: 0.5rem;
+    --sm-space-3: 0.75rem;
+    --sm-space-4: 1rem;
+    --sm-space-6: 1.5rem;
+    --sm-space-8: 2rem;
+    --sm-space-14: 3.5rem;
+    --sm-control-sm: 2rem;
+    --sm-control: 2.5rem;
+    --sm-touch: 2.75rem;
+
+    --sm-radius: 4px;
+    --sm-radius-sm: 2px;
+
+    --sm-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --sm-duration-fast: 120ms;
+    --sm-duration: 200ms;
+    --sm-duration-enter: 240ms;
+
+    --sm-shadow-float: 0 8px 24px -8px var(--sm-float), 0 1px 2px var(--sm-float);
+    --sm-focus: 0 0 0 2px var(--sm-paper), 0 0 0 4px var(--sm-accent);
+
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not(.light) {
+      --sm-paper: #0e1120;
+      --sm-surface: #121629;
+      --sm-tint: #161b33;
+      --sm-ink: #e9ebf3;
+      --sm-ink-2: #b6bbcf;
+      --sm-ink-3: #8d93ab;
+      --sm-accent: #93a9ff;
+      --sm-ember: #f0743c;
+      --sm-on-ember: #0e1120;
+      --sm-on-accent: #0e1120;
+      --sm-rule: #262c45;
+      --sm-float: rgba(0, 0, 0, 0.45);
+      --sm-data-1: #6b86ee;
+      --sm-data-2: #e0622a;
+      --sm-data-3: #22a07a;
+      --sm-data-4: #9a7ee8;
+      --sm-seq-1: #1a2350;
+      --sm-seq-2: #24337a;
+      --sm-seq-3: #3149a6;
+      --sm-seq-4: #4a64cf;
+      --sm-seq-5: #6b86ee;
+      --sm-seq-6: #97abf5;
+      --sm-seq-7: #c4d0fa;
+      --sm-div-1: #6b86ee;
+      --sm-div-2: #4a5f9e;
+      --sm-div-3: #323a55;
+      --sm-div-4: #3a3d48;
+      --sm-div-5: #5a3a2c;
+      --sm-div-6: #a04f27;
+      --sm-div-7: #e0622a;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"],
+  :root.dark {
+    --sm-paper: #0e1120;
+    --sm-surface: #121629;
+    --sm-tint: #161b33;
+    --sm-ink: #e9ebf3;
+    --sm-ink-2: #b6bbcf;
+    --sm-ink-3: #8d93ab;
+    --sm-accent: #93a9ff;
+    --sm-ember: #f0743c;
+    --sm-on-ember: #0e1120;
+    --sm-on-accent: #0e1120;
+    --sm-rule: #262c45;
+    --sm-float: rgba(0, 0, 0, 0.45);
+    --sm-data-1: #6b86ee;
+    --sm-data-2: #e0622a;
+    --sm-data-3: #22a07a;
+    --sm-data-4: #9a7ee8;
+    --sm-seq-1: #1a2350;
+    --sm-seq-2: #24337a;
+    --sm-seq-3: #3149a6;
+    --sm-seq-4: #4a64cf;
+    --sm-seq-5: #6b86ee;
+    --sm-seq-6: #97abf5;
+    --sm-seq-7: #c4d0fa;
+    --sm-div-1: #6b86ee;
+    --sm-div-2: #4a5f9e;
+    --sm-div-3: #323a55;
+    --sm-div-4: #3a3d48;
+    --sm-div-5: #5a3a2c;
+    --sm-div-6: #a04f27;
+    --sm-div-7: #e0622a;
+    color-scheme: dark;
+  }
+}

@@ -160,7 +160,7 @@ export default function TransferFormModal({
                     id="from-account"
                     value={fromAccountId}
                     onChange={(e) => setFromAccountId(e.target.value)}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     required
                   >
                     <option value="" disabled>
@@ -202,7 +202,7 @@ export default function TransferFormModal({
                     id="to-account"
                     value={toAccountId}
                     onChange={(e) => setToAccountId(e.target.value)}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     required
                   >
                     <option value="" disabled>
@@ -244,7 +244,7 @@ export default function TransferFormModal({
                     min="0"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     required
                   />
                 </div>
@@ -259,7 +259,7 @@ export default function TransferFormModal({
                     id="transfer-currency"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                   >
                     {SUPPORTED_CURRENCIES.map((c) => (
                       <option key={c} value={c}>
@@ -284,7 +284,7 @@ export default function TransferFormModal({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   maxLength={360}
-                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                   placeholder="Optional"
                 />
               </div>
@@ -302,7 +302,7 @@ export default function TransferFormModal({
                   id="transfer-date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="w-full px-2.5 py-1.5 sm:px-3 sm:py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                 />
               </div>
 
@@ -322,7 +322,7 @@ export default function TransferFormModal({
                         description,
                       });
                     }}
-                    className="text-xs font-medium text-emerald hover:underline"
+                    className="text-xs font-medium text-accent hover:underline"
                   >
                     Make recurring →
                   </button>
@@ -344,7 +344,7 @@ export default function TransferFormModal({
                           setShowDeleteConfirm(false);
                           onDelete();
                         }}
-                        className="px-3 py-1.5 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
+                        className="px-3 py-1.5 text-sm font-medium text-on-ember bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50"
                         disabled={isLoading}
                       >
                         {isLoading ? "Deleting..." : "Yes"}
@@ -380,7 +380,7 @@ export default function TransferFormModal({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md disabled:opacity-50"
                   disabled={isLoading || !!sameAccountError}
                 >
                   {isLoading ? "Saving..." : isEditMode ? "Save Changes" : "Transfer"}

@@ -36,7 +36,7 @@ export function PeriodStatWidget({ widgetType }: { widgetType: PeriodStatWidgetT
       <span
         className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
           cell.tone === "negative"
-            ? "bg-negative-bg text-negative-text"
+            ? "bg-tint text-content-primary"
             : "bg-positive-bg text-positive-text-strong"
         }`}
       >

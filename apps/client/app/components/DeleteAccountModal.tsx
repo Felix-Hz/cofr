@@ -105,7 +105,7 @@ export default function DeleteAccountModal({
                   onClick={() => setMode("soft")}
                   className={`w-full text-left p-4 rounded-lg border-2 transition-colors ${
                     mode === "soft"
-                      ? "border-emerald bg-emerald/5"
+                      ? "border-accent bg-accent/5"
                       : "border-edge-default hover:border-edge-strong"
                   }`}
                 >
@@ -144,7 +144,7 @@ export default function DeleteAccountModal({
                 <button
                   type="button"
                   onClick={() => setStep("confirm")}
-                  className="px-4 py-2 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-on-ember bg-negative-btn hover:bg-negative-btn-hover rounded-md transition-colors"
                 >
                   Continue
                 </button>
@@ -236,7 +236,7 @@ export default function DeleteAccountModal({
                   type="button"
                   onClick={handleConfirm}
                   disabled={!isConfirmValid || loading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-on-ember bg-negative-btn hover:bg-negative-btn-hover rounded-md disabled:opacity-50 transition-colors"
                 >
                   {loading ? "Deleting..." : "Delete My Account"}
                 </button>

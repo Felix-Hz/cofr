@@ -57,7 +57,7 @@ export function WidgetGallery({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed -inset-8 z-[60] bg-black/30 backdrop-blur-sm"
+            className="fixed -inset-8 z-[60] bg-black/30"
             onClick={onClose}
             aria-hidden
           />
@@ -121,11 +121,11 @@ export function WidgetGallery({
                               "flex flex-col gap-1.5 rounded-md border p-4 text-left transition-all",
                               added
                                 ? "cursor-not-allowed border-edge-default bg-surface-elevated opacity-50"
-                                : "border-edge-default bg-surface-elevated hover:border-emerald/60 hover:shadow-lg",
+                                : "border-edge-default bg-surface-elevated hover:border-accent/60 hover:shadow-lg",
                             )}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald">
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-accent">
                                 {section.meta.title}
                               </span>
                               {added && (

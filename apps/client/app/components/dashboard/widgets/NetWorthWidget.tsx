@@ -58,7 +58,7 @@ export function NetWorthWidget({ widget }: WidgetRenderProps) {
             Out
           </div>
           <div
-            className={`${isCompact ? "text-[13px]" : "text-sm"} font-semibold text-negative-text tabular-nums`}
+            className={`${isCompact ? "text-[13px]" : "text-sm"} font-semibold text-content-primary tabular-nums`}
           >
             {formatCurrency(lifetime_spent, currency, true, 0)}
           </div>

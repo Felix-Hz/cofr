@@ -240,10 +240,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 touch-none">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
-        onClick={committing ? undefined : onClose}
-      />
+      <div className="absolute inset-0 bg-black/50" onClick={committing ? undefined : onClose} />
 
       <div className="relative w-full max-w-3xl bg-surface-primary rounded-xl border border-edge-default shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
@@ -296,13 +293,13 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
               }}
               className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-12 text-center cursor-pointer transition-colors ${
                 dragActive
-                  ? "border-emerald bg-accent-soft-bg"
+                  ? "border-accent bg-accent-soft-bg"
                   : "border-edge-strong hover:bg-surface-hover"
               } ${loading ? "pointer-events-none opacity-70" : ""}`}
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-emerald border-t-transparent" />
+                  <div className="animate-spin rounded-full h-6 w-6 border-2 border-accent border-t-transparent" />
                   <span className="text-sm text-content-secondary">Reading statement…</span>
                 </>
               ) : (
@@ -321,7 +318,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                     <line x1="12" y1="3" x2="12" y2="15" />
                   </svg>
                   <span className="text-sm font-medium text-content-primary">
-                    Drop a bank statement CSV here, or <span className="text-emerald">browse</span>
+                    Drop a bank statement CSV here, or <span className="text-accent">browse</span>
                   </span>
                   <span className="text-xs text-content-tertiary">
                     You'll review everything before it's saved.
@@ -367,7 +364,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                     onChange={(e) =>
                       file && void loadPreview(file, { accountId: e.target.value, currency })
                     }
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary focus:outline-none focus:ring-1 focus:ring-emerald"
+                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -390,7 +387,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                         currency: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary focus:outline-none focus:ring-1 focus:ring-emerald"
+                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary focus:outline-none focus:ring-1 focus:ring-accent"
                   >
                     {[...new Set([currency, ...SUPPORTED_CURRENCIES])].map((c) => (
                       <option key={c} value={c}>
@@ -400,7 +397,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                   </select>
                 </label>
                 {loading && (
-                  <div className="pb-2.5 animate-spin rounded-full h-4 w-4 border-2 border-emerald border-t-transparent" />
+                  <div className="pb-2.5 animate-spin rounded-full h-4 w-4 border-2 border-accent border-t-transparent" />
                 )}
               </div>
               {preview.account_remembered && (
@@ -487,7 +484,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                   <button
                     type="button"
                     onClick={() => setGroupLimit((n) => n + GROUP_PAGE)}
-                    className="text-sm text-emerald hover:underline"
+                    className="text-sm text-accent hover:underline"
                   >
                     Show {Math.min(GROUP_PAGE, visibleGroups.length - groupLimit)} more
                   </button>
@@ -534,7 +531,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
                     type="button"
                     onClick={handleCommit}
                     disabled={!canCommit}
-                    className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md transition-colors disabled:opacity-50"
                   >
                     {committing
                       ? "Importing…"
@@ -550,7 +547,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
         {step === "done" && result && (
           <div className="px-5 py-8 flex flex-col items-center text-center gap-3">
             <div className="h-12 w-12 rounded-full bg-positive-bg flex items-center justify-center">
-              <svg className="w-6 h-6 text-emerald" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-6 h-6 text-accent" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -594,7 +591,7 @@ export default function ImportModal({ isOpen, onClose, onImported }: ImportModal
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md transition-colors"
+                className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md transition-colors"
               >
                 Done
               </button>
@@ -634,7 +631,7 @@ function FilterChip({
       aria-selected={active}
       onClick={onClick}
       className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-        active ? "border-emerald bg-accent-soft-bg text-accent-soft-text" : idle
+        active ? "border-accent bg-accent-soft-bg text-accent-soft-text" : idle
       }`}
     >
       {children}
@@ -713,7 +710,7 @@ function CategoryPicker({
       title={
         guessed ? "Guessed. Pick the right category, or choose it again to confirm." : undefined
       }
-      className={`relative inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors focus-within:ring-2 focus-within:ring-emerald ${tone}`}
+      className={`relative inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors focus-within:ring-2 focus-within:ring-accent ${tone}`}
     >
       {isTransfer ? (
         <TransferIcon />
@@ -814,7 +811,7 @@ function MerchantName({
             setEditing(false);
           }
         }}
-        className="w-full min-w-0 rounded-md border border-edge-strong bg-surface-primary px-1.5 py-0 text-sm font-medium text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+        className="w-full min-w-0 rounded-md border border-edge-strong bg-surface-primary px-1.5 py-0 text-sm font-medium text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
       />
     );
   }
@@ -956,7 +953,7 @@ function GroupRowImpl({
             if (el) el.indeterminate = included > 0 && included < group.rows.length;
           }}
           onChange={(e) => onSetRows(indexes, { include: e.target.checked })}
-          className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge-strong accent-emerald"
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge-strong accent-accent"
         />
         <div className={`min-w-0 flex-1 ${muted ? "opacity-60" : ""}`}>
           <div className="flex items-center gap-3">
@@ -1029,7 +1026,7 @@ function GroupRowImpl({
                   aria-label={`Import row from line ${row.line}`}
                   checked={!!decision?.include}
                   onChange={(e) => onSetRows([row.index], { include: e.target.checked })}
-                  className="mt-1 h-3.5 w-3.5 shrink-0 accent-emerald"
+                  className="mt-1 h-3.5 w-3.5 shrink-0 accent-accent"
                 />
                 <div className={`min-w-0 flex-1 ${decision?.include ? "" : "opacity-60"}`}>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:flex-nowrap">

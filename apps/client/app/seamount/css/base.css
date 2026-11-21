@@ -1,0 +1,75 @@
+/* ── Seamount base ──
+   Opt-in element defaults: paper ground, the sans for interface text, tabular figures, the focus ring and
+   reduced motion. Apps that own their reset can skip this file and keep only tokens and components. */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    background: var(--sm-paper);
+    color: var(--sm-ink);
+    font-family: var(--sm-font-sans);
+    font-size: var(--sm-text-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--sm-font-display);
+    font-weight: 350;
+    letter-spacing: -0.015em;
+    color: var(--sm-ink);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--sm-font-mono);
+  }
+
+  ::selection {
+    background: var(--sm-tint);
+    color: var(--sm-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--sm-accent);
+    outline-offset: 2px;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--sm-rule);
+  }
+
+  /* !important inside a layer outranks unlayered app styles, so reduced motion always wins */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

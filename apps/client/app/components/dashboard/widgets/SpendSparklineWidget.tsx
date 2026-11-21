@@ -1,4 +1,4 @@
-import { useId, useMemo } from "react";
+import { useMemo } from "react";
 import { useDashboardSparkline } from "~/lib/dashboard/data-context";
 import type { WidgetRenderProps } from "~/lib/dashboard/registry";
 import { formatCurrency } from "~/lib/utils";
@@ -17,8 +17,6 @@ function getTodayKey() {
 
 export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
   const sparkline = useDashboardSparkline();
-  const strokeGradientId = useId();
-  const markerGradientId = useId();
   const isCompact = widget.row_span <= 2;
   const lineStrokeWidth = isCompact ? 2.25 : 2.75;
   const {
@@ -116,7 +114,7 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
             <span
               className={`inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-medium leading-none tabular-nums ${
                 changeTone === "up"
-                  ? "bg-negative-bg text-negative-text"
+                  ? "bg-tint text-content-primary"
                   : changeTone === "down"
                     ? "bg-positive-bg text-positive-text-strong"
                     : "bg-surface-elevated text-content-tertiary"
@@ -137,7 +135,7 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
           className={`shrink-0 text-right ${isCompact ? "hidden w-[88px] gap-1.5 sm:grid" : "grid gap-2"}`}
         >
           <div
-            className={`rounded-md border border-edge-default bg-surface-elevated/80 ${isCompact ? "px-2.5 py-1.5" : "px-3 py-2"}`}
+            className={`rounded border border-edge-default ${isCompact ? "px-2.5 py-1.5" : "px-3 py-2"}`}
           >
             <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-content-tertiary">
               Peak
@@ -149,7 +147,7 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
             </div>
           </div>
           <div
-            className={`rounded-md border border-edge-default bg-surface-elevated/80 ${isCompact ? "px-2.5 py-1.5" : "px-3 py-2"}`}
+            className={`rounded border border-edge-default ${isCompact ? "px-2.5 py-1.5" : "px-3 py-2"}`}
           >
             <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-content-tertiary">
               Avg
@@ -170,12 +168,12 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
       ) : (
         <div className={`relative flex min-h-0 flex-1 flex-col ${isCompact ? "mt-1.5" : "mt-4"}`}>
           <div
-            className={`relative flex-1 overflow-hidden rounded-md border border-edge-default bg-surface-elevated/65 ${
+            className={`relative flex-1 overflow-hidden border-y border-edge-default ${
               isCompact ? "min-h-[56px] px-2 py-1.5" : "min-h-[72px] px-3 py-3"
             }`}
           >
             <div
-              className={`pointer-events-none absolute top-1/2 border-t border-dashed border-edge-default/70 ${isCompact ? "inset-x-2" : "inset-x-3"}`}
+              className={`pointer-events-none absolute top-1/2 border-t border-edge-default/70 ${isCompact ? "inset-x-2" : "inset-x-3"}`}
             />
             <div
               className={`pointer-events-none absolute border-t border-edge-default/55 ${isCompact ? "bottom-2 inset-x-2" : "bottom-3 inset-x-3"}`}
@@ -185,45 +183,21 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
               preserveAspectRatio="none"
               className="relative h-full w-full"
             >
-              <defs>
-                <linearGradient
-                  id={strokeGradientId}
-                  x1="0"
-                  y1="0"
-                  x2={VIEWBOX_W}
-                  y2="0"
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop offset="0%" stopColor="#34d399" stopOpacity="0.82" />
-                  <stop offset="55%" stopColor="#10b981" stopOpacity="0.96" />
-                  <stop offset="100%" stopColor="#059669" stopOpacity="0.88" />
-                </linearGradient>
-                <linearGradient
-                  id={markerGradientId}
-                  x1="0"
-                  y1={PAD}
-                  x2="0"
-                  y2={VIEWBOX_H - PAD}
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.42" />
-                  <stop offset="100%" stopColor="#94a3b8" stopOpacity="0.08" />
-                </linearGradient>
-              </defs>
               {hasTodayInRange && todayX !== null && !isTodayLatest ? (
                 <line
                   x1={todayX}
                   y1={PAD}
                   x2={todayX}
                   y2={VIEWBOX_H - PAD}
-                  stroke={`url(#${markerGradientId})`}
+                  stroke="var(--sm-ink-3)"
+                  strokeOpacity={0.5}
                   strokeWidth={1}
                 />
               ) : null}
               <path
                 d={path}
                 fill="none"
-                stroke={`url(#${strokeGradientId})`}
+                stroke="var(--sm-data-1)"
                 strokeWidth={lineStrokeWidth}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -241,7 +215,7 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
                 todayY < VIEWBOX_H - PAD - 1 && (
                   <div
                     title="Today"
-                    className="absolute flex items-center justify-center rounded-full bg-white/95"
+                    className="absolute flex items-center justify-center bg-surface-primary"
                     style={{
                       left: `${(todayX / VIEWBOX_W) * 100}%`,
                       top: `${(todayY / VIEWBOX_H) * 100}%`,
@@ -251,21 +225,20 @@ export function SpendSparklineWidget({ widget }: WidgetRenderProps) {
                     }}
                   >
                     <div
-                      className="rounded-full bg-[#059669]"
+                      className="bg-data-1"
                       style={{ width: isCompact ? 4 : 5, height: isCompact ? 4 : 5 }}
                     />
                   </div>
                 )}
               {path && (
                 <div
-                  className="absolute rounded-full bg-[#059669]"
+                  className="absolute bg-accent"
                   style={{
                     left: `${((VIEWBOX_W - PAD) / VIEWBOX_W) * 100}%`,
                     top: `${(latestDotY / VIEWBOX_H) * 100}%`,
                     transform: "translate(-50%, -50%)",
-                    width: isCompact ? 4 : 5,
-                    height: isCompact ? 4 : 5,
-                    opacity: 0.92,
+                    width: isCompact ? 5 : 6,
+                    height: isCompact ? 5 : 6,
                   }}
                 />
               )}

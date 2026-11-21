@@ -83,7 +83,7 @@ export default function ImportHistoryList({
                 type="button"
                 onClick={() => void handleUndo(b.id)}
                 disabled={working === b.id}
-                className="px-2 py-1 text-xs font-medium text-white bg-negative-btn hover:bg-negative-btn-hover rounded disabled:opacity-50"
+                className="px-2 py-1 text-xs font-medium text-on-ember bg-negative-btn hover:bg-negative-btn-hover rounded disabled:opacity-50"
               >
                 {working === b.id ? "Removing…" : `Remove ${b.imported_count}`}
               </button>

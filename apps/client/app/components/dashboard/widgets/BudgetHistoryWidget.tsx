@@ -32,11 +32,11 @@ function HistoryBar({
         className={`relative w-3/4 rounded-t-[2px] transition-opacity ${
           isIncome
             ? over
-              ? "bg-emerald"
-              : "bg-emerald/60"
+              ? "bg-accent"
+              : "bg-accent/60"
             : over
-              ? "bg-negative-btn/85 group-hover:bg-negative-btn"
-              : "bg-emerald/85 group-hover:bg-emerald"
+              ? "bg-content-heading"
+              : "bg-accent/85 group-hover:bg-accent"
         }`}
         style={{ height: `${Math.max(spentH, period.spent > 0 ? 2 : 0)}%` }}
       />
@@ -122,7 +122,7 @@ export function BudgetHistoryWidget() {
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="text-[10px] bg-surface-elevated border border-edge-default rounded px-1.5 py-0.5 text-content-secondary focus:outline-none focus:ring-1 focus:ring-emerald max-w-[180px] truncate"
+            className="text-[10px] bg-surface-elevated border border-edge-default rounded px-1.5 py-0.5 text-content-secondary focus:outline-none focus:ring-1 focus:ring-accent max-w-[180px] truncate"
           >
             {periodicBudgets.map((b) => (
               <option key={b.id} value={b.id}>
@@ -135,7 +135,7 @@ export function BudgetHistoryWidget() {
 
       {isLoading ? (
         <div className="flex flex-1 items-center justify-center">
-          <div className="h-5 w-5 animate-spin rounded-full border-2 border-emerald border-t-transparent" />
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
         </div>
       ) : periodicBudgets.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-1.5 text-center">
@@ -193,7 +193,7 @@ export function BudgetHistoryWidget() {
 
           <div className="flex items-center gap-4 border-t border-edge-default/80 pt-2 text-[11px]">
             <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-sm bg-emerald/85" />
+              <span className="h-2 w-2 rounded-sm bg-accent/85" />
               <span className="text-content-muted">Actual</span>
             </div>
             <div className="flex items-center gap-1.5">

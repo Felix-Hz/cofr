@@ -129,7 +129,7 @@ export default function CategoryFormModal({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={60}
-                className={`w-full px-3 py-2 border rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald ${
+                className={`w-full px-3 py-2 border rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent ${
                   nameConflict ? "border-warning-text" : "border-edge-strong"
                 }`}
                 required
@@ -163,7 +163,7 @@ export default function CategoryFormModal({
                   onClick={() => setType("expense")}
                   className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     type === "expense"
-                      ? "bg-emerald text-white shadow-sm"
+                      ? "bg-accent text-on-accent shadow-sm"
                       : "text-content-tertiary hover:text-content-secondary"
                   }`}
                 >
@@ -198,7 +198,7 @@ export default function CategoryFormModal({
                 onChange={(e) => setAlias(e.target.value.toUpperCase())}
                 maxLength={10}
                 placeholder="e.g. PC"
-                className={`w-full px-3 py-2 border rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald ${
+                className={`w-full px-3 py-2 border rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-accent ${
                   aliasConflict ? "border-warning-text" : "border-edge-strong"
                 }`}
               />
@@ -254,7 +254,7 @@ export default function CategoryFormModal({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md disabled:opacity-50"
                 disabled={!canSubmit}
               >
                 {isLoading ? "Saving..." : isEditMode ? "Update" : "Add"}

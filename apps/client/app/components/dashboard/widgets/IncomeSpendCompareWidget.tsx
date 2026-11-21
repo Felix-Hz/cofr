@@ -34,7 +34,7 @@ export function IncomeSpendCompareWidget() {
           className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${
             netPositive
               ? "bg-positive-bg text-positive-text-strong"
-              : "bg-negative-bg text-negative-text"
+              : "bg-tint text-content-primary"
           }`}
         >
           {netPositive ? "+" : ""}
@@ -47,15 +47,15 @@ export function IncomeSpendCompareWidget() {
           label="In"
           amount={formatCurrency(income, periodStats.currency, true, 0)}
           share={incomeShare}
-          barClass="bg-positive-text-strong"
+          barClass="bg-data-1"
           labelClass="text-positive-text-strong"
         />
         <Row
           label="Out"
           amount={formatCurrency(spent, periodStats.currency, true, 0)}
           share={spentShare}
-          barClass="bg-negative-text"
-          labelClass="text-negative-text"
+          barClass="bg-data-2"
+          labelClass="text-content-primary"
         />
       </div>
     </div>

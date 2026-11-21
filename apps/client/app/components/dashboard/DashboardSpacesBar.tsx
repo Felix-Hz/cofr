@@ -40,7 +40,7 @@ export function DashboardSpacesBar({
 
   if (!isEditMode) {
     return (
-      <section className="dashboard-ambient relative overflow-hidden rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-3 py-2 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.3)]">
+      <section className="dashboard-ambient relative overflow-hidden rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-3 py-2">
         <div className="flex items-center gap-3">
           {spaces.length > 1 && (
             <div className="flex items-center gap-1">
@@ -94,7 +94,7 @@ export function DashboardSpacesBar({
   }
 
   return (
-    <section className="dashboard-ambient relative overflow-hidden rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-4 py-3 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.3)] sm:px-5">
+    <section className="dashboard-ambient relative overflow-hidden rounded-[var(--radius-lg)] border border-edge-default bg-surface-primary px-4 py-3 sm:px-5">
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {spaces.map((space) => {
@@ -108,7 +108,7 @@ export function DashboardSpacesBar({
                 className={cn(
                   "inline-flex h-9 shrink-0 items-center gap-2 rounded-md border px-3.5 text-sm font-medium transition-[background-color,color,border-color] duration-200",
                   isActive
-                    ? "border-accent/25 bg-surface-primary text-content-primary shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--accent)_12%,transparent)]"
+                    ? "border-accent/25 bg-surface-primary text-content-primary"
                     : "border-edge-default bg-surface-elevated text-content-secondary hover:bg-surface-hover hover:text-content-primary",
                 )}
               >

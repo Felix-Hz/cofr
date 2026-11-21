@@ -67,7 +67,7 @@ export function TransactionsWidget() {
             <button
               type="button"
               onClick={onCreateExpense}
-              className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-emerald px-4 text-sm font-medium text-white transition-[background-color] duration-200 hover:bg-emerald-hover"
+              className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-accent px-4 text-sm font-medium text-on-accent transition-[background-color] duration-200 hover:bg-accent-hover"
             >
               Add first transaction
             </button>
@@ -200,7 +200,7 @@ export function TransactionsWidget() {
             <select
               value={expensesLimit}
               onChange={(event) => onTransactionsPageSizeChange(Number(event.target.value))}
-              className="h-7 rounded-md border border-edge-strong bg-surface-primary px-2 text-[11px] text-content-secondary focus:outline-none focus:ring-2 focus:ring-emerald/40"
+              className="h-7 rounded-md border border-edge-strong bg-surface-primary px-2 text-[11px] text-content-secondary focus:outline-none focus:ring-2 focus:ring-accent/40"
               aria-label="Transactions per page"
             >
               {PAGE_SIZE_OPTIONS.map((size) => (

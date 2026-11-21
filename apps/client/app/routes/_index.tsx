@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, redirect } from "react-router";
+import {
+  CategoriesFigure,
+  CurrencyFigure,
+  DashboardFigure,
+  ExportFigure,
+  HeatmapFigure,
+  ImportFigure,
+  PhoneFigure,
+  TrendBarsFigure,
+} from "~/components/landing/Figures";
 import ThemeToggle from "~/components/ThemeToggle";
 import { isAuthenticated } from "~/lib/auth";
 import { IS_LANDING, SUPPORTED_CURRENCIES } from "~/lib/constants";
@@ -120,25 +130,32 @@ function CofrBrand({ className = "" }: { className?: string }) {
 }
 
 // The hosted landing has no accounts, so its calls to action point at the installer instead.
-function StartLink({ className, children }: { className: string; children: React.ReactNode }) {
+function StartLink({
+  className,
+  children,
+  ...data
+}: {
+  className: string;
+  children: React.ReactNode;
+  "data-variant"?: string;
+  "data-size"?: string;
+}) {
   if (IS_LANDING) {
     return (
-      <a href="#self-host" className={className} data-event="cta:install">
+      <a href="#self-host" className={className} data-event="cta:install" {...data}>
         {children}
       </a>
     );
   }
   return (
-    <Link to="/login?mode=signup" className={className}>
+    <Link to="/login?mode=signup" className={className} {...data}>
       {children}
     </Link>
   );
 }
 
-const BTN_PRIMARY =
-  "h-12 px-6 inline-flex items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-white bg-accent hover:bg-accent-hover active:translate-y-px transition-colors";
-const BTN_GHOST =
-  "h-12 px-6 inline-flex items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-content-primary border border-edge-strong hover:bg-surface-hover transition-colors";
+const BTN_PRIMARY = "sm-button h-11 px-5";
+const BTN = "sm-button h-11 px-5";
 
 function GitHubIcon({ className }: { className: string }) {
   return (
@@ -157,7 +174,7 @@ function Nav() {
       className="sticky top-0 z-50 bg-surface-page border-b border-edge-default"
       style={{ paddingTop: "var(--safe-top)" }}
     >
-      <div className="max-w-6xl mx-auto px-5 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <div className="max-w-6xl mx-auto px-5 sm:px-6 h-14 flex items-center justify-between gap-3">
         <Link to="/" aria-label="cofr home">
           <CofrBrand className="text-[22px] text-content-heading" />
         </Link>
@@ -168,20 +185,22 @@ function Nav() {
             rel="noopener noreferrer"
             aria-label="cofr on GitHub"
             data-event="nav:github"
-            className="h-10 w-10 rounded-full flex items-center justify-center text-content-tertiary hover:text-content-primary hover:bg-surface-hover transition-colors"
+            className="h-9 w-9 rounded flex items-center justify-center text-content-tertiary hover:text-content-primary hover:bg-surface-hover transition-colors"
           >
-            <GitHubIcon className="w-[18px] h-[18px]" />
+            <GitHubIcon className="w-4 h-4" />
           </a>
           <ThemeToggle />
           {!IS_LANDING && (
             <Link
               to="/login"
-              className="hidden sm:inline-flex h-10 px-4 items-center text-[14px] font-semibold text-content-secondary hover:text-content-primary transition-colors"
+              className="sm-button hidden sm:inline-flex"
+              data-variant="ghost"
+              data-size="sm"
             >
               Log in
             </Link>
           )}
-          <StartLink className="h-10 px-4 sm:px-5 inline-flex items-center rounded-full text-[14px] font-semibold text-white bg-accent hover:bg-accent-hover transition-colors">
+          <StartLink className="sm-button" data-variant="primary" data-size="sm">
             {IS_LANDING ? "Install" : "Sign up"}
           </StartLink>
         </div>
@@ -192,10 +211,10 @@ function Nav() {
 
 // --- Hero ---
 
-const RECEIPT_LINES: { label: string; amount: string; circled?: boolean }[] = [
+const RECEIPT_LINES: { label: string; amount: string; flagged?: boolean }[] = [
   { label: "Rent", amount: "1,650.00" },
   { label: "Groceries", amount: "412.80" },
-  { label: "Flat whites (23)", amount: "126.50", circled: true },
+  { label: "Flat whites (23)", amount: "126.50", flagged: true },
   { label: "Bus & trains", amount: "96.00" },
   { label: "Streaming", amount: "18.99" },
   { label: "Dentist", amount: "180.00" },
@@ -204,14 +223,15 @@ const RECEIPT_LINES: { label: string; amount: string; circled?: boolean }[] = [
 
 function Hero() {
   return (
-    <section className="px-5 sm:px-6 pt-14 sm:pt-20 lg:pt-24 pb-16 sm:pb-20">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-14 lg:gap-12 items-center">
+    <section className="px-5 sm:px-6 pt-12 sm:pt-16 lg:pt-20 pb-20 sm:pb-24">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-14 lg:gap-16 items-end">
         <header>
-          <h1 className="lp-display lp-in text-content-heading text-[clamp(2.9rem,9vw,5.6rem)]">
-            Where did all my <span className="lp-marker lp-marker-anim">money</span> go?
+          <p className="lp-in label text-accent">Personal finance, self-hosted</p>
+          <h1 className="lp-display lp-in mt-6 text-content-heading text-[clamp(3rem,8.5vw,6.25rem)]">
+            Where did all my <em className="italic">money</em> go?
           </h1>
           <p
-            className="lp-in mt-6 sm:mt-8 max-w-xl text-[17px] sm:text-[19px] leading-[1.6] text-content-secondary"
+            className="lp-lead lp-in mt-7 max-w-xl text-[clamp(1.1875rem,1rem+0.6vw,1.4375rem)] text-content-secondary"
             style={{ "--d": 1 } as React.CSSProperties}
           >
             Track spending across accounts and currencies, import your bank statement, and see where
@@ -221,7 +241,7 @@ function Hero() {
             className="lp-in mt-9 flex flex-col sm:flex-row gap-3"
             style={{ "--d": 2 } as React.CSSProperties}
           >
-            <StartLink className={BTN_PRIMARY}>
+            <StartLink className={BTN_PRIMARY} data-variant="primary">
               {IS_LANDING ? "Install it" : "Start tracking"}
               <span aria-hidden="true">→</span>
             </StartLink>
@@ -229,19 +249,28 @@ function Hero() {
               href={GITHUB_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className={BTN_GHOST}
+              className={BTN}
               data-event="cta:github"
             >
               <GitHubIcon className="w-4 h-4" />
               Read the code
             </a>
           </div>
-          <p
-            className="lp-in mt-6 text-[13px] text-content-tertiary"
+          <dl
+            className="lp-in mt-10 grid grid-cols-3 max-w-md border-t border-edge-default"
             style={{ "--d": 3 } as React.CSSProperties}
           >
-            Open source · {SUPPORTED_CURRENCIES.length} currencies · Works on your phone
-          </p>
+            {[
+              ["Licence", "AGPL-3.0"],
+              ["Currencies", String(SUPPORTED_CURRENCIES.length)],
+              ["Runs on", "Docker"],
+            ].map(([k, v]) => (
+              <div key={k} className="pt-3 pr-4">
+                <dt className="label">{k}</dt>
+                <dd className="lp-mono mt-1 text-[15px] text-content-primary">{v}</dd>
+              </div>
+            ))}
+          </dl>
         </header>
 
         <Receipt />
@@ -252,320 +281,191 @@ function Hero() {
 
 function Receipt() {
   return (
-    <div className="relative w-full max-w-[22rem] mx-auto lg:mr-4" aria-hidden="true">
-      <div className="lp-receipt-wrap">
-        <div className="lp-receipt lp-mono text-[13px] sm:text-[13.5px]">
-          <div className="text-center">
-            <p className="font-bold tracking-[0.2em] text-[12px]">A NORMAL MONTH</p>
-            <p className="opacity-50 text-[11px] mt-1">thanks for shopping, apparently</p>
-          </div>
-          <div className="my-4 border-t border-dashed border-current opacity-25" />
-          <ul className="space-y-2">
-            {RECEIPT_LINES.map((line, i) => (
-              <li
-                key={line.label}
-                className="lp-line relative flex items-baseline"
-                style={{ "--i": i } as React.CSSProperties}
-              >
-                <span className="whitespace-nowrap">{line.label}</span>
-                <span className="lp-dots" />
-                <span>{line.amount}</span>
-                {line.circled && (
-                  <>
-                    <svg
-                      className="absolute -left-3 -right-2 -top-2.5 h-[calc(100%+1.25rem)] w-[calc(100%+1.25rem)] overflow-visible pointer-events-none"
-                      viewBox="0 0 200 30"
-                      preserveAspectRatio="none"
-                    >
-                      <path
-                        className="lp-pen lp-pen-draw"
-                        pathLength={1}
-                        d="M118 4 C 60 -2, 6 4, 4 15 C 2 27, 70 29, 140 27 C 190 25, 199 18, 196 10 C 193 3, 160 1, 104 5"
-                      />
-                    </svg>
-                    <span className="lp-note cofr-brand absolute left-[54%] -top-[1.4rem] text-[16px] leading-none">
-                      hmm.
-                    </span>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-          <div className="my-4 border-t border-dashed border-current opacity-25" />
-          <ul className="space-y-1.5">
-            <li className="lp-line flex" style={{ "--i": 8 } as React.CSSProperties}>
-              <span>OUT</span>
-              <span className="lp-dots" />
-              <span>2,627.49</span>
-            </li>
-            <li className="lp-line flex" style={{ "--i": 9 } as React.CSSProperties}>
-              <span>IN</span>
-              <span className="lp-dots" />
-              <span>4,230.00</span>
-            </li>
+    <figure
+      className="lp-in w-full max-w-[23rem] mx-auto lg:mr-0"
+      style={{ "--d": 2 } as React.CSSProperties}
+    >
+      <figcaption className="mb-3 flex items-baseline justify-between gap-4">
+        <span className="label text-accent">Fig 1</span>
+        <span className="label">Receipt, November</span>
+      </figcaption>
+      <div className="lp-receipt lp-mono text-[13px] sm:text-[13.5px]" aria-hidden="true">
+        <div className="text-center">
+          <p className="label text-content-primary">A normal month</p>
+          <p className="text-[11px] text-content-tertiary mt-1">thanks for shopping, apparently</p>
+        </div>
+        <div className="my-4 border-t border-dashed border-edge-strong" />
+        <ul className="space-y-2.5">
+          {RECEIPT_LINES.map((line) => (
             <li
-              className="lp-line flex font-bold text-[15px] mt-2"
-              style={{ "--i": 10 } as React.CSSProperties}
+              key={line.label}
+              className={`relative flex items-baseline ${line.flagged ? "mb-7" : ""}`}
             >
-              <span>KEPT</span>
+              <span className="whitespace-nowrap">{line.label}</span>
               <span className="lp-dots" />
-              <span className="lp-marker">1,602.51</span>
+              <span>{line.amount}</span>
+              {line.flagged && (
+                <>
+                  <span className="lp-flag" />
+                  <span className="lp-flag-note">hmm.</span>
+                </>
+              )}
             </li>
-          </ul>
-          <p className="mt-5 text-center text-[11px] opacity-50 tracking-[0.3em]">
-            ||| | || ||| || | |||
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// --- Ticker ---
-
-const TICKER: { label: string; amount: string; inflow?: boolean }[] = [
-  { label: "Flat white", amount: "-5.50" },
-  { label: "Salary", amount: "+4,230.00", inflow: true },
-  { label: "Bus fare", amount: "-2.40" },
-  { label: "Mum paid me back", amount: "+30.00", inflow: true },
-  { label: "Parking ticket (ugh)", amount: "-65.00" },
-  { label: "Birthday present", amount: "-45.00" },
-  { label: "Savings transfer", amount: "500.00" },
-  { label: "Gym I never go to", amount: "-19.99" },
-  { label: "Sold the old bike", amount: "+120.00", inflow: true },
-  { label: "Ramen in Tokyo", amount: "-¥1,200" },
-  { label: "Plants (again)", amount: "-38.00" },
-];
-
-function Ticker() {
-  // Two copies so the loop is seamless; the second is offset by exactly half the track.
-  const items = [0, 1].flatMap((copy) => TICKER.map((t) => ({ ...t, key: `${copy}-${t.label}` })));
-  return (
-    <div className="overflow-hidden py-6" aria-hidden="true">
-      <div className="lp-ticker-band py-3.5">
-        <div className="lp-ticker-track lp-mono text-[14px]">
-          {items.map((t) => (
-            <span key={t.key} className="flex items-center gap-2.5 px-5 whitespace-nowrap">
-              <span className="opacity-75">{t.label}</span>
-              <span className={`font-bold ${t.inflow ? "text-accent" : ""}`}>{t.amount}</span>
-              <span className="opacity-30 pl-5">✱</span>
-            </span>
           ))}
-        </div>
+        </ul>
+        <div className="my-4 border-t border-dashed border-edge-strong" />
+        <ul className="space-y-1.5">
+          <li className="flex">
+            <span>OUT</span>
+            <span className="lp-dots" />
+            <span>−2,627.49</span>
+          </li>
+          <li className="flex">
+            <span>IN</span>
+            <span className="lp-dots" />
+            <span>+4,230.00</span>
+          </li>
+          <li className="flex font-semibold text-[15px] mt-3 pt-3 border-t border-content-heading">
+            <span>KEPT</span>
+            <span className="lp-dots" />
+            <span>1,602.51</span>
+          </li>
+        </ul>
+      </div>
+      <p className="mt-3 text-[13px] leading-snug text-content-tertiary">
+        One month, totalled the way cofr does it. The flat whites were a surprise.
+      </p>
+    </figure>
+  );
+}
+
+// --- Sections ---
+
+function SectionHead({ n, title, aside }: { n: string; title: string; aside?: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[12rem_1fr] gap-x-10 gap-y-4 pt-4 mb-10 sm:mb-14">
+      <p className="label text-accent">[&nbsp;{n}&nbsp;]</p>
+      <div className="flex flex-wrap items-baseline justify-between gap-4">
+        <h2 className="lp-display text-content-heading text-[clamp(2.25rem,5vw,3.5rem)] max-w-3xl">
+          {title}
+        </h2>
+        {aside}
       </div>
     </div>
   );
 }
-
-// --- What it does ---
-
-function SectionHeading({ title }: { title: string }) {
-  return (
-    <h2 className="lp-rise lp-display max-w-2xl mb-10 sm:mb-14 text-content-heading text-[clamp(2.2rem,5.5vw,3.6rem)]">
-      {title}
-    </h2>
-  );
-}
-
-function Card({
-  title,
-  body,
-  className = "",
-  children,
-}: {
-  title: string;
-  body: React.ReactNode;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <article className={`lp-card lp-rise p-5 sm:p-6 flex flex-col gap-5 ${className}`}>
-      <div className="flex-1 min-h-[7.5rem] flex items-center" aria-hidden="true">
-        {children}
-      </div>
-      <div>
-        <h3 className="text-[17px] font-bold text-content-heading">{title}</h3>
-        <p className="mt-1.5 text-[14.5px] leading-relaxed text-content-secondary">{body}</p>
-      </div>
-    </article>
-  );
-}
-
-const IMPORT_GROUPS = [
-  { name: "Corner Grocer", count: 6, cat: "Groceries", color: "#10b981" },
-  { name: "City Bus", count: 9, cat: "Transport", color: "#3b82f6" },
-  { name: "Payroll", count: 2, cat: "Income", color: "#22c55e" },
-];
 
 const CATEGORIES = [
-  { name: "Groceries", color: "#10b981" },
-  { name: "Rent", color: "#ef4444" },
-  { name: "Transport", color: "#3b82f6" },
-  { name: "Eating out", color: "#f59e0b" },
-  { name: "Health", color: "#8b5cf6" },
-  { name: "Fun", color: "#ec4899" },
+  { name: "Groceries", color: "#2f56c9" },
+  { name: "Rent", color: "#d9541e" },
+  { name: "Transport", color: "#0f8a6a" },
+  { name: "Eating out", color: "#8a5cd6" },
+];
+
+const FEATURES: {
+  title: string;
+  body: string;
+  spec?: React.ReactNode;
+  figure?: { n: number; node: React.ReactNode };
+}[] = [
+  {
+    title: "Import your bank statement",
+    figure: { n: 2, node: <ImportFigure /> },
+    body: "Upload the CSV your bank exports. Repeat shops are grouped so you categorise them once. Rows already imported are skipped.",
+    spec: (
+      <span className="lp-mono">
+        Corner Grocer ×6 · City Bus ×9 · Payroll ×2
+        <span className="block text-content-tertiary">4 already imported, skipped</span>
+      </span>
+    ),
+  },
+  {
+    title: `Any of ${SUPPORTED_CURRENCIES.length} currencies`,
+    figure: { n: 3, node: <CurrencyFigure /> },
+    body: "Record in the original currency. Totals convert to yours at daily rates.",
+    spec: (
+      <span className="lp-mono">
+        −¥1,200 <span className="text-content-tertiary">≈ −$13.40 at home</span>
+      </span>
+    ),
+  },
+  {
+    title: "Categories that fit your life",
+    figure: { n: 4, node: <CategoriesFigure /> },
+    body: "11 built in, each one optional, plus up to 20 of your own.",
+    spec: (
+      <span className="flex flex-wrap gap-x-4 gap-y-1">
+        {CATEGORIES.map((c) => (
+          <span key={c.name} className="inline-flex items-center gap-1.5">
+            <span className="size-1.5" style={{ background: c.color }} />
+            {c.name}
+          </span>
+        ))}
+        <span className="text-content-tertiary">+ yours</span>
+      </span>
+    ),
+  },
+  {
+    title: "A dashboard you arrange",
+    figure: { n: 5, node: <DashboardFigure /> },
+    body: "Drag, resize and hide widgets. Each one says what it found, not just what it measured.",
+  },
+  {
+    title: "Export everything",
+    figure: { n: 6, node: <ExportFigure /> },
+    body: "Your data leaves with you whenever you want it.",
+    spec: <span className="lp-mono">.csv · .xlsx · .pdf · .zip</span>,
+  },
+  {
+    title: "Lives on your phone",
+    figure: { n: 7, node: <PhoneFigure /> },
+    body: "Add it to your home screen from the browser. It opens full screen; no app store.",
+  },
 ];
 
 function Features() {
   return (
-    <section className="lp-defer px-5 sm:px-6 py-20 sm:py-28">
-      <div className="max-w-6xl mx-auto">
-        <SectionHeading title="What it does." />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Card
-            className="md:col-span-2"
-            title="Import your bank statement"
-            body="Upload the CSV your bank exports. Repeat shops are grouped so you categorise them once. Rows already imported are skipped."
-          >
-            <div className="w-full flex items-center gap-4">
-              <div className="lp-file lp-wiggle hidden sm:flex shrink-0 w-20 h-24 bg-surface-elevated border border-edge-strong flex-col justify-end p-2">
-                <span className="lp-mono text-[10px] text-content-tertiary">statement</span>
-                <span className="lp-mono text-[12px] font-bold text-accent">.csv</span>
-              </div>
-              <span className="hidden sm:block text-content-muted text-xl">→</span>
-              <ul className="flex-1 min-w-0 space-y-2">
-                {IMPORT_GROUPS.map((g) => (
-                  <li
-                    key={g.name}
-                    className="flex items-center gap-3 rounded-xl bg-surface-elevated border border-edge-default px-3 py-2"
-                  >
-                    <span className="text-[13px] font-semibold text-content-primary truncate">
-                      {g.name}
-                    </span>
-                    <span className="text-[11px] font-bold text-content-tertiary">×{g.count}</span>
-                    <span className="ml-auto lp-chip">
-                      <span className="w-2 h-2 rounded-full" style={{ background: g.color }} />
-                      {g.cat}
-                    </span>
-                  </li>
-                ))}
-                <li className="text-[12px] text-content-tertiary px-1">
-                  4 already imported, skipped
-                </li>
-              </ul>
-            </div>
-          </Card>
-
-          <Card
-            title="Any of 9 currencies"
-            body="Record in the original currency. Totals convert to yours at daily rates."
-          >
-            <div className="w-full">
-              <p className="lp-mono text-[28px] font-bold text-content-heading leading-none">
-                ¥1,200
+    <section className="lp-defer px-5 sm:px-6 pb-24 sm:pb-32">
+      <div className="max-w-6xl mx-auto lp-section">
+        <SectionHead
+          n="01"
+          title="What it does."
+          aside={<span className="label">Highlights</span>}
+        />
+        <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-12 lg:pl-[calc(12rem+2.5rem)]">
+          {FEATURES.map((f, i) => (
+            <li key={f.title} className="border-t border-edge-default pt-4">
+              {f.figure && (
+                <figure className="mb-5">
+                  <span className="label text-accent">Fig {f.figure.n}</span>
+                  <div className="mt-3 flex h-36 items-end">{f.figure.node}</div>
+                </figure>
+              )}
+              <p className="label">
+                {String(i + 1).padStart(2, "0")}
               </p>
-              <p className="lp-mono mt-2 text-[15px] text-content-tertiary">≈ $13.40 at home</p>
-              <div className="mt-4 flex flex-wrap gap-1">
-                {SUPPORTED_CURRENCIES.map((c) => (
-                  <span
-                    key={c}
-                    className="lp-mono text-[10.5px] font-semibold px-1.5 py-0.5 rounded-md bg-surface-elevated text-content-tertiary"
-                  >
-                    {c}
-                  </span>
-                ))}
+              <h3 className="mt-3 text-[17px] font-medium text-content-heading">{f.title}</h3>
+              <p className="mt-1.5 text-[15px] leading-relaxed text-content-secondary">{f.body}</p>
+              {f.spec && <div className="mt-4 text-[13px] text-content-primary">{f.spec}</div>}
+            </li>
+          ))}
+        </ol>
+        <div className="mt-20 grid grid-cols-1 lg:grid-cols-[12rem_1fr] gap-x-10 gap-y-6">
+          <p className="label">The dashboard</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-12">
+            <figure className="border-t border-content-heading pt-4">
+              <span className="label text-accent">Fig 8</span>
+              <div className="mt-4">
+                <TrendBarsFigure />
               </div>
-            </div>
-          </Card>
-
-          <Card
-            title="Transfers aren't spending"
-            body="Moves between accounts are linked and kept out of your spending."
-          >
-            <div className="w-full flex items-center gap-2">
-              <div className="lp-tile px-3 py-2.5 shrink-0">
-                <p className="text-[11px] text-content-tertiary">Everyday</p>
-                <p className="lp-mono text-[13px] font-bold text-content-heading">-500</p>
+            </figure>
+            <figure className="border-t border-content-heading pt-4">
+              <span className="label text-accent">Fig 9</span>
+              <div className="mt-4">
+                <HeatmapFigure />
               </div>
-              <div className="relative flex-1 h-3 lp-wire">
-                <span className="lp-coin absolute inset-y-0 left-0 right-3">
-                  <span className="absolute top-0 left-0 w-3 h-3 rounded-full bg-accent" />
-                </span>
-              </div>
-              <div className="lp-tile px-3 py-2.5 shrink-0">
-                <p className="text-[11px] text-content-tertiary">Savings</p>
-                <p className="lp-mono text-[13px] font-bold text-accent">+500</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            title="Categories that fit your life"
-            body="11 built in, each one optional, plus up to 20 of your own."
-          >
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((c) => (
-                <span key={c.name} className="lp-chip">
-                  <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
-                  {c.name}
-                </span>
-              ))}
-              <span className="lp-chip lp-wiggle border-dashed text-content-tertiary">+ yours</span>
-            </div>
-          </Card>
-
-          <Card title="A dashboard you arrange" body="Drag, resize and hide widgets.">
-            <div className="w-full grid grid-cols-3 grid-rows-2 gap-2 h-28">
-              <div className="lp-tile col-span-2 p-2.5">
-                <div className="h-1.5 w-10 rounded-full bg-edge-strong" />
-                <div className="mt-2 h-3 w-16 rounded-full bg-content-heading/80" />
-              </div>
-              <div className="lp-tile lp-wiggle row-span-2 bg-accent-soft-bg border-accent/30 flex items-end p-2 gap-1">
-                <div className="flex-1 h-[40%] rounded-sm bg-accent/50" />
-                <div className="flex-1 h-[75%] rounded-sm bg-accent/70" />
-                <div className="flex-1 h-[55%] rounded-sm bg-accent" />
-              </div>
-              <div className="lp-tile" />
-              <div className="lp-tile" />
-            </div>
-          </Card>
-
-          <Card
-            className="md:col-span-2 lg:col-span-1"
-            title="Export everything"
-            body="CSV, XLSX or PDF, or all of it as a ZIP."
-          >
-            <div className="flex items-end gap-3">
-              {[
-                { ext: "csv", r: "-6deg" },
-                { ext: "xlsx", r: "3deg" },
-                { ext: "pdf", r: "-2deg" },
-                { ext: "zip", r: "7deg" },
-              ].map((f) => (
-                <div
-                  key={f.ext}
-                  className="lp-file w-14 h-[4.5rem] bg-surface-elevated border border-edge-strong flex items-end p-1.5"
-                  style={{ "--r": f.r } as React.CSSProperties}
-                >
-                  <span className="lp-mono text-[11px] font-bold text-content-secondary">
-                    .{f.ext}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card
-            className="md:col-span-2"
-            title="Lives on your phone"
-            body="Add it to your home screen from the browser. No app store."
-          >
-            <div className="w-full flex items-center justify-center gap-6">
-              <div className="w-24 h-40 rounded-[1.4rem] border-2 border-edge-strong bg-surface-elevated p-2.5 grid grid-cols-3 content-start gap-1.5">
-                {Array.from({ length: 8 }, (_, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: static decoration
-                  <span key={i} className="aspect-square rounded-md bg-edge-default" />
-                ))}
-                <span className="lp-wiggle aspect-square rounded-md bg-content-heading flex items-center justify-center">
-                  <span className="cofr-brand text-[7px] text-surface-page">cofr</span>
-                </span>
-              </div>
-              <p className="cofr-brand text-[15px] text-content-tertiary -rotate-6 max-w-[8rem]">
-                ← right next to your banking app
-              </p>
-            </div>
-          </Card>
+            </figure>
+          </div>
         </div>
       </div>
     </section>
@@ -618,59 +518,66 @@ function SelfHost() {
   };
 
   return (
-    <section
-      id="self-host"
-      className="lp-defer scroll-mt-20 px-5 sm:px-6 py-20 sm:py-28 border-t border-edge-default"
-    >
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-12 lg:gap-16 items-center">
-        <div className="lp-rise">
-          <h2 className="lp-display text-content-heading text-[clamp(2.2rem,5.5vw,3.6rem)]">
-            Install it in one command.
-          </h2>
-          <p className="mt-5 max-w-lg text-[16px] sm:text-[17px] leading-relaxed text-content-secondary">
-            Works on any machine with Docker. It generates secrets, starts Postgres and the app, and
-            sets up HTTPS if you give it a domain. Run it again to update.
-          </p>
-          <p className="mt-4 text-[14px] text-content-tertiary">
-            AGPL-3.0.{" "}
-            <a
-              href={`${GITHUB_URL}/blob/main/scripts/install.sh`}
-              data-event="install:read-script"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-content-heading underline underline-offset-4"
-            >
-              Read the installer
-            </a>{" "}
-            before you run it.
-          </p>
-        </div>
+    <section id="self-host" className="lp-defer scroll-mt-20 px-5 sm:px-6 pb-24 sm:pb-32">
+      <div className="max-w-6xl mx-auto lp-section">
+        <SectionHead n="02" title="Install it in one command." />
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.35fr] gap-10 lg:gap-14 lg:pl-[calc(12rem+2.5rem)]">
+          <div>
+            <p className="lp-lead text-[19px] text-content-secondary">
+              Works on any machine with Docker. It generates secrets, starts Postgres and the app,
+              and sets up HTTPS if you give it a domain. Run it again to update.
+            </p>
+            <dl className="sm-spec mt-8">
+              <div>
+                <dt>Licence</dt>
+                <dd>AGPL-3.0</dd>
+              </div>
+              <div>
+                <dt>Needs</dt>
+                <dd>{active.note.replace(/^Needs /, "")}</dd>
+              </div>
+              <div>
+                <dt>Installer</dt>
+                <dd>
+                  <a
+                    href={`${GITHUB_URL}/blob/main/scripts/install.sh`}
+                    data-event="install:read-script"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-content-primary underline decoration-accent underline-offset-4 hover:text-accent"
+                  >
+                    Read it before you run it
+                  </a>
+                </dd>
+              </div>
+            </dl>
+          </div>
 
-        <div className="lp-rise min-w-0">
-          <div className="lp-term overflow-hidden">
-            <div className="flex items-center gap-1 px-2 pt-2 border-b border-[#1e293b]">
-              {(Object.keys(INSTALL) as Platform[]).map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setPlatform(id)}
-                  data-event={`install:tab:${id}`}
-                  aria-pressed={platform === id}
-                  className={`px-3.5 py-2 text-[13px] font-semibold rounded-t-lg transition-colors ${
-                    platform === id
-                      ? "bg-[#131c2e] text-white"
-                      : "text-slate-400 hover:text-slate-200"
-                  }`}
-                >
-                  {INSTALL[id].label}
-                </button>
-              ))}
-            </div>
-            <div className="lp-mono text-[13px] sm:text-[14px] p-4 sm:p-5">
+          <figure className="min-w-0">
+            <figcaption className="mb-3 flex items-center justify-between gap-4">
+              <span className="label text-accent">Fig 10</span>
+              <fieldset className="sm-segmented m-0 min-w-0">
+                <legend className="sr-only">Platform</legend>
+                {(Object.keys(INSTALL) as Platform[]).map((id) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setPlatform(id)}
+                    data-event={`install:tab:${id}`}
+                    aria-pressed={platform === id}
+                    data-state={platform === id ? "on" : "off"}
+                    className="sm-segmented-item"
+                  >
+                    {INSTALL[id].label}
+                  </button>
+                ))}
+              </fieldset>
+            </figcaption>
+            <div className="lp-term lp-mono text-[13px] sm:text-[14px] p-4 sm:p-5">
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0 overflow-x-auto">
-                  <code className="whitespace-nowrap text-white select-all">
-                    <span className="text-[#34d399] font-bold">{active.prompt}</span> {active.cmd}
+                  <code className="whitespace-nowrap text-content-heading select-all">
+                    <span className="text-accent">{active.prompt}</span> {active.cmd}
                   </code>
                 </div>
                 <button
@@ -678,31 +585,31 @@ function SelfHost() {
                   onClick={copy}
                   data-event={`install:copy:${platform}`}
                   aria-label={copied ? "Copied" : "Copy install command"}
-                  className={`shrink-0 font-sans text-[12px] font-semibold px-2.5 py-1 rounded-md transition-colors ${
-                    copied
-                      ? "bg-[#34d399] text-[#0b1220]"
-                      : "bg-[#1e293b] text-slate-300 hover:bg-[#334155]"
-                  }`}
+                  className="sm-button shrink-0"
+                  data-size="sm"
+                  data-variant={copied ? "primary" : undefined}
                 >
                   {copied ? "Copied" : "Copy"}
                 </button>
               </div>
-              <div className="mt-4 space-y-1 text-slate-500" aria-hidden="true">
+              <div className="mt-4 space-y-1 text-content-tertiary" aria-hidden="true">
                 {INSTALL_OUTPUT.map((line) => (
                   <p key={line} className="pl-4">
                     {line}
                   </p>
                 ))}
-                <p className="pt-2 text-[#34d399]">cofr is running</p>
-                <p className="pl-4 text-slate-300">-&gt; http://localhost</p>
+                <p className="pt-2 text-content-heading">
+                  <span className="sm-square mr-2" />
+                  cofr is running
+                </p>
+                <p className="pl-4 text-content-secondary">-&gt; http://localhost</p>
                 <p className="pt-2">
-                  <span className="text-[#34d399] font-bold">{active.prompt}</span>{" "}
+                  <span className="text-accent">{active.prompt}</span>{" "}
                   <span className="lp-cursor" />
                 </p>
               </div>
             </div>
-          </div>
-          <p className="mt-3 text-[13px] text-content-tertiary">{active.note}</p>
+          </figure>
         </div>
       </div>
     </section>
@@ -713,27 +620,32 @@ function SelfHost() {
 
 function FAQ() {
   return (
-    <section className="lp-defer px-5 sm:px-6 py-20 sm:py-28 bg-surface-elevated border-y border-edge-default">
-      <div className="max-w-3xl mx-auto">
-        <SectionHeading title="Fair questions." />
-        <div className="lp-rise border-t border-edge-strong">
-          {FAQ_ITEMS.map((item) => (
-            <details key={item.q} className="lp-faq group border-b border-edge-strong">
-              <summary className="flex items-center gap-4 py-5 cursor-pointer text-[17px] sm:text-[19px] font-bold text-content-heading">
-                <span className="flex-1">{item.q}</span>
-                <span
-                  className="lp-plus shrink-0 w-8 h-8 rounded-full border border-edge-strong flex items-center justify-center text-[18px] font-normal text-content-secondary group-hover:border-content-tertiary"
-                  aria-hidden="true"
-                >
-                  +
-                </span>
-              </summary>
-              <p className="pb-6 pr-12 text-[15px] sm:text-[16px] leading-relaxed text-content-secondary">
-                {item.a}
-              </p>
-            </details>
+    <section className="lp-defer px-5 sm:px-6 pb-24 sm:pb-32">
+      <div className="max-w-6xl mx-auto lp-section">
+        <SectionHead n="03" title="Fair questions." />
+        <ol className="border-t border-content-heading lg:ml-[calc(12rem+2.5rem)] max-w-3xl">
+          {FAQ_ITEMS.map((item, i) => (
+            <li key={item.q}>
+              <details className="lp-faq border-b border-edge-default">
+                <summary className="flex items-baseline gap-5 py-5 cursor-pointer">
+                  <span className="label text-accent w-6 shrink-0">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="flex-1 text-[18px] sm:text-[20px] font-medium text-content-heading">
+                    {item.q}
+                  </span>
+                  <span className="label shrink-0" aria-hidden="true">
+                    <span className="lp-closed">[+]</span>
+                    <span className="lp-open">[−]</span>
+                  </span>
+                </summary>
+                <p className="pb-6 pl-11 pr-12 text-[16px] leading-relaxed text-content-secondary">
+                  {item.a}
+                </p>
+              </details>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );
@@ -743,16 +655,19 @@ function FAQ() {
 
 function Closing() {
   return (
-    <section className="lp-defer px-5 sm:px-6 pt-24 sm:pt-32 pb-10 text-center">
-      <div className="lp-rise max-w-2xl mx-auto">
-        <h2 className="lp-display text-content-heading text-[clamp(2.4rem,7vw,4.4rem)]">
-          See where it goes.
-        </h2>
-        <div className="mt-9 flex flex-col sm:flex-row justify-center gap-3">
-          <StartLink className={BTN_PRIMARY}>
-            {IS_LANDING ? "Install cofr" : "Start tracking"}
-            <span aria-hidden="true">→</span>
-          </StartLink>
+    <section className="lp-defer px-5 sm:px-6 pb-16">
+      <div className="max-w-6xl mx-auto lp-section pt-16 sm:pt-24 grid grid-cols-1 lg:grid-cols-[12rem_1fr] gap-x-10">
+        <p className="label text-accent">[&nbsp;04&nbsp;]</p>
+        <div>
+          <h2 className="lp-display text-content-heading text-[clamp(2.5rem,7vw,4.75rem)]">
+            See where it goes.
+          </h2>
+          <div className="mt-9 flex flex-col sm:flex-row gap-3">
+            <StartLink className={BTN_PRIMARY} data-variant="primary">
+              {IS_LANDING ? "Install cofr" : "Start tracking"}
+              <span aria-hidden="true">→</span>
+            </StartLink>
+          </div>
         </div>
       </div>
     </section>
@@ -781,10 +696,10 @@ function Footer() {
               AGPL-3.0
             </a>
           </p>
-          <ul className="flex items-center gap-5">
+          <ul className="flex items-center gap-6">
             {links.map((l) => (
               <li key={l.to}>
-                <Link to={l.to} className="text-content-secondary hover:text-content-primary">
+                <Link to={l.to} className="label hover:text-content-primary">
                   {l.label}
                 </Link>
               </li>
@@ -794,7 +709,7 @@ function Footer() {
                 href={GITHUB_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-content-secondary hover:text-content-primary"
+                className="label hover:text-content-primary"
               >
                 GitHub
               </a>
@@ -817,7 +732,6 @@ export default function Index() {
       <Nav />
       <main>
         <Hero />
-        <Ticker />
         <Features />
         <SelfHost />
         <FAQ />

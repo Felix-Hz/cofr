@@ -103,7 +103,7 @@ export function AccountTrendWidget() {
                 deltaTone === "up"
                   ? "bg-positive-bg text-positive-text-strong"
                   : deltaTone === "down"
-                    ? "bg-negative-bg text-negative-text"
+                    ? "bg-tint text-content-primary"
                     : "bg-surface-elevated text-content-tertiary"
               }`}
             >

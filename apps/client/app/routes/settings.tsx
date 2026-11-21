@@ -886,7 +886,7 @@ export default function Settings() {
         </h2>
         <Link
           to="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald hover:text-emerald-hover transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-accent hover:text-accent-hover transition-colors"
         >
           <svg
             className="w-4 h-4"
@@ -908,7 +908,7 @@ export default function Settings() {
       {/* Tab bar: appears on scroll, fixed to viewport */}
       <div
         ref={tabsContainerRef}
-        className={`flex gap-1 overflow-x-auto scrollbar-hide fixed top-0 left-0 right-0 z-40 bg-surface-page/80 backdrop-blur-md border-b border-edge-default shadow-sm px-4 py-2.5 transition-all duration-200 ${
+        className={`flex gap-1 overflow-x-auto scrollbar-hide fixed top-0 left-0 right-0 z-40 bg-surface-page/80 border-b border-edge-default shadow-sm px-4 py-2.5 transition-all duration-200 ${
           showTabs ? "opacity-100 translate-y-0" : "opacity-0 pointer-events-none -translate-y-full"
         }`}
       >
@@ -920,7 +920,7 @@ export default function Settings() {
             onClick={() => scrollToSection(section.id)}
             className={`px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium rounded-full whitespace-nowrap transition-colors ${
               activeTab === section.id
-                ? "bg-emerald text-white"
+                ? "bg-accent text-on-accent"
                 : "text-content-tertiary hover:text-content-secondary hover:bg-surface-hover"
             }`}
           >
@@ -1168,7 +1168,7 @@ export default function Settings() {
                     System
                   </span>
                   {defaultAccountId === acct.id && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald/10 text-emerald">
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/10 text-accent">
                       Default
                     </span>
                   )}
@@ -1217,7 +1217,7 @@ export default function Settings() {
                                 setBalanceCurrentAmount(null);
                               }
                             }}
-                            className="w-full px-3 py-2 text-left text-xs font-medium text-emerald hover:bg-surface-hover"
+                            className="w-full px-3 py-2 text-left text-xs font-medium text-accent hover:bg-surface-hover"
                           >
                             Set Balance
                           </button>
@@ -1237,13 +1237,13 @@ export default function Settings() {
                     ref={(el) => {
                       if (el) el.focus();
                     }}
-                    className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                   />
                   <button
                     type="button"
                     onClick={() => handleUpdateAccount(acct.id)}
                     disabled={acctLoading}
-                    className="shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-emerald rounded-md disabled:opacity-50"
+                    className="shrink-0 px-3 py-1.5 text-xs font-medium text-on-accent bg-accent rounded-md disabled:opacity-50"
                   >
                     {acctLoading ? "..." : "Save"}
                   </button>
@@ -1284,7 +1284,7 @@ export default function Settings() {
                         type="button"
                         onClick={handleSetBalance}
                         disabled={acctLoading}
-                        className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                        className="shrink-0 text-xs font-medium text-on-accent bg-accent rounded-md px-3 py-1.5 disabled:opacity-50"
                       >
                         {acctLoading ? "..." : "Confirm"}
                       </button>
@@ -1305,12 +1305,12 @@ export default function Settings() {
                         value={balanceAmount}
                         onChange={(e) => setBalanceAmount(e.target.value)}
                         placeholder="New balance"
-                        className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                        className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-accent"
                       />
                       <select
                         value={balanceCurrency}
                         onChange={(e) => setBalanceCurrency(e.target.value)}
-                        className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                        className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                       >
                         {SUPPORTED_CURRENCIES.map((c) => (
                           <option key={c} value={c}>
@@ -1322,7 +1322,7 @@ export default function Settings() {
                         type="button"
                         onClick={handleSetBalance}
                         disabled={acctLoading || !balanceAmount}
-                        className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                        className="shrink-0 text-xs font-medium text-on-accent bg-accent rounded-md px-3 py-1.5 disabled:opacity-50"
                       >
                         {acctLoading ? "..." : "Save"}
                       </button>
@@ -1405,7 +1405,7 @@ export default function Settings() {
                       {acct.name}
                     </span>
                     {defaultAccountId === acct.id && (
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald/10 text-emerald">
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/10 text-accent">
                         Default
                       </span>
                     )}
@@ -1454,7 +1454,7 @@ export default function Settings() {
                                   setBalanceCurrentAmount(null);
                                 }
                               }}
-                              className="w-full px-3 py-2 text-left text-xs font-medium text-emerald hover:bg-surface-hover"
+                              className="w-full px-3 py-2 text-left text-xs font-medium text-accent hover:bg-surface-hover"
                             >
                               Set Balance
                             </button>
@@ -1484,13 +1484,13 @@ export default function Settings() {
                       ref={(el) => {
                         if (el) el.focus();
                       }}
-                      className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                      className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                     />
                     <button
                       type="button"
                       onClick={() => handleUpdateAccount(acct.id)}
                       disabled={acctLoading}
-                      className="shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-emerald rounded-md disabled:opacity-50"
+                      className="shrink-0 px-3 py-1.5 text-xs font-medium text-on-accent bg-accent rounded-md disabled:opacity-50"
                     >
                       {acctLoading ? "..." : "Save"}
                     </button>
@@ -1531,7 +1531,7 @@ export default function Settings() {
                           type="button"
                           onClick={handleSetBalance}
                           disabled={acctLoading}
-                          className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                          className="shrink-0 text-xs font-medium text-on-accent bg-accent rounded-md px-3 py-1.5 disabled:opacity-50"
                         >
                           {acctLoading ? "..." : "Confirm"}
                         </button>
@@ -1552,12 +1552,12 @@ export default function Settings() {
                           value={balanceAmount}
                           onChange={(e) => setBalanceAmount(e.target.value)}
                           placeholder="New balance"
-                          className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                          className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-accent"
                         />
                         <select
                           value={balanceCurrency}
                           onChange={(e) => setBalanceCurrency(e.target.value)}
-                          className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                          className="w-20 shrink-0 px-2 py-1.5 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                         >
                           {SUPPORTED_CURRENCIES.map((c) => (
                             <option key={c} value={c}>
@@ -1569,7 +1569,7 @@ export default function Settings() {
                           type="button"
                           onClick={handleSetBalance}
                           disabled={acctLoading || !balanceAmount}
-                          className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                          className="shrink-0 text-xs font-medium text-on-accent bg-accent rounded-md px-3 py-1.5 disabled:opacity-50"
                         >
                           {acctLoading ? "..." : "Save"}
                         </button>
@@ -1606,12 +1606,12 @@ export default function Settings() {
                   onChange={(e) => setNewAccountName(e.target.value)}
                   maxLength={60}
                   placeholder="Account name"
-                  className="flex-1 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="flex-1 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-accent"
                 />
                 <select
                   value={newAccountType}
                   onChange={(e) => setNewAccountType(e.target.value)}
-                  className="sm:w-32 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="sm:w-32 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                 >
                   <option value="checking">Checking</option>
                   <option value="savings">Savings</option>
@@ -1626,12 +1626,12 @@ export default function Settings() {
                   value={newAccountStartingBalance}
                   onChange={(e) => setNewAccountStartingBalance(e.target.value)}
                   placeholder="Starting balance"
-                  className="flex-1 min-w-0 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="flex-1 min-w-0 px-3 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-accent"
                 />
                 <select
                   value={newAccountCurrency}
                   onChange={(e) => setNewAccountCurrency(e.target.value)}
-                  className="w-20 shrink-0 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="w-20 shrink-0 px-2 py-2 text-sm border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent"
                 >
                   {SUPPORTED_CURRENCIES.map((c) => (
                     <option key={c} value={c}>
@@ -1643,7 +1643,7 @@ export default function Settings() {
                   type="button"
                   onClick={handleCreateAccount}
                   disabled={acctLoading || !newAccountName.trim()}
-                  className="shrink-0 text-xs font-medium text-white bg-emerald rounded-md px-3 py-1.5 disabled:opacity-50"
+                  className="shrink-0 text-xs font-medium text-on-accent bg-accent rounded-md px-3 py-1.5 disabled:opacity-50"
                 >
                   {acctLoading ? "..." : "Save"}
                 </button>
@@ -1666,7 +1666,7 @@ export default function Settings() {
             <button
               type="button"
               onClick={() => setAddingAccount(true)}
-              className="w-full py-2.5 text-sm font-medium text-emerald border-2 border-dashed border-emerald/40 hover:border-emerald hover:bg-emerald/5 rounded-lg transition-colors"
+              className="w-full py-2.5 text-sm font-medium text-accent border-2 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 rounded-lg transition-colors"
             >
               + Add Account
             </button>
@@ -1725,7 +1725,7 @@ export default function Settings() {
                     type="button"
                     onClick={() => handleToggleCategory(cat.id)}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                      cat.is_active ? "bg-emerald" : "bg-edge-strong"
+                      cat.is_active ? "bg-accent" : "bg-edge-strong"
                     }`}
                   >
                     <span
@@ -1813,7 +1813,7 @@ export default function Settings() {
                     type="button"
                     onClick={() => handleToggleCategory(cat.id)}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                      cat.is_active ? "bg-emerald" : "bg-edge-strong"
+                      cat.is_active ? "bg-accent" : "bg-edge-strong"
                     }`}
                   >
                     <span
@@ -1839,7 +1839,7 @@ export default function Settings() {
               setEditingCategory(null);
               setCatModalOpen(true);
             }}
-            className="w-full py-2.5 text-sm font-medium text-emerald border-2 border-dashed border-emerald/40 hover:border-emerald hover:bg-emerald/5 rounded-lg transition-colors"
+            className="w-full py-2.5 text-sm font-medium text-accent border-2 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 rounded-lg transition-colors"
           >
             + Add Custom Category
           </button>
@@ -1924,7 +1924,7 @@ export default function Settings() {
                       type="button"
                       onClick={() => handleRecurringToggle(rule.id)}
                       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                        rule.is_active ? "bg-emerald" : "bg-edge-strong"
+                        rule.is_active ? "bg-accent" : "bg-edge-strong"
                       }`}
                       aria-label={rule.is_active ? "Pause" : "Resume"}
                     >
@@ -1952,7 +1952,7 @@ export default function Settings() {
               setEditingRule(null);
               setRecurringModalOpen(true);
             }}
-            className="w-full py-2.5 text-sm font-medium text-emerald border-2 border-dashed border-emerald/40 hover:border-emerald hover:bg-emerald/5 rounded-lg transition-colors"
+            className="w-full py-2.5 text-sm font-medium text-accent border-2 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 rounded-lg transition-colors"
           >
             + Add Recurring Rule
           </button>
@@ -2020,7 +2020,7 @@ export default function Settings() {
                       <span
                         className={`text-[10px] font-semibold uppercase tracking-widest px-1.5 py-0.5 rounded-sm ${
                           budget.budget_type === "income"
-                            ? "bg-emerald/15 text-emerald"
+                            ? "bg-accent/15 text-accent"
                             : "bg-surface-elevated text-content-tertiary"
                         }`}
                       >
@@ -2038,7 +2038,7 @@ export default function Settings() {
                               ? "bg-negative-btn"
                               : pct >= 85
                                 ? "bg-warning-text"
-                                : "bg-emerald"
+                                : "bg-accent"
                           }`}
                           style={{ width: `${Math.min(pct, 100)}%` }}
                         />
@@ -2131,7 +2131,7 @@ export default function Settings() {
                 setEditingBudget(null);
                 setBudgetModalOpen(true);
               }}
-              className="w-full py-2.5 text-sm font-medium text-emerald border-2 border-dashed border-emerald/40 hover:border-emerald hover:bg-emerald/5 rounded-lg transition-colors"
+              className="w-full py-2.5 text-sm font-medium text-accent border-2 border-dashed border-accent/40 hover:border-accent hover:bg-accent/5 rounded-lg transition-colors"
             >
               + Add Budget
             </button>
@@ -2289,7 +2289,7 @@ export default function Settings() {
                 required
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors"
               />
             </div>
             <div>
@@ -2305,14 +2305,14 @@ export default function Settings() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="At least 8 characters"
-                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-emerald focus:border-transparent transition-colors"
+                className="w-full px-3 py-2 border border-edge-strong rounded-md bg-surface-primary text-content-primary placeholder:text-content-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-colors"
               />
               <PasswordRequirements password={newPassword} />
             </div>
             <button
               type="submit"
               disabled={passwordLoading || !isPasswordValid(newPassword)}
-              className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md disabled:opacity-50 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md disabled:opacity-50 transition-colors"
             >
               {passwordLoading ? "Saving..." : "Change password"}
             </button>
@@ -2344,7 +2344,7 @@ export default function Settings() {
           <button
             type="button"
             onClick={() => setIsImportModalOpen(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md transition-colors"
+            className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md transition-colors"
           >
             Import CSV
           </button>
@@ -2381,7 +2381,7 @@ export default function Settings() {
           <button
             type="button"
             onClick={() => setIsExportModalOpen(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md transition-colors"
+            className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md transition-colors"
           >
             New Export
           </button>

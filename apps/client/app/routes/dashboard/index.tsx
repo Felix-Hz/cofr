@@ -171,11 +171,11 @@ function ToolbarButton({
     "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-[background-color,color,border-color] duration-200";
   const toneStyles =
     tone === "emerald"
-      ? "bg-emerald text-white hover:bg-emerald-hover"
+      ? "bg-accent text-on-accent hover:bg-accent-hover"
       : tone === "accent"
         ? "border border-accent/30 text-accent hover:bg-accent-soft-bg"
         : active
-          ? "bg-emerald text-white"
+          ? "bg-accent text-on-accent"
           : "border border-edge-strong text-content-tertiary hover:bg-surface-hover hover:text-content-primary";
   return (
     <Tooltip content={label}>
@@ -925,7 +925,7 @@ export default function Dashboard() {
       <div className="space-y-6 pb-24">
         {/* ─── Header ─── */}
         <div className="sm:hidden">
-          <div className="dashboard-ambient overflow-hidden rounded-[var(--radius-xl)] border border-edge-default bg-surface-primary p-3 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.3)]">
+          <div className="dashboard-ambient overflow-hidden rounded-[var(--radius-xl)] border border-edge-default bg-surface-primary p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-content-tertiary">
@@ -995,7 +995,7 @@ export default function Dashboard() {
                   onClick={handleToggleEditMode}
                   className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border transition-[background-color,color,border-color] duration-200 ${
                     isEditMode
-                      ? "border-transparent bg-emerald text-white hover:bg-emerald-hover"
+                      ? "border-transparent bg-accent text-on-accent hover:bg-accent-hover"
                       : "border-edge-strong bg-surface-elevated text-content-primary hover:bg-surface-hover"
                   }`}
                 >
@@ -1061,7 +1061,7 @@ export default function Dashboard() {
                     onClick={() => setIsControlsOpen(!isControlsOpen)}
                     className={`relative flex h-9 w-9 items-center justify-center rounded-md transition-[background-color,color] duration-200 ${
                       isControlsOpen
-                        ? "bg-emerald text-white"
+                        ? "bg-accent text-on-accent"
                         : "text-content-tertiary hover:bg-surface-hover hover:text-content-primary"
                     }`}
                     aria-label="Filters & controls"
@@ -1133,7 +1133,7 @@ export default function Dashboard() {
                 type="button"
                 aria-label="Add an expense"
                 onClick={handleAdd}
-                className="ml-auto inline-flex h-9 items-center gap-2 rounded-md bg-emerald px-3.5 text-sm font-medium text-white transition-[background-color] duration-200 hover:bg-emerald-hover"
+                className="ml-auto inline-flex h-9 items-center gap-2 rounded-md bg-accent px-3.5 text-sm font-medium text-on-accent transition-[background-color] duration-200 hover:bg-accent-hover"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -1242,7 +1242,7 @@ export default function Dashboard() {
           </div>
 
           <div className="hidden shrink-0 items-center gap-3 sm:flex">
-            <div className="flex items-center rounded-lg border border-edge-default bg-surface-primary p-1 shadow-[0_10px_30px_-22px_rgba(15,23,42,0.35)]">
+            <div className="flex items-center rounded-lg border border-edge-default bg-surface-primary p-1">
               <ToolbarButton
                 label="Export data"
                 onClick={() => setIsExportModalOpen(true)}
@@ -1292,7 +1292,7 @@ export default function Dashboard() {
                     onClick={() => setIsControlsOpen(!isControlsOpen)}
                     className={`relative flex h-9 w-9 items-center justify-center rounded-md transition-[background-color,color] duration-200 ${
                       isControlsOpen
-                        ? "bg-emerald text-white"
+                        ? "bg-accent text-on-accent"
                         : "text-content-tertiary hover:bg-surface-hover hover:text-content-primary"
                     }`}
                     aria-label="Filters & controls"
@@ -1368,7 +1368,7 @@ export default function Dashboard() {
                 onClick={handleToggleEditMode}
                 className={`inline-flex h-11 items-center gap-2 rounded-md border px-4 text-sm font-medium transition-[background-color,color,border-color] duration-200 ${
                   isEditMode
-                    ? "border-transparent bg-emerald text-white hover:bg-emerald-hover"
+                    ? "border-transparent bg-accent text-on-accent hover:bg-accent-hover"
                     : "border-edge-strong bg-surface-primary text-content-primary hover:bg-surface-hover"
                 }`}
               >
@@ -1389,7 +1389,7 @@ export default function Dashboard() {
                 type="button"
                 aria-label="Add an expense"
                 onClick={handleAdd}
-                className="inline-flex h-11 items-center gap-2 rounded-md bg-emerald px-4 text-sm font-medium text-white transition-[background-color] duration-200 hover:bg-emerald-hover"
+                className="inline-flex h-11 items-center gap-2 rounded-md bg-accent px-4 text-sm font-medium text-on-accent transition-[background-color] duration-200 hover:bg-accent-hover"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path

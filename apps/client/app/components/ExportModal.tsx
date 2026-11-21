@@ -260,10 +260,7 @@ export default function ExportModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 touch-none">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
-        onClick={isExporting ? undefined : onClose}
-      />
+      <div className="absolute inset-0 bg-black/50" onClick={isExporting ? undefined : onClose} />
 
       {/* Modal */}
       <div className="relative w-full max-w-xl bg-surface-primary rounded-xl border border-edge-default shadow-xl overflow-hidden max-h-[85vh] flex flex-col">
@@ -317,7 +314,7 @@ export default function ExportModal({
               }}
               disabled={isExporting}
               placeholder={autoName}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-1 focus:ring-emerald disabled:opacity-50"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-edge-default bg-surface-primary text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
             />
             <p
               className="mt-1.5 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-content-tertiary/65"
@@ -343,7 +340,7 @@ export default function ExportModal({
                     onClick={() => setScope(opt.value)}
                     className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm transition-colors ${
                       scope === opt.value
-                        ? "border-emerald bg-accent-soft-bg"
+                        ? "border-accent bg-accent-soft-bg"
                         : disabledForFormat
                           ? "border-edge-default opacity-40 cursor-not-allowed"
                           : "border-edge-default hover:bg-surface-hover"
@@ -359,7 +356,7 @@ export default function ExportModal({
                     </div>
                     {scope === opt.value && (
                       <svg
-                        className="w-4 h-4 text-emerald shrink-0"
+                        className="w-4 h-4 text-accent shrink-0"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -393,7 +390,7 @@ export default function ExportModal({
                       onClick={() => setFormat(opt.value)}
                       className={`rounded-lg px-3 py-2 text-left transition-colors ${
                         selected
-                          ? "bg-emerald text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                          ? "bg-accent text-on-accent"
                           : disabledForScope
                             ? "text-content-tertiary/50 cursor-not-allowed"
                             : "text-content-secondary hover:bg-surface-hover"
@@ -405,7 +402,7 @@ export default function ExportModal({
                       <span
                         className={`mt-1 block text-[11px] leading-none ${
                           selected
-                            ? "text-white/70"
+                            ? "text-on-accent/70"
                             : disabledForScope
                               ? "text-content-tertiary/45"
                               : "text-content-tertiary"
@@ -450,10 +447,10 @@ export default function ExportModal({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 {isExporting && (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-emerald border-t-transparent" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-accent border-t-transparent" />
                 )}
                 {status === "done" && (
-                  <svg className="w-4 h-4 text-emerald" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -477,7 +474,7 @@ export default function ExportModal({
                 <span
                   className={`text-sm font-medium ${
                     status === "done"
-                      ? "text-emerald"
+                      ? "text-accent"
                       : status === "error"
                         ? "text-negative-text"
                         : "text-content-secondary"
@@ -491,7 +488,7 @@ export default function ExportModal({
               {isExporting && (
                 <div className="h-1.5 bg-surface-elevated rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-emerald rounded-full transition-all duration-500"
+                    className="h-full bg-accent rounded-full transition-all duration-500"
                     style={{
                       width:
                         status === "pending"
@@ -548,7 +545,7 @@ export default function ExportModal({
                       </div>
                       <a
                         href={getExportRecordDownloadUrl(rec.id)}
-                        className="text-emerald hover:text-emerald-hover shrink-0 p-1"
+                        className="text-accent hover:text-accent-hover shrink-0 p-1"
                         title="Download"
                         aria-label={`Download export ${rec.name}`}
                       >
@@ -570,7 +567,7 @@ export default function ExportModal({
                   ))}
                   <p className="text-xs text-content-tertiary pt-1">
                     Exports are stored for 6 months. View full history in{" "}
-                    <a href="/settings#export" className="text-emerald hover:underline">
+                    <a href="/settings#export" className="text-accent hover:underline">
                       Settings
                     </a>
                     .
@@ -596,7 +593,7 @@ export default function ExportModal({
               type="button"
               onClick={handleExport}
               disabled={isExporting || hasNoTransactions}
-              className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md transition-colors disabled:opacity-50"
             >
               {isExporting ? "Exporting..." : "Export"}
             </button>
@@ -608,7 +605,7 @@ export default function ExportModal({
                 const url = getExportDownloadUrl(jobId);
                 window.open(url, "_blank");
               }}
-              className="px-4 py-2 text-sm font-medium text-white bg-emerald hover:bg-emerald-hover rounded-md transition-colors"
+              className="px-4 py-2 text-sm font-medium text-on-accent bg-accent hover:bg-accent-hover rounded-md transition-colors"
             >
               Download Again
             </button>
